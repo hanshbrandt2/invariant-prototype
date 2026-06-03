@@ -49,7 +49,7 @@ function SiteNav() {
             ))}
           </nav>
           <a
-            href="#enter"
+            href="/dashboard"
             className="font-mono text-[0.72rem] uppercase tracking-[0.14em] border border-ink px-3.5 py-2 hover:bg-ink hover:text-paper transition-colors"
           >
             Enter workspace
@@ -120,7 +120,7 @@ function Hero() {
               style={{ animationDelay: "340ms" }}
             >
               <a
-                href="#enter"
+                href="/dashboard"
                 className="font-mono text-[0.74rem] uppercase tracking-[0.14em] bg-ink text-paper px-5 py-3 hover:bg-clay transition-colors"
               >
                 Enter the workspace
@@ -407,7 +407,7 @@ function CtaBand() {
         </div>
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <a
-            href="#top"
+            href="/dashboard"
             className="font-mono text-[0.76rem] uppercase tracking-[0.14em] bg-clay text-paper px-6 py-3.5 hover:bg-paper hover:text-ink transition-colors"
           >
             Open the prototype

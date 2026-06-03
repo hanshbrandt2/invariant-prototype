@@ -1,0 +1,96 @@
+import {
+  listWorkspaces,
+  listHostedDatasets,
+  listStarterPrompts,
+  getStarterPrompt,
+} from "@/lib/data";
+import { StartInput } from "@/components/dashboard/start-input";
+import { HostedDataPicker } from "@/components/dashboard/hosted-data-picker";
+import { WorkspaceCard } from "@/components/dashboard/workspace-card";
+import { StarterStrip } from "@/components/dashboard/starter-strip";
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ state?: string }>;
+}) {
+  const { state } = await searchParams;
+  const [workspaces, datasets, pool] = await Promise.all([
+    listWorkspaces(),
+    listHostedDatasets(),
+    Promise.resolve(listStarterPrompts()),
+  ]);
+  const dateKey = new Date().toISOString().slice(0, 10);
+  const starter = getStarterPrompt(dateKey);
+  const examples = pool.filter((p) => p.text !== starter.text).slice(0, 3);
+  const seeds = pool.slice(0, 3);
+
+  const newUser = state === "new" || workspaces.length === 0;
+  const active = workspaces.filter((w) => w.recentlyActive);
+  const rest = workspaces.filter((w) => !w.recentlyActive);
+
+  return (
+    <div className="mx-auto max-w-[1080px] px-5 md:px-8 py-8 md:py-10">
+      {/* ── hero: start a new analysis, data-rooted ───────────────── */}
+      <section id="hosted-data">
+        <p className="eyebrow text-clay">{newUser ? "Welcome — start here" : "New analysis"}</p>
+        <h1 className="mt-3 font-serif text-[2rem] md:text-[2.5rem] font-semibold tracking-[-0.01em] leading-tight">
+          What are you researching?
+        </h1>
+        <div className={`mt-7 grid grid-cols-1 ${newUser ? "lg:grid-cols-1 max-w-[720px]" : "lg:grid-cols-12"} gap-7`}>
+          <div className={newUser ? "" : "lg:col-span-7"}>
+            <StartInput initial={starter.text} examples={examples} />
+          </div>
+          <div className={newUser ? "mt-2" : "lg:col-span-5"}>
+            <p className="eyebrow mb-2.5">or start from hosted data</p>
+            <HostedDataPicker datasets={datasets} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── your workspaces ───────────────────────────────────────── */}
+      {!newUser && (
+        <section id="workspaces" className="mt-14 scroll-mt-20">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-serif text-[1.5rem] font-semibold">Your workspaces</h2>
+            <span className="eyebrow">{workspaces.length} threads</span>
+          </div>
+
+          <p className="eyebrow mt-7 mb-3">Recently active</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {active.map((ws) => (
+              <WorkspaceCard key={ws.id} ws={ws} />
+            ))}
+          </div>
+
+          {rest.length > 0 && (
+            <>
+              <p className="eyebrow mt-9 mb-3">All</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {rest.map((ws) => (
+                  <WorkspaceCard key={ws.id} ws={ws} />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
+
+      {newUser && (
+        <p className="mt-10 text-[0.9rem] text-muted">
+          no workspaces yet — pick a dataset above or describe an idea, and your
+          first research thread builds itself.
+        </p>
+      )}
+
+      {/* ── start here strip ──────────────────────────────────────── */}
+      <section id="community" className="mt-14 scroll-mt-20">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="font-serif text-[1.5rem] font-semibold">Start here</h2>
+          <span className="eyebrow">curated · achievable by design</span>
+        </div>
+        <StarterStrip seeds={seeds} />
+      </section>
+    </div>
+  );
+}
