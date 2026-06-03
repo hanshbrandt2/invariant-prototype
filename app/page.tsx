@@ -1,5 +1,5 @@
 import { Reveal } from "@/components/landing/reveal";
-import { ResearchGraph } from "@/components/landing/research-graph";
+import { Fig1 } from "@/components/landing/fig1";
 
 export default function Home() {
   return (
@@ -143,7 +143,7 @@ function Hero() {
             <span className="eyebrow">Fig. 1 — One connected graph, not a folder of notebooks</span>
             <span className="eyebrow hidden sm:inline">Lineage · live</span>
           </div>
-          <ResearchGraph />
+          <Fig1 />
         </div>
       </div>
     </section>
@@ -166,7 +166,7 @@ const PILLARS = [
     id: "policies",
     title: "Invariants as policy",
     body: "Roll conventions, point-in-time knowledge, universe construction — the assumptions that quietly break backtests. Written once as policy, attached to the graph, enforced on every build.",
-    foot: "policy:roll:wti:v3 · reviewed",
+    foot: "policy:roll_stitch_cl_calendar_panama · live",
   },
   {
     n: "§ 03",
@@ -301,10 +301,13 @@ function FactSheet() {
             ))}
           </ul>
           <p className="mt-5 eyebrow">Governed by</p>
-          <p className="mt-2 font-mono text-[0.82rem] text-ink-2">
-            policy:roll:wti:v3{" "}
-            <span className="text-faint">· point_in_time</span>
-          </p>
+          <ul className="mt-2 space-y-1 font-mono text-[0.8rem] text-ink-2">
+            <li>roll_stitch_cl_calendar_panama</li>
+            <li>
+              position_sizing_top_decile_long_short{" "}
+              <span className="text-faint">· point_in_time</span>
+            </li>
+          </ul>
         </div>
         <div className="px-6 py-5">
           <p className="eyebrow">Provenance</p>
