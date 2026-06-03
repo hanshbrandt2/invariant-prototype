@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────────────────────
+   Invariant — editorial design system
+   Warm paper, ink, clay (sparing), hairlines.
+   Source Serif 4 (titles) · Inter (UI) · JetBrains Mono (data)
+   Flat. No gradients. No shadows.
+   ─────────────────────────────────────────────────────────────── */
+
+@theme {
+  --color-paper: #faf7f1;
+  --color-paper-2: #f3eee4;
+  --color-paper-3: #ece5d6;
+  --color-ink: #1c1b18;
+  --color-ink-2: #4a463d;
+  --color-muted: #837c6e;
+  --color-faint: #a9a194;
+  --color-clay: #be4d2b;
+  --color-clay-deep: #9c3c20;
+  --color-hairline: #e7e1d5;
+  --color-hairline-2: #d8d0bf;
+
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --tracking-label: 0.18em;
+}
+
+:root {
+  --background: var(--color-paper);
+  --foreground: var(--color-ink);
+}
+
+* {
+  border-color: var(--color-hairline);
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv05";
+}
+
+::selection {
+  background: var(--color-clay);
+  color: var(--color-paper);
+}
+
+/* Editorial label — small caps, wide tracking, mono */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* Hairline rules */
+.rule {
+  border-top: 1px solid var(--color-hairline);
+}
+.rule-ink {
+  border-top: 1px solid var(--color-ink);
+}
+
+/* Drop cap for the lede */
+.dropcap::first-letter {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  float: left;
+  font-size: 3.4em;
+  line-height: 0.78;
+  padding: 0.06em 0.12em 0 0;
+  color: var(--color-clay);
+}
+
+/* ── Motion: restrained, on-load staggered reveals ───────────── */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.rise {
+  opacity: 0;
+  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Reveal-on-scroll (driven by Reveal component) */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal[data-shown="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
