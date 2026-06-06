@@ -37,7 +37,10 @@ export default function RootLayout({
       lang="en"
       className={`${sourceSerif.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
     >
-      <body className="min-h-full bg-paper text-ink">{children}</body>
+      <body className="min-h-full bg-paper text-ink">
+        <a href="#main-content" className="sr-only skip-link">Skip to content</a>
+        {children}
+      </body>
     </html>
   );
 }

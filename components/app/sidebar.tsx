@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/components/auth/auth-context";
-import { CreditMeter } from "@/components/app/credit-meter";
+import { AccountMenu } from "@/components/app/account-menu";
 
 type Item = { label: string; href: string; icon: React.ReactNode; soon?: boolean };
 
@@ -17,15 +16,18 @@ const I = {
 
 const items: Item[] = [
   { label: "Home", href: "/dashboard", icon: I.home },
-  { label: "Search", href: "/dashboard?search=1", icon: I.search, soon: true },
+  { label: "Search", href: "#search", icon: I.search },
   { label: "Hosted data", href: "/dashboard#hosted-data", icon: I.data },
-  { label: "Workspaces", href: "/dashboard#workspaces", icon: I.work },
-  { label: "Community", href: "/dashboard#community", icon: I.community, soon: true },
 ];
 
-export function Sidebar() {
+const WORKSPACE_VIEWS = [
+  { label: "Recent", view: "recent" },
+  { label: "All", view: "all" },
+  { label: "Starred", view: "starred" },
+];
+
+export function Sidebar({ recents = [] }: { recents?: { id: string; name: string }[] }) {
   const pathname = usePathname();
-  const { email, logout } = useAuth();
 
   return (
     <aside className="hidden md:flex flex-col w-[228px] shrink-0 border-r border-hairline bg-paper h-screen sticky top-0">
@@ -34,42 +36,101 @@ export function Sidebar() {
         <span className="font-serif text-[1.3rem] font-semibold tracking-[-0.01em]">Invariant</span>
       </Link>
 
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      {/* account — "My Invariant" */}
+      <AccountMenu />
+
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {items.map((it) => {
           const active = pathname === it.href.split("#")[0].split("?")[0] && it.label === "Home";
-          return (
-            <Link
-              key={it.label}
-              href={it.href}
-              className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] transition-colors ${
-                active ? "bg-paper-2 text-ink" : "text-ink-2 hover:bg-paper-2"
-              }`}
-            >
+          const cls = `group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] transition-colors w-full ${
+            active ? "bg-paper-2 text-ink" : "text-ink-2 hover:bg-paper-2"
+          }`;
+          const inner = (
+            <>
               <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
                 {it.icon}
               </svg>
               <span>{it.label}</span>
+              {it.label === "Search" && <span className="ml-auto font-mono text-[0.6rem] text-faint border border-hairline-2 rounded px-1">⌘K</span>}
               {it.soon && <span className="ml-auto font-mono text-[0.6rem] text-faint">soon</span>}
+            </>
+          );
+          // Search opens the command palette in place rather than navigating
+          if (it.label === "Search") {
+            return (
+              <button key={it.label} onClick={() => window.dispatchEvent(new Event("inv:open-search"))} className={cls}>
+                {inner}
+              </button>
+            );
+          }
+          return (
+            <Link key={it.label} href={it.href} className={cls}>
+              {inner}
             </Link>
           );
         })}
-      </nav>
 
-      <div className="px-4 py-4 border-t border-hairline space-y-3">
-        <Link href="/dashboard#credits" className="block rounded-lg border border-hairline-2 px-3 py-2.5 hover:border-ink transition-colors">
-          <CreditMeter />
-          <p className="mt-1 font-mono text-[0.62rem] text-faint">free tier · builds debit this</p>
-        </Link>
-        <div className="flex items-center justify-between px-1">
-          <div className="min-w-0">
-            <p className="text-[0.78rem] text-ink truncate">{email ?? "you"}</p>
-            <p className="font-mono text-[0.6rem] text-faint">account</p>
+        {/* Workspaces + its three views */}
+        <div className="pt-3">
+          <Link
+            href="/dashboard#workspaces"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+          >
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              {I.work}
+            </svg>
+            <span>Workspaces</span>
+          </Link>
+          <div className="ml-[30px] mt-0.5 flex flex-col">
+            {WORKSPACE_VIEWS.map((v) => (
+              <Link
+                key={v.view}
+                href={`/dashboard?view=${v.view}#workspaces`}
+                className="px-3 py-1 rounded-md text-[0.8rem] text-muted hover:text-ink hover:bg-paper-2 transition-colors"
+              >
+                {v.label}
+              </Link>
+            ))}
           </div>
-          <button onClick={logout} className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-muted hover:text-clay">
-            sign out
-          </button>
         </div>
-      </div>
+
+        {/* Recents — quick jump back into recent threads */}
+        {recents.length > 0 && (
+          <div className="pt-3">
+            <p className="px-3 pb-1 eyebrow">Recents</p>
+            {recents.map((w) => (
+              <Link
+                key={w.id}
+                href={`/workspace/${w.id}`}
+                className="block px-3 py-1.5 rounded-md font-mono text-[0.76rem] text-ink-2 hover:bg-paper-2 hover:text-ink transition-colors truncate"
+              >
+                {w.name}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        <div className="pt-3">
+          <Link
+            href="/learn"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+          >
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 5.5 10 3l7 2.5L10 8 3 5.5Z" /><path d="M6 8v4c0 1 2 2 4 2s4-1 4-2V8" />
+            </svg>
+            <span>Learn</span>
+          </Link>
+          <Link
+            href="/community"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+          >
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              {I.community}
+            </svg>
+            <span>Community</span>
+          </Link>
+        </div>
+      </nav>
     </aside>
   );
 }

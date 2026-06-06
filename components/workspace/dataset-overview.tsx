@@ -1,21 +1,44 @@
 "use client";
 
 import { useState } from "react";
-import type { HostedDataset } from "@/lib/types";
+import type { ColumnStat, HostedDataset, SchemaField } from "@/lib/types";
 import { PreviewChart } from "@/components/workspace/preview-chart";
+import { Histogram } from "@/components/workspace/histogram";
+import { fmtCell, fmtCount, fmtNumber, isNumericType } from "@/lib/format";
 
-const TABS = ["Overview", "Table", "Schema", "Chart", "Code"] as const;
+const TABS = ["Overview", "Schema", "Stats", "Sample", "Chart"] as const;
 type Tab = (typeof TABS)[number];
 
-const fmt = (n: number) =>
-  n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}K` : String(n);
+const STAT_COLS: { key: keyof ColumnStat; label: string }[] = [
+  { key: "type", label: "type" },
+  { key: "nullPct", label: "null %" },
+  { key: "distinct", label: "distinct" },
+  { key: "mean", label: "mean" },
+  { key: "std", label: "std" },
+  { key: "p01", label: "p01" },
+  { key: "p50", label: "p50" },
+  { key: "p99", label: "p99" },
+  { key: "min", label: "min" },
+  { key: "max", label: "max" },
+];
+
+const ROLE_CHIP: Record<string, { label: string; cls: string }> = {
+  time: { label: "TIME", cls: "border-[#3B6D11] text-[#3B6D11]" },
+  key: { label: "KEY", cls: "border-clay text-clay" },
+};
 
 /** Default face for a dataset = Overview. Leads with the visual + numbers. */
 export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
   const [tab, setTab] = useState<Tab>("Overview");
+  const [histCol, setHistCol] = useState(d.histograms?.[0]?.column ?? "");
+  const timeField = d.schemaFields.find((f) => f.role === "time")?.name;
+  const keyField = d.schemaFields.find((f) => f.role === "key")?.name;
+  const rows = d.sampleRows ?? [];
+  const stats = d.columnStats ?? [];
+  const hist = d.histograms?.find((h) => h.column === histCol);
 
   const kpis: [string, string][] = [
-    ["rows", fmt(d.rows)],
+    ["rows", fmtCount(d.rows)],
     ["columns", String(d.cols)],
     ["coverage", `${d.coverage.start.slice(0, 7)} → ${d.coverage.end.slice(0, 7)}`],
     ["missing", `${d.missingPct}%`],
@@ -24,13 +47,13 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
   return (
     <div>
       {/* tabs */}
-      <div className="flex items-center gap-1 border-b border-hairline px-6">
+      <div className="flex items-center gap-1.5 border-b border-hairline px-6">
         {TABS.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3 py-2.5 text-[0.8rem] border-b-2 -mb-px transition-colors ${
-              tab === t ? "border-clay text-ink" : "border-transparent text-muted hover:text-ink"
+            className={`px-3.5 py-3 text-[0.88rem] border-b-2 -mb-px transition-colors ${
+              tab === t ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"
             }`}
           >
             {t}
@@ -68,57 +91,145 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
           </div>
         )}
 
-        {tab === "Table" && (
-          <div className="mt-6 border border-hairline bg-paper overflow-x-auto">
-            <table className="w-full font-mono text-[0.78rem]">
-              <thead>
-                <tr className="border-b border-hairline text-faint">
-                  {["ts_event", "open", "high", "low", "close", "volume"].map((h) => (
-                    <th key={h} className="text-left font-normal px-4 py-2">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {d.preview.slice(0, 8).map((row, i) => {
-                  const c = row.v;
-                  return (
-                    <tr key={i} className="border-b border-hairline/60 text-ink-2">
-                      <td className="px-4 py-1.5">2024-01-02T09:{String(30 + i).padStart(2, "0")}Z</td>
-                      <td className="px-4 py-1.5 tabular-nums">{(c * 0.999).toFixed(2)}</td>
-                      <td className="px-4 py-1.5 tabular-nums">{(c * 1.002).toFixed(2)}</td>
-                      <td className="px-4 py-1.5 tabular-nums">{(c * 0.997).toFixed(2)}</td>
-                      <td className="px-4 py-1.5 tabular-nums text-ink">{c.toFixed(2)}</td>
-                      <td className="px-4 py-1.5 tabular-nums">{(1200 + i * 37) % 4000}</td>
+        {tab === "Sample" && (
+          <div className="mt-6">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="eyebrow">sample · {rows.length} of {fmtCount(d.rows)} rows</span>
+              <span className="eyebrow">{d.schema}</span>
+            </div>
+            <div className="rounded-lg border border-hairline bg-white overflow-x-auto">
+              <table className="w-full font-mono text-[0.76rem] border-collapse">
+                <thead>
+                  <tr className="border-b border-hairline text-faint">
+                    {d.schemaFields.map((f) => (
+                      <th key={f.name} title={f.type} className={`font-normal px-3 py-2 whitespace-nowrap ${isNumericType(f.type) ? "text-right" : "text-left"}`}>
+                        {f.name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, i) => (
+                    <tr key={i} className="border-b border-hairline/50 last:border-0 text-ink-2">
+                      {d.schemaFields.map((f) => {
+                        const v = row[f.name];
+                        const num = isNumericType(f.type);
+                        return (
+                          <td key={f.name} className={`px-3 py-1.5 whitespace-nowrap ${num ? "text-right tabular-nums" : ""} ${v === null || v === undefined ? "text-faint" : f.role === "value" ? "text-ink" : ""}`}>
+                            {fmtCell(v)}
+                          </td>
+                        );
+                      })}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 font-mono text-[0.68rem] text-faint">a deterministic sample, keyed by the schema — not the full table.</p>
           </div>
         )}
 
         {tab === "Schema" && (
-          <div className="mt-6 border border-hairline bg-paper divide-y divide-hairline">
-            {d.schemaFields.map((f) => (
-              <div key={f.name} className="flex items-center gap-4 px-4 py-2.5 font-mono text-[0.8rem]">
-                <span className="text-ink w-40 shrink-0">{f.name}</span>
-                <span className="text-clay w-24 shrink-0">{f.type}</span>
-                <span className="text-faint">{f.note ?? ""}</span>
-              </div>
-            ))}
+          <div className="mt-6">
+            <div className="rounded-lg border border-hairline bg-white overflow-hidden">
+              <table className="w-full text-[0.8rem] border-collapse">
+                <thead>
+                  <tr className="border-b border-hairline text-faint font-mono text-[0.62rem] uppercase tracking-[0.1em]">
+                    <th className="text-left font-normal px-4 py-2">column</th>
+                    <th className="text-left font-normal px-4 py-2">type</th>
+                    <th className="text-left font-normal px-4 py-2">role</th>
+                    <th className="text-left font-normal px-4 py-2">nullable</th>
+                    <th className="text-left font-normal px-4 py-2 w-full">note</th>
+                  </tr>
+                </thead>
+                <tbody className="font-mono">
+                  {d.schemaFields.map((f: SchemaField) => {
+                    const chip = f.role ? ROLE_CHIP[f.role] : undefined;
+                    return (
+                      <tr key={f.name} className="border-b border-hairline/50 last:border-0">
+                        <td className="px-4 py-2 text-ink">{f.name}</td>
+                        <td className="px-4 py-2 text-clay">{f.type}</td>
+                        <td className="px-4 py-2">
+                          {chip && <span className={`text-[0.58rem] uppercase tracking-[0.1em] border rounded-full px-1.5 py-0.5 ${chip.cls}`}>{chip.label}</span>}
+                        </td>
+                        <td className={`px-4 py-2 ${f.nullable ? "text-muted" : "text-faint"}`}>{f.nullable ? "yes" : "no"}</td>
+                        <td className="px-4 py-2 text-faint">{f.note ?? ""}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 font-mono text-[0.68rem] text-faint">
+              {timeField && <>indexed on <span className="text-[#3B6D11]">{timeField}</span></>}
+              {keyField && <> · keyed by <span className="text-clay">{keyField}</span></>}
+              {" · "}{d.schemaFields.length} columns
+            </p>
           </div>
         )}
 
-        {tab === "Code" && (
-          <div className="mt-6 border border-ink bg-ink text-paper p-5 font-mono text-[0.82rem] leading-relaxed overflow-x-auto">
-            <span className="text-faint"># reproducible — runs anywhere</span>
-            <br />
-            <span className="text-clay">from</span> invariant <span className="text-clay">import</span> load
-            <br />
-            <br />
-            df = load(<span className="text-[#d9b36b]">&quot;{d.id}&quot;</span>, schema=<span className="text-[#d9b36b]">&quot;{d.schema}&quot;</span>)
-            <br />
-            df.shape <span className="text-faint"># ({d.rows}, {d.cols})</span>
+        {tab === "Stats" && (
+          <div className="mt-6">
+            <div className="flex items-baseline justify-between mb-2">
+              <span className="eyebrow">column profile</span>
+              <span className="eyebrow text-faint">pre-computed snapshot · as of {d.coverage.end}</span>
+            </div>
+            <div className="rounded-lg border border-hairline bg-white overflow-x-auto">
+              <table className="w-full font-mono text-[0.72rem] border-collapse">
+                <thead>
+                  <tr className="border-b border-hairline text-faint">
+                    <th className="text-left font-normal px-3 py-2 sticky left-0 bg-white">column</th>
+                    {STAT_COLS.map((c) => (
+                      <th key={c.label} className={`font-normal px-3 py-2 whitespace-nowrap ${c.key === "type" ? "text-left" : "text-right"}`}>{c.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.map((s) => (
+                    <tr key={s.name} className="border-b border-hairline/50 last:border-0 text-ink-2">
+                      <td className="px-3 py-1.5 text-ink whitespace-nowrap sticky left-0 bg-white">{s.name}</td>
+                      {STAT_COLS.map((c) => {
+                        const v = s[c.key];
+                        if (c.key === "type") return <td key={c.label} className="px-3 py-1.5 text-clay">{String(v)}</td>;
+                        if (c.key === "nullPct") {
+                          const n = v as number;
+                          return <td key={c.label} className={`px-3 py-1.5 text-right tabular-nums ${n > 0 ? "text-clay" : "text-faint"}`}>{n > 0 ? `${n}%` : "0"}</td>;
+                        }
+                        const txt = v === undefined || v === null ? "—" : typeof v === "number" ? fmtNumber(v) : String(v);
+                        return <td key={c.label} className={`px-3 py-1.5 text-right tabular-nums ${txt === "—" ? "text-faint" : ""}`}>{txt}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {d.histograms && d.histograms.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="eyebrow">distribution</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {d.histograms.map((h) => (
+                      <button
+                        key={h.column}
+                        onClick={() => setHistCol(h.column)}
+                        className={`font-mono text-[0.66rem] rounded-full border px-2 py-0.5 transition-colors ${histCol === h.column ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink"}`}
+                      >
+                        {h.column}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {hist && (
+                  <div className="rounded-lg border border-hairline bg-white p-3">
+                    <Histogram hist={hist} />
+                    <p className="mt-1 font-mono text-[0.66rem] text-faint">
+                      {histCol} · {stats.find((s) => s.name === histCol)?.type} · {stats.find((s) => s.name === histCol)?.nullPct ?? 0}% null · {hist.bins.length} bins
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,4 +1,4 @@
-import type { LineageSubgraph, Node, HostedDataset, ResultSpec, Turn } from "@/lib/types";
+import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup } from "@/lib/types";
 
 /** Everything the (client) workspace needs, pre-loaded server-side. */
 export interface WorkspaceBundle {
@@ -12,14 +12,63 @@ export interface WorkspaceBundle {
   nodes: Record<string, Node>;
   datasets: Record<string, HostedDataset>;
   resultSpecs: Record<string, ResultSpec>;
+  code: Record<string, string>; // reproducible Python per node id (Code lens)
+  concepts: Record<string, Concept>; // by NodeKind (Concepts lens)
+  variants: Record<string, VariantGroup>; // by node id (forks / ⑂×N)
   initialBuildPrompt?: string;
   initialDataId?: string;
   initialView?: "lineage";
+  initialLens?: Lens;
+  initialFocus?: string; // deep-link a node/edge focus
+  initialDrawer?: InspectTarget; // deep-link the inspector drawer
+  initialDrawerTab?: "overview" | "spec" | "contract" | "checks" | "code" | "lineage"; // deep-link the drawer tab
+  initialFork?: string; // deep-link the fork dialog (node id)
 }
 
-/** The one switchable canvas — leads with the visual, never code/metadata. */
-export type CanvasView =
-  | { kind: "empty" }
-  | { kind: "building" }
-  | { kind: "node"; nodeId: string }
-  | { kind: "lineage"; ref: string };
+/** The four ways the same analysis is told (a switcher, not stacked sections). */
+export type Lens = "result" | "graph" | "code" | "concepts";
+
+/** What the inspector drawer is showing (opened from the Graph lens). The graph
+ *  stays put behind it; closing returns you to exactly where you were. */
+export type InspectTarget =
+  | { type: "node"; id: string }
+  | { type: "edge"; parentId: string; childId: string }
+  | { type: "compare"; nodeId: string };
+
+/**
+ * The canvas is a lens switcher over one subject. `focus` (which node, or "" for
+ * the whole-analysis narrative) and `lens` (how it's shown) are orthogonal.
+ * `empty` is the only full-canvas phase (the start-with-data invitation); once
+ * live, the build renders INTO the lenses (the graph grows node-by-node).
+ */
+export type CanvasState =
+  | { phase: "empty" }
+  | { phase: "live"; focus: string; lens: Lens };
+
+/** An edge "focus" — clicking a lineage edge inspects the relationship, not a
+ *  node. Encoded as a focus token so it rides the same nav stack. */
+const EDGE = "__edge__";
+export function edgeFocus(parentId: string, childId: string): string {
+  return `${EDGE}|${parentId}|${childId}`;
+}
+export function parseEdgeFocus(focus: string): { parentId: string; childId: string } | null {
+  if (!focus.startsWith(`${EDGE}|`)) return null;
+  const [, parentId, childId] = focus.split("|");
+  return { parentId, childId };
+}
+
+export const KIND_LABEL: Partial<Record<NodeKind, string>> = {
+  dataset: "dataset",
+  "raw-dataset": "dataset",
+  feature: "feature",
+  matrix: "matrix",
+  target: "target",
+  model: "model",
+  result: "result",
+  policy: "policy",
+  universe: "universe",
+  strategy: "strategy",
+  figure: "figure",
+  operator: "operator",
+  user_operator: "operator",
+};

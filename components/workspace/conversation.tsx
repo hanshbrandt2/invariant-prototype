@@ -1,25 +1,33 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Turn, NextAction } from "@/lib/types";
+import type { PlanView, Turn, NextAction } from "@/lib/types";
 
-/** Always-on conversation — the build interface. What you write compiles to a build. */
+/** Always-on conversation = the build interface. What you write compiles to a
+ *  build; the agent surfaces the decomposed plan here as a ticking checklist
+ *  (which doubles as the meter), then it materialises on the canvas. */
 export function Conversation({
   turns,
   building,
   onSubmit,
   onAction,
+  onApprovePlan,
+  onScopePlan,
+  onCollapse,
 }: {
   turns: Turn[];
   building: boolean;
   onSubmit: (prompt: string) => void;
   onAction: (a: NextAction) => void;
+  onApprovePlan: (turnId: string) => void;
+  onScopePlan: (turnId: string, years: number) => void;
+  onCollapse: () => void;
 }) {
   const [value, setValue] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns.length, building]);
+  }, [turns, building]);
 
   const send = () => {
     const p = value.trim();
@@ -29,25 +37,30 @@ export function Conversation({
   };
 
   return (
-    <div className="hidden md:flex flex-col w-[380px] shrink-0 border-r border-hairline bg-paper">
-      <div className="px-5 py-3 border-b border-hairline">
-        <span className="eyebrow">conversation</span>
+    <div className="hidden md:flex flex-col w-[330px] shrink-0">
+      <div className="flex items-center justify-between h-16 px-5">
+        <span className="text-[0.8rem] font-medium text-muted">Chat</span>
+        <button onClick={onCollapse} title="hide chat" className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:bg-paper hover:text-ink transition-all text-[0.85rem] leading-none">‹‹</button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
+      <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
         {turns.map((t) => (
           <div key={t.id}>
-            <p className="eyebrow mb-1.5">{t.role === "user" ? "you" : t.role === "assistant" ? "invariant" : ""}</p>
-            <p className={`text-[0.92rem] leading-[1.6] ${t.role === "user" ? "text-ink" : "text-ink-2"}`}>
-              {t.text}
-            </p>
+            {t.role === "user" ? (
+              <p className="text-[0.9rem] leading-[1.55] text-ink bg-white shadow-card rounded-2xl rounded-tr-md px-3.5 py-2.5">{t.text}</p>
+            ) : (
+              <p className="text-[0.9rem] leading-[1.62] text-ink-2">{t.text}</p>
+            )}
+
+            {t.plan && <PlanChecklist plan={t.plan} onApprove={() => onApprovePlan(t.id)} onScope={(y) => onScopePlan(t.id, y)} />}
+
             {t.actions && t.actions.length > 0 && (
               <div className="mt-2.5 flex flex-wrap gap-2">
                 {t.actions.map((a, i) => (
                   <button
                     key={i}
                     onClick={() => onAction(a)}
-                    className="text-left text-[0.78rem] text-ink-2 border border-hairline-2 rounded-full px-3 py-1 hover:border-ink hover:text-ink transition-colors"
+                    className="text-left text-[0.78rem] text-ink-2 bg-white shadow-card rounded-full px-3 py-1 hover:text-ink transition-colors"
                   >
                     {a.type === "push_node" ? `open ${a.ref.split(":")[1] ?? a.ref}` : a.type === "open_catalog" ? "browse hosted data" : a.label}
                   </button>
@@ -56,14 +69,11 @@ export function Conversation({
             )}
           </div>
         ))}
-        {building && (
-          <p className="eyebrow text-clay animate-pulse">building…</p>
-        )}
         <div ref={endRef} />
       </div>
 
-      <div className="border-t border-hairline p-3">
-        <div className="border border-hairline-2 bg-paper-2 focus-within:border-ink transition-colors">
+      <div className="p-3">
+        <div className="rounded-xl border border-hairline bg-white shadow-soft focus-within:border-hairline-2 transition-colors">
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -80,12 +90,86 @@ export function Conversation({
           <div className="flex justify-end px-2.5 pb-2.5">
             <button
               onClick={send}
-              className="font-mono text-[0.68rem] uppercase tracking-[0.12em] bg-ink text-paper px-3.5 py-1.5 hover:bg-clay transition-colors"
+              className="font-mono text-[0.68rem] uppercase tracking-[0.12em] bg-ink text-paper rounded-lg px-3.5 py-1.5 hover:bg-clay transition-colors"
             >
               build →
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** The plan, surfaced in chat: steps tick as they build; credits accrue; a big
+ *  build waits for an explicit approve. This IS the meter. */
+function PlanChecklist({ plan, onApprove, onScope }: { plan: PlanView; onApprove: () => void; onScope: (years: number) => void }) {
+  const done = plan.steps.filter((s) => s.status === "done").length;
+  const spent = plan.steps.filter((s) => s.status === "done").reduce((a, s) => a + s.credits, 0);
+  const scopes = plan.awaitingApproval ? plan.scopeOptions ?? [] : [];
+  return (
+    <div className="mt-3 border border-hairline-2 bg-paper-2/50">
+      {scopes.length > 1 && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-hairline">
+          <span className="font-mono text-[0.6rem] uppercase tracking-[0.1em] text-faint shrink-0">eval horizon</span>
+          <div className="flex flex-wrap gap-1">
+            {scopes.map((y) => (
+              <button
+                key={y}
+                onClick={() => onScope(y)}
+                className={`font-mono text-[0.64rem] rounded-full border px-2 py-0.5 transition-colors ${
+                  plan.horizonYears === y ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"
+                }`}
+              >
+                {y}y
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <ol className="divide-y divide-hairline">
+        {plan.steps.map((s) => (
+          <li key={s.id} className="flex items-center gap-2.5 px-3 py-2">
+            <span
+              className={`inline-flex h-4 w-4 items-center justify-center shrink-0 rounded-full border text-[0.58rem] ${
+                s.status === "done"
+                  ? "bg-ink border-ink text-paper"
+                  : s.status === "running"
+                    ? "border-clay text-clay animate-pulse"
+                    : "border-hairline-2 text-faint"
+              }`}
+            >
+              {s.status === "done" ? "✓" : ""}
+            </span>
+            <span className={`flex-1 text-[0.8rem] ${s.status === "pending" ? "text-faint" : "text-ink-2"}`}>{s.label}</span>
+            {s.op && <span className="font-mono text-[0.62rem] text-faint">{s.op}</span>}
+            <span className="font-mono text-[0.66rem] tabular-nums text-faint w-8 text-right">{s.credits}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="flex items-center justify-between px-3 py-2 border-t border-hairline">
+        {plan.awaitingApproval ? (
+          <>
+            <span className="font-mono text-[0.66rem] text-muted">
+              est. {plan.credits} credits — approve the spend
+            </span>
+            <button
+              onClick={onApprove}
+              className="font-mono text-[0.66rem] uppercase tracking-[0.12em] bg-ink text-paper px-3 py-1 hover:bg-clay transition-colors"
+            >
+              build →
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="font-mono text-[0.66rem] text-muted">
+              {done}/{plan.steps.length} steps
+            </span>
+            <span className="font-mono text-[0.66rem] tabular-nums text-ink-2">
+              {spent.toFixed(1)} <span className="text-faint">/ {plan.credits} cr</span>
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,12 +1,15 @@
 import {
   getWorkspace,
   getConversation,
+  getGreeting,
   getFig1Lineage,
   getGraphPresentation,
   listHostedDatasets,
   getResultSpec,
+  getCodeMap,
+  getConcepts,
+  getVariants,
 } from "@/lib/data";
-import { greeting } from "@/lib/fixtures/conversations";
 import type { Node, HostedDataset, ResultSpec } from "@/lib/types";
 import { WorkspaceClient } from "@/components/workspace/workspace-client";
 import type { WorkspaceBundle } from "@/components/workspace/types";
@@ -16,17 +19,25 @@ export default async function WorkspacePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ build?: string; data?: string; view?: string }>;
+  searchParams: Promise<{ build?: string; data?: string; view?: string; lens?: string; focus?: string; inspect?: string; compare?: string; fork?: string }>;
 }) {
   const { id } = await params;
-  const { build, data, view } = await searchParams;
+  const { build, data, view, lens, focus, inspect, compare, fork, drawertab } = (await searchParams) as Record<string, string | undefined>;
+  const LENSES = ["result", "graph", "code", "concepts"] as const;
+  const initialLens = (LENSES as readonly string[]).includes(lens ?? "")
+    ? (lens as (typeof LENSES)[number])
+    : undefined;
   const isNew = id === "new";
 
   const ws = isNew ? undefined : await getWorkspace(id);
-  const lineage = ws?.lineage ?? (await getFig1Lineage());
-  const presentation = await getGraphPresentation(isNew ? "crude-oil-research" : id);
+  // a NEW workspace starts with an EMPTY graph and accretes node-by-node as the
+  // conversation builds; an existing workspace opens on its saved lineage.
+  const lineage = isNew ? { nodes: [], edges: [] } : (ws?.lineage ?? (await getFig1Lineage()));
+  const presentation = isNew
+    ? { labels: {}, producerOps: {} }
+    : await getGraphPresentation(id);
   const allDatasets = await listHostedDatasets();
-  const initialTurns = isNew ? greeting : await getConversation(id);
+  const initialTurns = isNew ? await getGreeting() : await getConversation(id);
 
   // node index
   const nodes: Record<string, Node> = {};
@@ -48,6 +59,13 @@ export default async function WorkspacePage({
     }
   }
 
+  // lens content: reproducible code per node + per-kind concept text + variants
+  const [code, concepts, variants] = await Promise.all([
+    getCodeMap(lineage, presentation.producerOps),
+    getConcepts(),
+    isNew ? Promise.resolve({}) : getVariants(id),
+  ]);
+
   const bundle: WorkspaceBundle = {
     workspaceId: id,
     workspaceName: ws?.name ?? (isNew ? "new-analysis" : id),
@@ -59,9 +77,23 @@ export default async function WorkspacePage({
     nodes,
     datasets,
     resultSpecs,
+    code,
+    concepts,
+    variants,
     initialBuildPrompt: build,
     initialDataId: data,
     initialView: view === "lineage" ? "lineage" : undefined,
+    initialLens,
+    initialFocus: focus,
+    initialDrawer: compare
+      ? { type: "compare", nodeId: compare }
+      : inspect?.startsWith("edge:")
+        ? (() => { const [, p, c] = inspect.split(/[:|]/); return { type: "edge" as const, parentId: p, childId: c }; })()
+        : inspect
+          ? { type: "node", id: inspect }
+          : undefined,
+    initialFork: fork,
+    initialDrawerTab: ["overview", "spec", "contract", "checks", "code", "lineage"].includes(drawertab ?? "") ? (drawertab as WorkspaceBundle["initialDrawerTab"]) : undefined,
   };
 
   return <WorkspaceClient bundle={bundle} />;

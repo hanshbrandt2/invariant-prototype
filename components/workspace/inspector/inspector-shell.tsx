@@ -7,13 +7,12 @@ import type { NodeKind, LifecycleState } from "@/lib/types";
 export function InspectorShell({
   kind,
   name,
-  id,
   version,
   state,
   lineageHash,
   policyRefs,
-  canBack,
-  onBack,
+  checks,
+  onOpenChecks,
   onOpenLineage,
   children,
 }: {
@@ -24,20 +23,15 @@ export function InspectorShell({
   state?: LifecycleState;
   lineageHash?: string;
   policyRefs?: string[];
-  canBack: boolean;
-  onBack: () => void;
-  onOpenLineage: () => void;
+  checks?: { passed: number; total: number; ok: boolean };
+  onOpenChecks?: () => void;
+  onOpenLineage?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <div className="px-6 pt-5 pb-4 border-b border-hairline bg-paper">
         <div className="flex items-center gap-3 mb-3">
-          {canBack && (
-            <button onClick={onBack} className="font-mono text-[0.72rem] text-muted hover:text-clay transition-colors">
-              ← back
-            </button>
-          )}
           <span className="font-mono text-[0.62rem] uppercase tracking-[0.14em] border border-ink px-2 py-0.5">
             {kind}
           </span>
@@ -50,7 +44,15 @@ export function InspectorShell({
               {state}
             </span>
           )}
-          <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-[#3B6D11]">checks ✓</span>
+          {checks && checks.total > 0 && (
+            <button
+              onClick={onOpenChecks}
+              disabled={!onOpenChecks}
+              className={`font-mono text-[0.62rem] uppercase tracking-[0.12em] enabled:hover:underline ${checks.ok ? "text-[#3B6D11]" : "text-clay"}`}
+            >
+              checks {checks.passed}/{checks.total} {checks.ok ? "✓" : "!"}
+            </button>
+          )}
           {lineageHash && <span className="font-mono text-[0.68rem] text-faint ml-auto">{lineageHash}</span>}
         </div>
 
@@ -70,12 +72,14 @@ export function InspectorShell({
               </div>
             )}
           </div>
-          <button
-            onClick={onOpenLineage}
-            className="shrink-0 font-mono text-[0.72rem] uppercase tracking-[0.12em] border border-ink px-3.5 py-2 hover:bg-ink hover:text-paper transition-colors"
-          >
-            how it was built →
-          </button>
+          {onOpenLineage && (
+            <button
+              onClick={onOpenLineage}
+              className="shrink-0 font-mono text-[0.72rem] uppercase tracking-[0.12em] border border-ink px-3.5 py-2 hover:bg-ink hover:text-paper transition-colors"
+            >
+              how it was built →
+            </button>
+          )}
         </div>
       </div>
 

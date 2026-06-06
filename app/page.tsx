@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Reveal } from "@/components/landing/reveal";
 import { Fig1 } from "@/components/landing/fig1";
+import { listStarterPrompts } from "@/lib/data";
 
 export default function Home() {
   return (
@@ -37,7 +39,8 @@ function SiteNav() {
               ["Provenance", "#provenance"],
               ["Lineage", "#lineage"],
               ["Policies", "#policies"],
-              ["The arc", "#arc"],
+              ["Learn", "/learn"],
+              ["Community", "/community"],
             ].map(([label, href]) => (
               <a
                 key={href}
@@ -134,6 +137,9 @@ function Hero() {
             </div>
           </div>
         </div>
+
+        {/* popular starts — the thin funnel strip (3 links) */}
+        <PopularStarts />
       </div>
 
       {/* the graph, full-bleed-ish, on a faint paper panel */}
@@ -147,6 +153,29 @@ function Hero() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* Popular starts — a thin funnel strip under the hero. Each opens a
+   pre-scoped analysis; the login gate sits at the first build and resumes it. */
+function PopularStarts() {
+  const seeds = listStarterPrompts().slice(0, 3);
+  return (
+    <div className="rise border-t border-hairline py-4 flex flex-wrap items-center gap-x-6 gap-y-2" style={{ animationDelay: "420ms" }}>
+      <span className="eyebrow shrink-0">Popular starts</span>
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        {seeds.map((s) => (
+          <Link
+            key={s.text}
+            href={`/workspace/new?build=${encodeURIComponent(s.text)}`}
+            className="group text-[0.86rem] text-ink-2 hover:text-clay transition-colors"
+          >
+            {s.text}
+            <span className="ml-1.5 text-faint group-hover:text-clay">→</span>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }
 

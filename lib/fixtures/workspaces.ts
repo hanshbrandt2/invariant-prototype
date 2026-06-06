@@ -43,6 +43,7 @@ export const workspaces: Workspace[] = [
     summary: "WTI mean-reversion on 1-minute bars, governed by the CL roll policy.",
     updatedAt: "2026-06-02",
     recentlyActive: true,
+    starred: true,
     lineage: fig1Lineage,
   },
   {
@@ -59,6 +60,7 @@ export const workspaces: Workspace[] = [
     summary: "Long/short decile momentum on Nasdaq large-cap, 10-year backtest.",
     updatedAt: "2026-05-19",
     recentlyActive: false,
+    starred: true,
     lineage: equityMomentum,
   },
 ];

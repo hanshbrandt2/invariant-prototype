@@ -4,19 +4,21 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-context";
 
 /**
- * The gate. One-tap OAuth (simulated) + email fallback. Shows whenever the
- * user reaches an (app) surface without being authed; on continue it flips
- * the flag and the surface they already navigated to reveals itself.
+ * The gate. One-tap OAuth (simulated) + email fallback. ACTION-scoped: it only
+ * appears when a gated action (a build) requests auth — browsing stays open.
+ * On login the held action replays; dismissing it (backdrop / ✕) just cancels
+ * that action and leaves you where you were.
  */
 export function LoginModal() {
-  const { ready, authed, login } = useAuth();
+  const { ready, authed, gateOpen, login, closeGate } = useAuth();
   const [email, setEmail] = useState("");
-  if (!ready || authed) return null;
+  if (!ready || authed || !gateOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-paper/70 backdrop-blur-[2px]" />
+      <button aria-label="dismiss" onClick={closeGate} className="absolute inset-0 bg-paper/70 backdrop-blur-[2px] cursor-default" />
       <div className="relative w-full max-w-[380px] border border-ink bg-paper">
+        <button onClick={closeGate} aria-label="close" className="absolute right-3 top-3 grid h-7 w-7 place-items-center text-muted hover:text-clay text-[1.05rem] leading-none">×</button>
         <div className="px-7 pt-7 pb-6 border-b border-hairline">
           <div className="flex items-baseline gap-2.5">
             <span className="inline-block h-2.5 w-2.5 bg-clay" />

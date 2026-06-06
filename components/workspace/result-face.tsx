@@ -1,6 +1,8 @@
 "use client";
 
 import type { Node, ResultSpec } from "@/lib/types";
+import { PreviewChart } from "@/components/workspace/preview-chart";
+import { equityCurve } from "@/components/workspace/curve";
 
 const METRIC_LABEL: Record<string, string> = {
   sharpe: "Sharpe",
@@ -31,6 +33,11 @@ export function ResultFace({
   return (
     <div className="p-6">
       <p className="font-serif italic text-[1.05rem] text-ink-2">{spec.friendlyName}</p>
+
+      {/* the finding — lead with the visual */}
+      <div className="mt-4 border border-hairline bg-paper p-4">
+        <PreviewChart data={equityCurve(spec.metrics)} height={200} />
+      </div>
 
       {/* metrics — what it found */}
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-5 border border-hairline divide-x divide-hairline">
