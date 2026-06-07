@@ -1,6 +1,7 @@
 "use client";
 
-import type { LineageSubgraph, Node } from "@/lib/types";
+import type { LineageSubgraph, Node, Validator } from "@/lib/types";
+import { TrustBadge } from "@/components/workspace/trust-badge";
 
 type Status = "pass" | "warn" | "info";
 interface Check {
@@ -109,7 +110,17 @@ const DOT: Record<Status, { c: string; ch: string }> = {
  * checks plus the node's upstream/downstream reach. Everything here is computed
  * from the lineage + contract; nothing is asserted.
  */
-export function ValidationTab({ node, graph }: { node: Node; graph: LineageSubgraph }) {
+export function ValidationTab({
+  node,
+  graph,
+  validator,
+  onFlashPin,
+}: {
+  node: Node;
+  graph: LineageSubgraph;
+  validator?: Validator;
+  onFlashPin?: (pinId: string) => void;
+}) {
   const checks = deriveChecks(node, graph);
   const up = reach(graph, node.id, "up");
   const down = reach(graph, node.id, "down");
@@ -117,6 +128,13 @@ export function ValidationTab({ node, graph }: { node: Node; graph: LineageSubgr
 
   return (
     <div className="p-6 space-y-6">
+      {validator && (
+        <section>
+          <p className="eyebrow mb-2">harness verdict</p>
+          <TrustBadge validator={validator} zoom="inspector" onFlashPin={onFlashPin} />
+        </section>
+      )}
+
       <section>
         <div className="flex items-baseline justify-between mb-2">
           <p className="eyebrow">checks</p>

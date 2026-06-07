@@ -1,4 +1,4 @@
-import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, Node, ResultSpec } from "@/lib/types";
+import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, Node, ResultSpec, Validator } from "@/lib/types";
 
 /** The common contract every kind-face receives. One inspector, faces by kind. */
 export interface FaceProps {
@@ -11,6 +11,7 @@ export interface FaceProps {
   concepts: Record<string, Concept>;
   dataset?: HostedDataset; // dataset faces only
   spec?: ResultSpec; // result faces only
+  validator?: Validator; // the single validator object (gates rendered metrics)
   onOpenNode: (id: string) => void;
 }
 

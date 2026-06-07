@@ -1,7 +1,7 @@
 "use client";
 
 import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, NodeKind, ResultSpec, VariantGroup } from "@/lib/types";
-import { genCodeMap, genDatasetCode } from "@/lib/data";
+import { genCodeMap, genDatasetCode, deriveValidator } from "@/lib/data";
 import type { CanvasState, InspectTarget } from "@/components/workspace/types";
 import { KIND_LABEL, parseEdgeFocus } from "@/components/workspace/types";
 import { EmptyCanvas } from "@/components/workspace/empty-canvas";
@@ -106,8 +106,9 @@ export function Canvas({
     const pieces = presentKinds.map((k) => ({ kind: KIND_LABEL[k] ?? k, what: concepts[k]?.what ?? "" })).filter((p) => p.what);
 
     const FaceComp = node ? faceFor(node.kind) : null;
+    const nodeValidator = node && node.kind !== "dataset" && node.kind !== "raw-dataset" ? deriveValidator(node, graph) : undefined;
     const faceProps: FaceProps | null = node
-      ? { node, label: focusLabel, op: producerOps[node.id], graph, labels, producerOps, concepts, dataset, spec: resultSpecs[node.id], onOpenNode }
+      ? { node, label: focusLabel, op: producerOps[node.id], graph, labels, producerOps, concepts, dataset, spec: resultSpecs[node.id], validator: nodeValidator, onOpenNode }
       : null;
 
     content = (
@@ -137,7 +138,7 @@ export function Canvas({
               onOpenNode={onOpenNode}
             />
           ) : node && FaceComp && faceProps ? (
-            <InspectorShell kind={kind} name={focusLabel} id={focus} version={node.version} state={node.state} lineageHash={node.lineageHash} policyRefs={node.policyRefs} onOpenLineage={onOpenLineage}>
+            <InspectorShell kind={kind} name={focusLabel} id={focus} version={node.version} state={node.state} lineageHash={node.lineageHash} policyRefs={node.policyRefs} validator={nodeValidator} onOpenLineage={onOpenLineage}>
               {FaceComp(faceProps)}
             </InspectorShell>
           ) : dataset ? (

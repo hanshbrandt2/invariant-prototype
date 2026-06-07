@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Concept, HostedDataset, LineageSubgraph, Node, ResultSpec, VariantGroup } from "@/lib/types";
-import { genCodeMap } from "@/lib/data";
+import { genCodeMap, deriveValidator } from "@/lib/data";
 import type { InspectTarget } from "@/components/workspace/types";
 import { InspectorShell } from "@/components/workspace/inspector/inspector-shell";
 import { EdgeInspector } from "@/components/workspace/inspector/edge-inspector";
@@ -108,8 +108,9 @@ export function InspectorDrawer({
     title = label;
     if (node) {
       const Face = faceFor(node.kind);
-      const props: FaceProps = { node, label, op: producerOps[node.id], graph, labels, producerOps, concepts, dataset, spec: resultSpecs[node.id], onOpenNode: openNode };
       const isDs = node.kind === "dataset" || node.kind === "raw-dataset";
+      const validator = isDs ? undefined : deriveValidator(node, graph);
+      const props: FaceProps = { node, label, op: producerOps[node.id], graph, labels, producerOps, concepts, dataset, spec: resultSpecs[node.id], validator, onOpenNode: openNode };
       const hasSpec = node.spec != null && typeof node.spec === "object";
       const hasFlow = inputsOf(graph, node.id).length > 0 || outputsOf(graph, node.id).length > 0;
       const checks = summarizeChecks(node, graph);
@@ -135,6 +136,7 @@ export function InspectorDrawer({
           state={node.state}
           lineageHash={node.lineageHash}
           policyRefs={node.policyRefs}
+          validator={validator}
           checks={isDs ? undefined : checks}
           onOpenChecks={() => setTab("checks")}
         >
@@ -161,7 +163,7 @@ export function InspectorDrawer({
               )}
               {tab === "spec" && <SpecTable spec={node.spec} />}
               {tab === "contract" && <ContractTab node={node} />}
-              {tab === "checks" && <ValidationTab node={node} graph={graph} />}
+              {tab === "checks" && <ValidationTab node={node} graph={graph} validator={validator} />}
               {tab === "code" && <CodeLens code={nodeCode} name={label} highlightName={node.name} />}
               {tab === "lineage" && <LineageMini node={node} graph={graph} labels={labels} onOpenNode={openNode} />}
             </>

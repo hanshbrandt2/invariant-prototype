@@ -319,7 +319,7 @@ function DatasetFace(p: FaceProps) {
   return p.dataset ? <DatasetOverview dataset={p.dataset} /> : <FallbackFace node={p.node} producerOp={p.op} />;
 }
 function ResultFaceAdapter(p: FaceProps) {
-  return <ResultFace node={p.node} spec={p.spec} onOpenNode={p.onOpenNode} />;
+  return <ResultFace node={p.node} spec={p.spec} validator={p.validator} onOpenNode={p.onOpenNode} />;
 }
 function GenericFace(p: FaceProps) {
   return <FallbackFace node={p.node} producerOp={p.op} />;

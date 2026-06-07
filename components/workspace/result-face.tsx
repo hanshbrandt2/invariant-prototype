@@ -1,8 +1,9 @@
 "use client";
 
-import type { Node, ResultSpec } from "@/lib/types";
+import type { Node, ResultSpec, Validator } from "@/lib/types";
 import { PreviewChart } from "@/components/workspace/preview-chart";
 import { equityCurve } from "@/components/workspace/curve";
+import { Metric, type MetricFormat } from "@/components/workspace/metric";
 
 const METRIC_LABEL: Record<string, string> = {
   sharpe: "Sharpe",
@@ -12,19 +13,32 @@ const METRIC_LABEL: Record<string, string> = {
   ann_return: "Ann. return",
 };
 
-function fmtMetric(k: string, v: number) {
-  if (k === "max_drawdown" || k === "ann_return") return `${(v * 100).toFixed(1)}%`;
-  return v.toFixed(k === "hit_rate" ? 3 : 2);
-}
+const METRIC_FMT: Record<string, MetricFormat> = {
+  sharpe: "ratio",
+  hit_rate: "number",
+  max_drawdown: "signed-pct",
+  turnover: "ratio",
+  ann_return: "signed-pct",
+  flagged: "int",
+  max_z: "ratio",
+  share_pct: "pct",
+  ann_vol: "pct",
+  vol_of_vol: "ratio",
+  max_20d: "pct",
+};
 
-/** Result face: leads with what it found, then the prominent next move. */
+/** Result face: leads with what it found, then the prominent next move. Every
+ *  number routes through the anti-fabrication gate (Metric): no value renders
+ *  without this result's lineage_hash + validator verdict. */
 export function ResultFace({
   node,
   spec,
+  validator,
   onOpenNode,
 }: {
   node: Node;
   spec?: ResultSpec;
+  validator?: Validator;
   onOpenNode: (id: string) => void;
 }) {
   if (!spec) {
@@ -44,7 +58,9 @@ export function ResultFace({
         {Object.entries(spec.metrics).map(([k, v]) => (
           <div key={k} className="px-4 py-4">
             <div className="eyebrow">{METRIC_LABEL[k] ?? k}</div>
-            <div className="mt-1.5 font-mono text-[1.35rem] text-ink tabular-nums">{fmtMetric(k, v)}</div>
+            <div className="mt-1.5 text-[1.35rem] text-ink">
+              <Metric value={v} format={METRIC_FMT[k] ?? "ratio"} validator={validator} lineageHash={node.lineageHash} />
+            </div>
           </div>
         ))}
       </div>

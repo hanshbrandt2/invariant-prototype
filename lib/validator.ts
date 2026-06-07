@@ -61,3 +61,12 @@ export function deriveValidator(node: Node, graph: LineageSubgraph): Validator {
 export function validatorOk(v: Validator): boolean {
   return v.p1 === "pass" && v.p2 === "pass" && v.p3 === "pass" && v.reproducible;
 }
+
+/** The honest "what this can't prove" lines the inspector badge surfaces — the
+ *  validator's own caveats, kept beside the derivation so they stay truthful. */
+export const VALIDATOR_CAVEAT = {
+  adaptedness:
+    "P3 is a falsification test, not a proof — a green gate means we failed to falsify on these fixtures; it cannot catch timestamp-correctness bugs or cross-sectional leaks hidden inside a bar.",
+  reproducible:
+    "The hash proves this artifact is pinned and exactly re-runnable. It does not prove the recipe is correct — only that it is this recipe, every time.",
+};

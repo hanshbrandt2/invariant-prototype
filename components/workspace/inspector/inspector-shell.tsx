@@ -1,9 +1,11 @@
 "use client";
 
-import type { NodeKind, LifecycleState } from "@/lib/types";
+import type { NodeKind, LifecycleState, Validator } from "@/lib/types";
+import { TrustBadge } from "@/components/workspace/trust-badge";
 
-/** One inspector, kind-aware. Header: kind + state badges, harness status,
- *  lineage hash, policy chips, breadcrumb. Body = the faces-by-kind face. */
+/** One inspector, kind-aware. Header: kind + state badges, the validator
+ *  (TrustBadge at chat zoom), lineage hash, policy chips, breadcrumb. Body =
+ *  the faces-by-kind face. */
 export function InspectorShell({
   kind,
   name,
@@ -11,6 +13,7 @@ export function InspectorShell({
   state,
   lineageHash,
   policyRefs,
+  validator,
   checks,
   onOpenChecks,
   onOpenLineage,
@@ -23,6 +26,7 @@ export function InspectorShell({
   state?: LifecycleState;
   lineageHash?: string;
   policyRefs?: string[];
+  validator?: Validator;
   checks?: { passed: number; total: number; ok: boolean };
   onOpenChecks?: () => void;
   onOpenLineage?: () => void;
@@ -44,14 +48,19 @@ export function InspectorShell({
               {state}
             </span>
           )}
-          {checks && checks.total > 0 && (
-            <button
-              onClick={onOpenChecks}
-              disabled={!onOpenChecks}
-              className={`font-mono text-[0.62rem] uppercase tracking-[0.12em] enabled:hover:underline ${checks.ok ? "text-[#3B6D11]" : "text-clay"}`}
-            >
-              checks {checks.passed}/{checks.total} {checks.ok ? "✓" : "!"}
-            </button>
+          {validator ? (
+            <TrustBadge validator={validator} zoom="chat" onClick={onOpenChecks} />
+          ) : (
+            checks &&
+            checks.total > 0 && (
+              <button
+                onClick={onOpenChecks}
+                disabled={!onOpenChecks}
+                className={`font-mono text-[0.62rem] uppercase tracking-[0.12em] enabled:hover:underline ${checks.ok ? "text-green" : "text-clay"}`}
+              >
+                checks {checks.passed}/{checks.total} {checks.ok ? "✓" : "!"}
+              </button>
+            )
           )}
           {lineageHash && <span className="font-mono text-[0.68rem] text-faint ml-auto">{lineageHash}</span>}
         </div>
