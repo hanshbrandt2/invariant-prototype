@@ -22,6 +22,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [balance, setBalance] = useState(START);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- mount-time localStorage hydration; lazy init would mismatch SSR */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY);
@@ -29,6 +30,7 @@ export function CreditsProvider({ children }: { children: React.ReactNode }) {
     } catch {}
     setReady(true);
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const write = (v: number) => {
     try {

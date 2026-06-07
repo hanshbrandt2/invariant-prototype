@@ -86,7 +86,7 @@ export function Canvas({
     );
 
   return (
-    <div className="rise flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-2xl border border-hairline bg-white shadow-soft overflow-hidden" style={{ animationDelay: "110ms" }}>
+    <div className="rise flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-lg border border-hairline bg-white  overflow-hidden" style={{ animationDelay: "110ms" }}>
       <div className="absolute inset-0 overflow-auto">{content}</div>
       {drawer && (
         <InspectorDrawer

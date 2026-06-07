@@ -42,7 +42,7 @@ export function PreviewChart({
             labelStyle={{ color: "#837c6e" }}
             cursor={{ stroke: "#be4d2b", strokeWidth: 1, strokeDasharray: "3 3" }}
           />
-          <Line type="monotone" dataKey="v" stroke="#1F4E79" strokeWidth={1.5} dot={false} animationDuration={700} />
+          <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} animationDuration={700} />
         </LineChart>
       </ResponsiveContainer>
     </div>

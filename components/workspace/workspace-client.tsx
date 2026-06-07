@@ -296,6 +296,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
 
   // fire the queued intent (resume-by-URL) once on mount
   const fired = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect -- fire the queued intent (resume-by-URL) exactly once on mount */
   useEffect(() => {
     if (fired.current) return;
     fired.current = true;
@@ -308,6 +309,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const live = canvas.phase === "live";
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;

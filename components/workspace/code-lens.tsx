@@ -45,7 +45,7 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
         </div>
       </div>
 
-      <div className="rounded-xl border border-ink bg-ink overflow-hidden">
+      <div className="rounded-lg border border-ink bg-ink overflow-hidden">
         <pre className="py-3 text-[0.8rem] leading-[1.7] font-mono">
           {lines.map((line, i) => (
             <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay/25" : ""}`}>

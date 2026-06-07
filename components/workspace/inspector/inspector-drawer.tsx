@@ -35,11 +35,11 @@ function LineageMini({ node, graph, labels, onOpenNode }: { node: Node; graph: L
     <div className="p-5 space-y-6">
       <div>
         <p className="eyebrow mb-2">built from</p>
-        {ins.length ? <div className="rounded-xl border border-hairline bg-white divide-y divide-hairline overflow-hidden">{ins.map((i) => <Row key={i.id} id={i.id} />)}</div> : <p className="text-[0.85rem] text-muted">— raw input, no parents.</p>}
+        {ins.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{ins.map((i) => <Row key={i.id} id={i.id} />)}</div> : <p className="text-[0.85rem] text-muted">— raw input, no parents.</p>}
       </div>
       <div>
         <p className="eyebrow mb-2">feeds into</p>
-        {outs.length ? <div className="rounded-xl border border-hairline bg-white divide-y divide-hairline overflow-hidden">{outs.map((id) => <Row key={id} id={id} />)}</div> : <p className="text-[0.85rem] text-muted">— terminal, nothing downstream yet.</p>}
+        {outs.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{outs.map((id) => <Row key={id} id={id} />)}</div> : <p className="text-[0.85rem] text-muted">— terminal, nothing downstream yet.</p>}
       </div>
     </div>
   );
@@ -206,8 +206,8 @@ export function InspectorDrawer({
   }
 
   return (
-    <aside className="drawer-in absolute inset-y-2 right-2 z-30 w-full max-w-[528px] bg-white rounded-2xl overflow-y-auto shadow-float">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-hairline bg-white/95 backdrop-blur-sm rounded-t-2xl">
+    <aside className="drawer-in absolute inset-y-2 right-2 z-30 w-full max-w-[528px] bg-white border border-hairline-2 rounded-lg overflow-y-auto ">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-hairline bg-white/95 backdrop-blur-sm rounded-t-lg">
           <div className="flex items-center gap-2.5 min-w-0">
             {stack.length > 1 && (
               <button onClick={back} className="font-mono text-[0.74rem] text-muted hover:text-clay">← back</button>

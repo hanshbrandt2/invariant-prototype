@@ -49,14 +49,14 @@ export function ExportMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-xl bg-paper px-3 py-1.5 shadow-soft hover:shadow-card transition-shadow text-[0.82rem] text-muted hover:text-ink"
+        className="flex items-center gap-1.5 rounded-lg border border-hairline bg-paper px-3 py-1.5   transition-colors text-[0.82rem] text-muted hover:text-ink"
       >
         Export
         <span className={`text-[0.6rem] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl bg-white shadow-float border border-hairline overflow-hidden z-40">
+        <div className="absolute right-0 top-full mt-1.5 w-64 rounded-lg bg-white  border border-hairline overflow-hidden z-40">
           <button
             onClick={() => { download(`${slug}.py`, getScript(), "text/x-python"); setOpen(false); }}
             className="flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left"

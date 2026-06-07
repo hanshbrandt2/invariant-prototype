@@ -75,7 +75,7 @@ function layout(sg: LineageSubgraph, v: Variant) {
   const cols: string[][] = Array.from({ length: maxDepth + 1 }, () => []);
   for (const n of flow) cols[depth[n.id]].push(n.id);
   const rowOf: Record<string, number> = {};
-  cols.forEach((col, d) => {
+  cols.forEach((col) => {
     col.sort((a, b) => {
       const ba = (parents[a] ?? []).reduce((s, p) => s + (rowOf[p] ?? 0), 0) / Math.max(1, parents[a]?.length);
       const bb = (parents[b] ?? []).reduce((s, p) => s + (rowOf[p] ?? 0), 0) / Math.max(1, parents[b]?.length);
@@ -132,7 +132,6 @@ export function ResearchGraph({
   const { S, placed, policyPos, width, height, depthOf } = layout(subgraph, variant);
   const hero = variant === "hero";
   const half = S.W / 2;
-  const byId = Object.fromEntries(subgraph.nodes.map((n) => [n.id, n]));
 
   const governs = subgraph.nodes.flatMap((n) =>
     (n.policyRefs ?? [])

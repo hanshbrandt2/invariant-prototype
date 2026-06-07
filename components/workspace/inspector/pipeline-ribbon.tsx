@@ -43,7 +43,7 @@ export function PipelineRibbon({
   const nameOf = (id: string) => nodeById(graph, id)?.name ?? labels[id] ?? id;
 
   return (
-    <div className="rounded-xl border border-hairline bg-paper-2/40 px-4 py-3.5">
+    <div className="rounded-lg border border-hairline bg-paper-2/40 px-4 py-3.5">
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
         {/* inputs */}
         <div className="flex items-center gap-1.5 shrink-0">

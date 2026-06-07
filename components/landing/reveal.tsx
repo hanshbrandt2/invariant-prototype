@@ -23,6 +23,7 @@ export function Reveal({
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- reveal-on-mount when already in view; the observer path is async */
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -49,6 +50,7 @@ export function Reveal({
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const Component = Tag as React.ElementType;
   return (

@@ -98,7 +98,7 @@ export function CompareView({
       )}
 
       {hasMetrics ? (
-        <div className="mt-4 rounded-xl border border-hairline bg-white overflow-hidden">
+        <div className="mt-4 rounded-lg border border-hairline bg-white overflow-hidden">
           <table className="w-full table-fixed font-mono text-[0.74rem]">
             <thead>
               <tr className="border-b border-hairline text-faint">

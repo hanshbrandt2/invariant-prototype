@@ -11,7 +11,7 @@ const I = {
 
 function Ico({ href, title, children }: { href: string; title: string; children: React.ReactNode }) {
   return (
-    <Link href={href} title={title} className="grid h-[38px] w-[38px] place-items-center rounded-xl text-muted hover:bg-paper hover:text-ink hover:shadow-soft transition-all">
+    <Link href={href} title={title} className="grid h-[38px] w-[38px] place-items-center rounded-lg text-muted hover:bg-paper hover:text-ink  transition-all">
       <svg viewBox="0 0 20 20" className="h-[19px] w-[19px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         {children}
       </svg>

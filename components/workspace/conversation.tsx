@@ -42,7 +42,7 @@ export function Conversation({
   };
 
   return (
-    <div className="rise hidden md:flex flex-col w-[330px] shrink-0">
+    <div className="rise hidden lg:flex flex-col w-[330px] shrink-0">
       <div className="flex items-center justify-between h-16 px-5">
         <span className="text-[0.8rem] font-medium text-muted">Chat</span>
         <button onClick={onCollapse} title="hide chat" className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:bg-paper hover:text-ink transition-all text-[0.85rem] leading-none">‹‹</button>
@@ -52,7 +52,7 @@ export function Conversation({
         {turns.map((t) => (
           <div key={t.id}>
             {t.role === "user" ? (
-              <p className="text-[0.9rem] leading-[1.55] text-ink bg-white shadow-card rounded-2xl rounded-tr-md px-3.5 py-2.5">{t.text}</p>
+              <p className="text-[0.9rem] leading-[1.55] text-ink bg-white border border-hairline  rounded-lg rounded-tr-md px-3.5 py-2.5">{t.text}</p>
             ) : (
               <p className="text-[0.9rem] leading-[1.62] text-ink-2">{t.text}</p>
             )}
@@ -70,7 +70,7 @@ export function Conversation({
                       {v && <TrustBadge validator={v} zoom="chat" onClick={v.violatedPin ? () => onFlashPin?.(v.violatedPin!) : undefined} />}
                       <button
                         onClick={() => onAction(a)}
-                        className="text-left text-[0.78rem] text-ink-2 bg-white shadow-card rounded-full px-3 py-1 hover:text-ink transition-colors"
+                        className="text-left text-[0.78rem] text-ink-2 bg-white border border-hairline  rounded-full px-3 py-1 hover:text-ink transition-colors"
                       >
                         {a.type === "push_node" ? `open ${a.ref.split(":")[1] ?? a.ref}` : a.type === "open_catalog" ? "browse hosted data" : a.label}
                       </button>
@@ -85,7 +85,7 @@ export function Conversation({
       </div>
 
       <div className="p-3">
-        <div className="rounded-xl border border-hairline bg-white shadow-soft focus-within:border-hairline-2 transition-colors">
+        <div className="rounded-lg border border-hairline bg-white  focus-within:border-hairline-2 transition-colors">
           <textarea
             value={value}
             onChange={(e) => setValue(e.target.value)}

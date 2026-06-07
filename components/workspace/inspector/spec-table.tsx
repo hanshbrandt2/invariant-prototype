@@ -25,7 +25,7 @@ export function SpecTable({ spec }: { spec: unknown }) {
         </button>
       </div>
       {yaml ? (
-        <pre className="rounded-xl border border-ink bg-ink text-paper/90 p-4 font-mono text-[0.8rem] leading-[1.7] overflow-x-auto whitespace-pre-wrap break-words">
+        <pre className="rounded-lg border border-ink bg-ink text-paper/90 p-4 font-mono text-[0.8rem] leading-[1.7] overflow-x-auto whitespace-pre-wrap break-words">
           {toYaml(obj, 0)}
         </pre>
       ) : (
