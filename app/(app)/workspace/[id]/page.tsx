@@ -10,6 +10,9 @@ import {
   getConcepts,
   getVariants,
   getSweeps,
+  getInvariants,
+  getConsequences,
+  getVintages,
 } from "@/lib/data";
 import type { Node, HostedDataset, ResultSpec } from "@/lib/types";
 import { WorkspaceClient } from "@/components/workspace/workspace-client";
@@ -70,6 +73,7 @@ export default async function WorkspacePage({
   // the parameter sweep (sibling results in the result lane). Surface it ALSO as
   // a result-level variant group so the hero's "compare" opens the leaderboard.
   const sweep = isNew ? undefined : await getSweeps(id);
+  const [invariants, consequences, vintages] = await Promise.all([getInvariants(), getConsequences(), getVintages()]);
   const variantsAll = sweep
     ? {
         ...variants,
@@ -98,6 +102,9 @@ export default async function WorkspacePage({
     concepts,
     variants: variantsAll,
     sweep,
+    invariants,
+    consequences,
+    vintages,
     initialBuildPrompt: build,
     initialDataId: data,
     initialView: view === "lineage" ? "lineage" : undefined,

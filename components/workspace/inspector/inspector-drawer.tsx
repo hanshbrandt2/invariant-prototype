@@ -64,6 +64,7 @@ export function InspectorDrawer({
   onClose,
   onPromote,
   onFork,
+  onFlashPin,
 }: {
   target: InspectTarget;
   initialTab?: FaceTab;
@@ -77,6 +78,7 @@ export function InspectorDrawer({
   onClose: () => void;
   onPromote: (nodeId: string, value: string) => void;
   onFork: (nodeId: string) => void;
+  onFlashPin?: (pinId: string) => void;
 }) {
   const [stack, setStack] = useState<InspectTarget[]>([target]);
   const [tab, setTab] = useState<FaceTab>(initialTab);
@@ -163,7 +165,7 @@ export function InspectorDrawer({
               )}
               {tab === "spec" && <SpecTable spec={node.spec} />}
               {tab === "contract" && <ContractTab node={node} />}
-              {tab === "checks" && <ValidationTab node={node} graph={graph} validator={validator} />}
+              {tab === "checks" && <ValidationTab node={node} graph={graph} validator={validator} onFlashPin={onFlashPin} />}
               {tab === "code" && <CodeLens code={nodeCode} name={label} highlightName={node.name} />}
               {tab === "lineage" && <LineageMini node={node} graph={graph} labels={labels} onOpenNode={openNode} />}
             </>

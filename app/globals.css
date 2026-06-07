@@ -148,6 +148,32 @@ body {
   border-color: var(--color-clay) !important;
 }
 
+/* Contract rail: designed (not-built) pins carry a hatch; a flashed pin pulses
+   clay when a red validator facet points at it; the integrity seal breathes. */
+.pin-hatch {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    var(--color-hairline) 4px,
+    var(--color-hairline) 5px
+  );
+}
+@keyframes pinFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(190, 77, 43, 0); }
+  30% { box-shadow: 0 0 0 3px rgba(190, 77, 43, 0.35); }
+}
+.pin-flash {
+  animation: pinFlash 0.7s ease-in-out 2;
+}
+@keyframes sealPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.seal-pulse {
+  animation: sealPulse 2.4s ease-in-out infinite;
+}
+
 /* Reveal-on-scroll (driven by Reveal component) */
 .reveal {
   opacity: 0;
@@ -163,7 +189,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .reveal,
-  .node-building {
+  .node-building,
+  .pin-flash,
+  .seal-pulse {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

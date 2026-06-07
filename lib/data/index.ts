@@ -199,9 +199,9 @@ export async function getValidator(id: string): Promise<Validator | undefined> {
   return deriveValidator(node, graph);
 }
 
-/** Sync validator derivation for the client-grown graph — re-exported through
- *  the seam so components read it the same way they read everything else. */
-export { deriveValidator };
+/** Sync validator derivation + the rolled-up verdict for the client-grown graph
+ *  — re-exported through the seam so components read it like everything else. */
+export { deriveValidator, validatorOk } from "@/lib/validator";
 
 /** Reproducible Python per node in a subgraph (Code lens). */
 export async function getCodeMap(

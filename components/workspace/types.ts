@@ -1,4 +1,4 @@
-import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup, Sweep } from "@/lib/types";
+import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup, Sweep, Pin, Consequence, Vintage } from "@/lib/types";
 
 /** Everything the (client) workspace needs, pre-loaded server-side. */
 export interface WorkspaceBundle {
@@ -16,6 +16,9 @@ export interface WorkspaceBundle {
   concepts: Record<string, Concept>; // by NodeKind (Concepts lens)
   variants: Record<string, VariantGroup>; // by node id (forks / ⑂×N)
   sweep?: Sweep; // the workspace's parameter sweep (sibling results in one lane)
+  invariants: Pin[]; // the contract rail's pins (the laws on this canvas)
+  consequences: Consequence[]; // what the pinned laws DO to a build
+  vintages: Vintage[]; // the As-of pin's revision-bearing series
   initialBuildPrompt?: string;
   initialDataId?: string;
   initialView?: "lineage";

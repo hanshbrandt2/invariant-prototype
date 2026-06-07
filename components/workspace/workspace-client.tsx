@@ -11,15 +11,17 @@ import type {
   StepStatus,
   PlanView,
   VariantGroup,
+  Pin,
 } from "@/lib/types";
 import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate } from "@/lib/sim";
-import { knobForOp, inferCurrent, genMetrics, genCodeMap } from "@/lib/data";
+import { knobForOp, inferCurrent, genMetrics, genCodeMap, deriveValidator, validatorOk } from "@/lib/data";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
+import { ContractRail } from "@/components/workspace/contract-rail";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
@@ -38,6 +40,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [drawer, setDrawer] = useState<InspectTarget | null>(bundle.initialDrawer ?? null);
   const [forkNode, setForkNode] = useState<string | null>(bundle.initialFork ?? null);
   const [chatOpen, setChatOpen] = useState(true);
+
+  // the contract rail's pins — structural ones are locked; invariants/policies
+  // can be toggled in/out of force, which the consequences strip reacts to.
+  const [pins, setPins] = useState<Pin[]>(bundle.invariants);
+  const [flashedPin, setFlashedPin] = useState<string | null>(null);
+  const togglePin = useCallback((id: string) => {
+    setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
+  }, []);
 
   const [building, setBuilding] = useState(false);
   const [inFlightId, setInFlightId] = useState<string | null>(null);
@@ -292,6 +302,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
 
   const live = canvas.phase === "live";
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;
+  // the integrity seal's verdict — the terminal result's harness verdict, honest
+  const resultNode = graph.nodes.find((n) => n.kind === "result");
+  const sealOk = resultNode ? validatorOk(deriveValidator(resultNode, graph)) : true;
 
   return (
     <div className="flex h-screen bg-paper">
@@ -308,8 +321,18 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           getScript={getScript}
           getConversation={getConversation}
         />
+        <ContractRail
+          pins={pins}
+          consequences={bundle.consequences}
+          vintages={bundle.vintages}
+          sealOk={sealOk}
+          onToggle={togglePin}
+          flashedPin={flashedPin}
+          onFlashHandled={() => setFlashedPin(null)}
+        />
         <Canvas
           canvas={canvas}
+          onFlashPin={setFlashedPin}
           graph={graph}
           labels={labels}
           producerOps={producerOps}
