@@ -17,7 +17,10 @@ import { resultSpecs } from "@/lib/fixtures/result-specs";
 import { conceptByKind } from "@/lib/fixtures/concepts";
 import { buildCodeMap, datasetCode } from "@/lib/fixtures/code";
 import { variantGroupsByWorkspace } from "@/lib/fixtures/variants";
-import type { Concept, VariantGroup } from "@/lib/types";
+import { PINS, CONSEQUENCES, VINTAGES } from "@/lib/fixtures/invariants";
+import { sweepsByWorkspace } from "@/lib/fixtures/sweeps";
+import { deriveValidator } from "@/lib/validator";
+import type { Concept, VariantGroup, Pin, Consequence, Vintage, Sweep, Validator } from "@/lib/types";
 
 /**
  * The only place that knows where data comes from. Fixtures-backed now,
@@ -166,6 +169,39 @@ export async function getConcepts(): Promise<Record<string, Concept>> {
 export async function getVariants(workspaceId: string): Promise<Record<string, VariantGroup>> {
   return variantGroupsByWorkspace[workspaceId] ?? {};
 }
+
+/** The contract layer — the pinned invariants ("laws") for a canvas. Workspace-
+ *  agnostic in the mock; a real backend scopes the pin set per workspace. */
+export async function getInvariants(): Promise<Pin[]> {
+  return PINS;
+}
+
+/** What the pinned laws DO to a build — the consequences strip. */
+export async function getConsequences(): Promise<Consequence[]> {
+  return CONSEQUENCES;
+}
+
+/** The revision-bearing vintage series for the As-of pin's slider. */
+export async function getVintages(): Promise<Vintage[]> {
+  return VINTAGES;
+}
+
+/** The parameter sweep for a workspace — N sibling results in one lane. */
+export async function getSweeps(workspaceId: string): Promise<Sweep | undefined> {
+  return sweepsByWorkspace[workspaceId];
+}
+
+/** The single validator object for one artifact (derived from the lineage). */
+export async function getValidator(id: string): Promise<Validator | undefined> {
+  const node = allNodes[id];
+  if (!node) return undefined;
+  const graph = await getLineageSubgraph(id);
+  return deriveValidator(node, graph);
+}
+
+/** Sync validator derivation for the client-grown graph — re-exported through
+ *  the seam so components read it the same way they read everything else. */
+export { deriveValidator };
 
 /** Reproducible Python per node in a subgraph (Code lens). */
 export async function getCodeMap(

@@ -244,3 +244,116 @@ export interface VariantGroup {
   members: VariantMember[];
   bestBy?: string; // metric key the "best" is chosen by (e.g. "sharpe")
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   The contract layer — invariants ("pins"), vintages, consequences,
+   and the single validator object. These mirror real backend
+   mechanisms (the ADR refs) the way the rest of this file mirrors the
+   artifact-catalog: shapes a live backend can fill, mocked now.
+   ───────────────────────────────────────────────────────────────── */
+
+/** A pin's enforcement state on the contract rail.
+ *  structural = axiom, locked on · active = in force, togglable ·
+ *  off = available, pinnable · designed = roadmap, never pinnable. */
+export type PinState = "structural" | "active" | "off" | "designed";
+
+/** What kind of law a pin is (drives grouping + the drawer copy). */
+export type PinKind = "structural" | "invariant" | "policy" | "designed";
+
+/** One law on the contract rail — an invariant every build on this canvas must
+ *  satisfy. Each maps to a real backend mechanism (the `adr` + `mechanism`). */
+export interface Pin {
+  id: string; // stable slug, e.g. "no_lookahead"
+  label: string; // "No look-ahead"
+  state: PinState;
+  kind: PinKind;
+  adr?: string; // governing decision record, e.g. "ADR-0033"
+  holds: string; // plain-language "what it holds"
+  enforce: string; // "how it's held" — the mechanism in prose
+  gates: string[]; // the gate chips, e.g. ["P1","P2","P3"] | ["hash"] | ["policy"]
+  scope: string; // where it applies
+  mechanism: string; // the actual operator / expression (rendered mono)
+  cantProve: string; // honest limit — "what this can't prove"
+  policyRef?: string; // policy node id, when kind === "policy"
+  intendedInvariant?: string; // the policy's plain-language invariant
+  locked?: boolean; // structural pins can't be toggled
+}
+
+/** A revision-bearing figure observed at a knowledge date — what the As-of
+ *  pin's vintage slider moves over. `moved` = differs from the live value;
+ *  `fencedOut` = dated after the pinned as-of (would be vintage leakage). */
+export interface Vintage {
+  asOf: string; // knowledge date (ISO)
+  value: number;
+  note?: string;
+  moved?: boolean;
+  fencedOut?: boolean;
+}
+
+/** A live readout of what the pinned laws DO to a build. `blocked` = the law
+ *  forbids something; `required` = the law forces something. */
+export interface Consequence {
+  kind: "blocked" | "required";
+  text: string;
+  dependsOnPin?: string; // pin id; undefined = always in force (structural)
+}
+
+export type Verdict = "pass" | "fail";
+
+/** The ONE validator object per artifact, rendered at three zooms (chat dot,
+ *  canvas glyph, inspector breakdown). P1/P2/P3 are the adaptedness gates
+ *  (no-lookahead falsification); `reproducible` is the lineage-hash pin. */
+export interface Validator {
+  p1: Verdict; // inputs adapted — only past information enters the decision
+  p2: Verdict; // target strictly future (lead), no overlap with the inputs
+  p3: Verdict; // forward-reach falsification scan found no leak
+  reproducible: boolean; // lineage_hash + producer_code_hash pinned
+  lineageHash?: string;
+  violatedPin?: string; // the pin id a red facet maps to
+}
+
+/** The bounded, ordered pipeline stages — the canvas's horizontal axis.
+ *  `analysis` is designed-not-built (ADR-0037): rendered faded, never filled. */
+export type CanvasStage =
+  | "dataset"
+  | "feature"
+  | "matrix"
+  | "target"
+  | "model"
+  | "result"
+  | "analysis";
+
+export const STAGE_LANES: CanvasStage[] = ["dataset", "feature", "matrix", "target", "model", "result", "analysis"];
+
+/** Which lane a node kind locks to. Policies / operators are governance and
+ *  definitions — not flow nodes — so they have no lane (rendered as pins and
+ *  badges, never as stage cards). */
+export const STAGE_OF_KIND: Partial<Record<NodeKind, CanvasStage>> = {
+  dataset: "dataset",
+  "raw-dataset": "dataset",
+  universe: "dataset",
+  feature: "feature",
+  matrix: "matrix",
+  target: "target",
+  model: "model",
+  strategy: "model",
+  result: "result",
+  figure: "result",
+};
+
+/** A parameter sweep: N sibling artifacts differing in ONE knob, each fully
+ *  materialised (own id + lineage_hash + validator), stacked in one lane so
+ *  the comparison is honestly like-for-like under the same pinned contract. */
+export interface SweepResult {
+  node: Node;
+  edges: LineageEdge[];
+  value: string; // the knob value, e.g. "40"
+  metrics: Record<string, number>;
+  validator: Validator;
+}
+export interface Sweep {
+  baseId: string; // the canonical sibling currently on the spine
+  param: string; // human knob name, e.g. "window"
+  op: string; // the operator swept, e.g. "rolling_zscore"
+  results: SweepResult[]; // includes the base; siblings stack downward
+}

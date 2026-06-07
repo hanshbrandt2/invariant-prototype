@@ -20,6 +20,8 @@
   --color-clay-deep: #9c3c20;
   --color-hairline: #e7e1d5;
   --color-hairline-2: #d8d0bf;
+  --color-green: #3b6d11;
+  --color-blue: #1f4e79;
 
   --font-serif: var(--font-source-serif), Georgia, serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
