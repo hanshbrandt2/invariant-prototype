@@ -52,7 +52,7 @@ export function ContractRail({
   }, [flashedPin, onFlashHandled]);
 
   return (
-    <section aria-label="contract — the laws on this canvas" className="shrink-0 border-b border-hairline bg-paper-2/60">
+    <section aria-label="contract — the laws on this canvas" className="rise shrink-0 border-b border-hairline bg-paper-2/60" style={{ animationDelay: "40ms" }}>
       {/* pins */}
       <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto">
         <span className="eyebrow shrink-0 pr-1">contract</span>

@@ -1,10 +1,13 @@
 "use client";
 
 import type { HostedDataset } from "@/lib/types";
+import { STAGE_LANES } from "@/lib/types";
 
 const fmt = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : `${(n / 1e3).toFixed(0)}K`);
 
-/** Empty canvas = an invitation, not blank. One move: start with data. */
+/** Empty canvas = the promise, not the blank page. The contract rail above
+ *  already shows the two locked laws; here the faint stage-lane guides show
+ *  where it will build, and one move — start with data — gets it going. */
 export function EmptyCanvas({
   datasets,
   onPickData,
@@ -13,8 +16,16 @@ export function EmptyCanvas({
   onPickData: (id: string, label: string) => void;
 }) {
   return (
-    <div className="h-full flex items-center justify-center p-8">
-      <div className="w-full max-w-[560px]">
+    <div className="relative h-full flex items-center justify-center p-8">
+      {/* faint stage-lane guides — where the build will land */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex">
+        {STAGE_LANES.map((s) => (
+          <div key={s} className="flex-1 border-l border-hairline/50 px-3 py-2 first:border-l-0">
+            <span className="font-mono text-[0.52rem] uppercase tracking-[0.16em] text-faint/60">{s}</span>
+          </div>
+        ))}
+      </div>
+      <div className="relative w-full max-w-[560px]">
         <p className="eyebrow text-clay text-center">start with data</p>
         <h2 className="mt-3 text-center font-serif text-[1.7rem] font-semibold leading-tight">
           Pick a dataset, and watch it build.
@@ -41,6 +52,10 @@ export function EmptyCanvas({
             </button>
           ))}
         </div>
+
+        <p className="mt-6 text-center font-mono text-[0.68rem] text-faint">
+          Whatever you build here obeys the two locked laws above — <span className="text-muted">no look-ahead</span> · <span className="text-muted">reproducible</span>.
+        </p>
       </div>
     </div>
   );

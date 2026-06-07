@@ -206,7 +206,7 @@ export function InspectorDrawer({
   }
 
   return (
-    <aside className="absolute inset-y-2 right-2 z-30 w-full max-w-[528px] bg-white rounded-2xl overflow-y-auto shadow-float">
+    <aside className="drawer-in absolute inset-y-2 right-2 z-30 w-full max-w-[528px] bg-white rounded-2xl overflow-y-auto shadow-float">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-hairline bg-white/95 backdrop-blur-sm rounded-t-2xl">
           <div className="flex items-center gap-2.5 min-w-0">
             {stack.length > 1 && (

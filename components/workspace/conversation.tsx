@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { PlanView, Turn, NextAction } from "@/lib/types";
+import type { PlanView, Turn, NextAction, Validator } from "@/lib/types";
+import { TrustBadge } from "@/components/workspace/trust-badge";
 
 /** Always-on conversation = the build interface. What you write compiles to a
  *  build; the agent surfaces the decomposed plan here as a ticking checklist
@@ -14,6 +15,8 @@ export function Conversation({
   onApprovePlan,
   onScopePlan,
   onCollapse,
+  validatorFor,
+  onFlashPin,
 }: {
   turns: Turn[];
   building: boolean;
@@ -22,6 +25,8 @@ export function Conversation({
   onApprovePlan: (turnId: string) => void;
   onScopePlan: (turnId: string, years: number) => void;
   onCollapse: () => void;
+  validatorFor?: (nodeId: string) => Validator | undefined;
+  onFlashPin?: (pinId: string) => void;
 }) {
   const [value, setValue] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -37,7 +42,7 @@ export function Conversation({
   };
 
   return (
-    <div className="hidden md:flex flex-col w-[330px] shrink-0">
+    <div className="rise hidden md:flex flex-col w-[330px] shrink-0">
       <div className="flex items-center justify-between h-16 px-5">
         <span className="text-[0.8rem] font-medium text-muted">Chat</span>
         <button onClick={onCollapse} title="hide chat" className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:bg-paper hover:text-ink transition-all text-[0.85rem] leading-none">‹‹</button>
@@ -55,16 +60,23 @@ export function Conversation({
             {t.plan && <PlanChecklist plan={t.plan} onApprove={() => onApprovePlan(t.id)} onScope={(y) => onScopePlan(t.id, y)} />}
 
             {t.actions && t.actions.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-2">
-                {t.actions.map((a, i) => (
-                  <button
-                    key={i}
-                    onClick={() => onAction(a)}
-                    className="text-left text-[0.78rem] text-ink-2 bg-white shadow-card rounded-full px-3 py-1 hover:text-ink transition-colors"
-                  >
-                    {a.type === "push_node" ? `open ${a.ref.split(":")[1] ?? a.ref}` : a.type === "open_catalog" ? "browse hosted data" : a.label}
-                  </button>
-                ))}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                {t.actions.map((a, i) => {
+                  // a returned result carries its validator inline — the chat zoom
+                  // of the one TrustBadge object (red → flash the violated pin).
+                  const v = a.type === "push_node" ? validatorFor?.(a.ref) : undefined;
+                  return (
+                    <span key={i} className="inline-flex items-center gap-1.5">
+                      {v && <TrustBadge validator={v} zoom="chat" onClick={v.violatedPin ? () => onFlashPin?.(v.violatedPin!) : undefined} />}
+                      <button
+                        onClick={() => onAction(a)}
+                        className="text-left text-[0.78rem] text-ink-2 bg-white shadow-card rounded-full px-3 py-1 hover:text-ink transition-colors"
+                      >
+                        {a.type === "push_node" ? `open ${a.ref.split(":")[1] ?? a.ref}` : a.type === "open_catalog" ? "browse hosted data" : a.label}
+                      </button>
+                    </span>
+                  );
+                })}
               </div>
             )}
           </div>

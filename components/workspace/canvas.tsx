@@ -73,6 +73,7 @@ export function Canvas({
         labels={labels}
         producerOps={producerOps}
         resultSpecs={resultSpecs}
+        concepts={concepts}
         variants={variants}
         sweep={sweep}
         selectedId={selectedNodeId}
@@ -85,7 +86,7 @@ export function Canvas({
     );
 
   return (
-    <div className="flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-2xl border border-hairline bg-white shadow-soft overflow-hidden">
+    <div className="rise flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-2xl border border-hairline bg-white shadow-soft overflow-hidden" style={{ animationDelay: "110ms" }}>
       <div className="absolute inset-0 overflow-auto">{content}</div>
       {drawer && (
         <InspectorDrawer

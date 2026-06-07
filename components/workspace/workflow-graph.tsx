@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { LineageEdge, LineageSubgraph, NodeKind, ResultSpec, Sweep, Validator, VariantGroup } from "@/lib/types";
+import type { Concept, LineageEdge, LineageSubgraph, NodeKind, ResultSpec, Sweep, Validator, VariantGroup } from "@/lib/types";
 import { STAGE_LANES, STAGE_OF_KIND } from "@/lib/types";
 import { knobForOp, deriveValidator } from "@/lib/data";
 import { TrustBadge } from "@/components/workspace/trust-badge";
@@ -84,6 +84,7 @@ export function WorkflowGraph({
   labels,
   producerOps,
   resultSpecs,
+  concepts,
   variants,
   sweep,
   selectedId,
@@ -97,6 +98,7 @@ export function WorkflowGraph({
   labels: Record<string, string>;
   producerOps: Record<string, string>;
   resultSpecs: Record<string, ResultSpec>;
+  concepts: Record<string, Concept>;
   variants: Record<string, VariantGroup>;
   sweep?: Sweep;
   selectedId?: string;
@@ -108,7 +110,9 @@ export function WorkflowGraph({
 }) {
   const [hover, setHover] = useState<string | null>(null);
   const [sweepOpen, setSweepOpen] = useState(false);
+  const [explain, setExplain] = useState(false);
   const heroRef = useRef<HTMLDivElement | null>(null);
+  const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const L = useMemo(() => {
     const byId = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
@@ -223,6 +227,13 @@ export function WorkflowGraph({
     heroRef.current?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [inFlightId, L.heroId]);
 
+  // follow the build: keep the in-flight node in view as the graph accretes L→R.
+  useEffect(() => {
+    if (!inFlightId) return;
+    const el = inFlightId === L.heroId ? heroRef.current : nodeRefs.current[inFlightId];
+    el?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [inFlightId, L.heroId]);
+
   const nodeValidator = (id: string): Validator | undefined => {
     const n = L.byId[id];
     if (!n || n.kind === "dataset" || n.kind === "raw-dataset") return undefined;
@@ -235,18 +246,28 @@ export function WorkflowGraph({
         <p className="text-[0.74rem] text-faint">
           {active ? "Dashed = upstream causes · tinted = downstream effects. Click to inspect." : "Stages flow left → right · siblings stack down. Hover to trace, click to inspect."}
         </p>
-        {L.presentKinds.length > 0 && (
-          <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-1.5 shrink-0">
-            {L.presentKinds.map((k) => (
-              <span key={k} className="flex items-center gap-1.5 font-mono text-[0.6rem] text-faint">
-                <svg width="20" height="6" className="shrink-0">
-                  <line x1="0" y1="3" x2="20" y2="3" stroke="var(--color-muted)" strokeWidth={EDGE_STYLE[k].heavy ? 1.8 : 1.1} strokeDasharray={EDGE_STYLE[k].dash} />
-                </svg>
-                {EDGE_STYLE[k].label}
-              </span>
-            ))}
-          </div>
-        )}
+        <div className="flex items-center gap-4 shrink-0">
+          <button
+            onClick={() => setExplain((e) => !e)}
+            aria-pressed={explain}
+            title="explain each kind in context"
+            className={`font-mono text-[0.58rem] uppercase tracking-[0.12em] px-2 py-1 border transition-colors ${explain ? "bg-ink text-paper border-ink" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
+          >
+            explain
+          </button>
+          {L.presentKinds.length > 0 && (
+            <div className="hidden md:flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              {L.presentKinds.map((k) => (
+                <span key={k} className="flex items-center gap-1.5 font-mono text-[0.6rem] text-faint">
+                  <svg width="20" height="6" className="shrink-0">
+                    <line x1="0" y1="3" x2="20" y2="3" stroke="var(--color-muted)" strokeWidth={EDGE_STYLE[k].heavy ? 1.8 : 1.1} strokeDasharray={EDGE_STYLE[k].dash} />
+                  </svg>
+                  {EDGE_STYLE[k].label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative" style={{ width: L.width, height: L.height }}>
@@ -310,8 +331,9 @@ export function WorkflowGraph({
           return (
             <div
               key={n.id}
-              className={`group absolute overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-30"} ${isBuilding ? "node-building" : ""}`}
-              style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W }}
+              ref={(el) => { nodeRefs.current[n.id] = el; }}
+              className={`group node-snap absolute overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-30"} ${isBuilding ? "node-building" : ""}`}
+              style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, animationDelay: `${Math.min(laneOf(n.kind) * 55, 320)}ms` }}
               onMouseEnter={() => setHover(n.id)}
               onMouseLeave={() => setHover(null)}
             >
@@ -374,6 +396,17 @@ export function WorkflowGraph({
             </button>
           );
         })}
+
+        {/* contextual concept caption — the "explain" overlay, on the hovered node */}
+        {explain && hover && L.byId[hover] && concepts[L.byId[hover].kind]?.what && (
+          <div
+            className="node-snap absolute z-20 border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-[0.72rem] leading-snug text-ink-2"
+            style={{ left: L.left(hover), top: L.top(hover) + L.cardH(hover) + 6, width: 248 }}
+          >
+            <span className="eyebrow text-clay block mb-0.5">{L.byId[hover].kind}</span>
+            {concepts[L.byId[hover].kind].what}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -407,7 +440,7 @@ function HeroCard({
   return (
     <div
       ref={heroRef}
-      className={`absolute overflow-hidden border bg-white ${ring} ${lit ? "opacity-100" : "opacity-30"} ${building ? "node-building" : ""}`}
+      className={`node-snap absolute overflow-hidden border bg-white ${ring} ${lit ? "opacity-100" : "opacity-30"} ${building ? "node-building" : ""}`}
       style={{ left: L.left(id), top: L.top(id), width: HERO_W }}
       onMouseEnter={() => setHover(id)}
       onMouseLeave={() => setHover(null)}

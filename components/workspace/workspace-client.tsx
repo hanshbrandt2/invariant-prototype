@@ -210,6 +210,15 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const compare = useCallback((nodeId: string) => setDrawer({ type: "compare", nodeId }), []);
   const closeDrawer = useCallback(() => setDrawer(null), []);
 
+  // the validator for a node referenced in chat (the badge's chat zoom).
+  const validatorFor = useCallback(
+    (id: string) => {
+      const n = graph.nodes.find((x) => x.id === id);
+      return n && n.kind !== "dataset" && n.kind !== "raw-dataset" ? deriveValidator(n, graph) : undefined;
+    },
+    [graph]
+  );
+
   // ── forking: vary a node's typed knob to spawn + run new sibling variants ──
   const openFork = useCallback((nodeId: string) => setForkNode(nodeId), []);
   const runFork = useCallback(
@@ -310,7 +319,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     <div className="flex h-screen bg-paper">
       <WorkspaceRail />
       {chatOpen && (
-        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} />
+        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} validatorFor={validatorFor} onFlashPin={setFlashedPin} />
       )}
       <div className="flex-1 min-w-0 flex flex-col">
         <WorkspaceTopBar
