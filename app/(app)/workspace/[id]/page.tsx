@@ -9,6 +9,7 @@ import {
   getCodeMap,
   getConcepts,
   getVariants,
+  getSweeps,
 } from "@/lib/data";
 import type { Node, HostedDataset, ResultSpec } from "@/lib/types";
 import { WorkspaceClient } from "@/components/workspace/workspace-client";
@@ -66,6 +67,22 @@ export default async function WorkspacePage({
     isNew ? Promise.resolve({}) : getVariants(id),
   ]);
 
+  // the parameter sweep (sibling results in the result lane). Surface it ALSO as
+  // a result-level variant group so the hero's "compare" opens the leaderboard.
+  const sweep = isNew ? undefined : await getSweeps(id);
+  const variantsAll = sweep
+    ? {
+        ...variants,
+        [sweep.baseId]: {
+          param: sweep.param,
+          knob: sweep.results.map((r) => r.value),
+          chosen: sweep.results.find((r) => r.node.id === sweep.baseId)?.value ?? sweep.results[0]?.value ?? "",
+          members: sweep.results.map((r) => ({ value: r.value, metrics: r.metrics })),
+          bestBy: "sharpe",
+        },
+      }
+    : variants;
+
   const bundle: WorkspaceBundle = {
     workspaceId: id,
     workspaceName: ws?.name ?? (isNew ? "new-analysis" : id),
@@ -79,7 +96,8 @@ export default async function WorkspacePage({
     resultSpecs,
     code,
     concepts,
-    variants,
+    variants: variantsAll,
+    sweep,
     initialBuildPrompt: build,
     initialDataId: data,
     initialView: view === "lineage" ? "lineage" : undefined,

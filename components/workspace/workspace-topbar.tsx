@@ -3,28 +3,15 @@
 import Link from "next/link";
 import { useCredits } from "@/components/app/credits-context";
 import { ExportMenu } from "@/components/workspace/export-menu";
-import type { Lens } from "@/components/workspace/types";
-
-const LENSES: { id: Lens; label: string }[] = [
-  { id: "graph", label: "Graph" },
-  { id: "result", label: "Result" },
-  { id: "code", label: "Code" },
-  { id: "concepts", label: "Concepts" },
-];
 
 /**
- * The workspace top bar: name + the lens switcher as a clear segmented control
- * (Graph first), the credit balance, and the chat toggle. The canvas below is
- * the hero.
+ * The workspace top bar: breadcrumb + the export menu, the credit balance, and
+ * the chat toggle. There is no lens switcher — the canvas below is one surface
+ * (the stage-laned graph); node detail opens in the slide-over inspector.
  */
 export function WorkspaceTopBar({
   workspaceName,
   live,
-  lens,
-  onLens,
-  focusLabel,
-  canBack,
-  onBack,
   chatOpen,
   onToggleChat,
   getScript,
@@ -32,11 +19,6 @@ export function WorkspaceTopBar({
 }: {
   workspaceName: string;
   live: boolean;
-  lens: Lens;
-  onLens: (l: Lens) => void;
-  focusLabel?: string;
-  canBack: boolean;
-  onBack: () => void;
   chatOpen: boolean;
   onToggleChat: () => void;
   getScript: () => string;
@@ -58,29 +40,7 @@ export function WorkspaceTopBar({
           <Link href="/dashboard" className="text-[0.78rem] text-faint hover:text-clay transition-colors">Dashboard</Link>
           <span className="text-faint">/</span>
           <span className="font-mono text-[0.92rem] text-ink truncate">{workspaceName}</span>
-          {canBack && focusLabel && (
-            <>
-              <span className="text-faint">/</span>
-              <button onClick={onBack} className="text-[0.82rem] text-clay hover:underline truncate" title="back">{focusLabel} ✕</button>
-            </>
-          )}
         </div>
-
-        {live && (
-          <div className="inline-flex rounded-xl bg-paper p-[3px] shadow-soft">
-            {LENSES.map((l) => (
-              <button
-                key={l.id}
-                onClick={() => onLens(l.id)}
-                className={`rounded-[9px] px-3.5 py-1.5 text-[0.82rem] transition-colors ${
-                  lens === l.id ? "bg-ink text-paper" : "text-muted hover:text-ink"
-                }`}
-              >
-                {l.label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">

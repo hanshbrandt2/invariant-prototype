@@ -1,4 +1,4 @@
-import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup } from "@/lib/types";
+import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup, Sweep } from "@/lib/types";
 
 /** Everything the (client) workspace needs, pre-loaded server-side. */
 export interface WorkspaceBundle {
@@ -15,6 +15,7 @@ export interface WorkspaceBundle {
   code: Record<string, string>; // reproducible Python per node id (Code lens)
   concepts: Record<string, Concept>; // by NodeKind (Concepts lens)
   variants: Record<string, VariantGroup>; // by node id (forks / ⑂×N)
+  sweep?: Sweep; // the workspace's parameter sweep (sibling results in one lane)
   initialBuildPrompt?: string;
   initialDataId?: string;
   initialView?: "lineage";
@@ -36,14 +37,13 @@ export type InspectTarget =
   | { type: "compare"; nodeId: string };
 
 /**
- * The canvas is a lens switcher over one subject. `focus` (which node, or "" for
- * the whole-analysis narrative) and `lens` (how it's shown) are orthogonal.
- * `empty` is the only full-canvas phase (the start-with-data invitation); once
- * live, the build renders INTO the lenses (the graph grows node-by-node).
+ * The synthesis canvas is ONE surface — the live-building stage-laned graph,
+ * with the terminal result promoted to an inline hero. `empty` is the
+ * start-with-data invitation; `live` is the graph (it grows node-by-node).
+ * Per-node detail opens in the slide-over inspector (the drawer), not by
+ * switching the whole canvas — so there is no lens/focus on the canvas itself.
  */
-export type CanvasState =
-  | { phase: "empty" }
-  | { phase: "live"; focus: string; lens: Lens };
+export type CanvasState = { phase: "empty" } | { phase: "live" };
 
 /** An edge "focus" — clicking a lineage edge inspects the relationship, not a
  *  node. Encoded as a focus token so it rides the same nav stack. */

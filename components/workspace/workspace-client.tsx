@@ -17,7 +17,7 @@ import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate } from "@/lib/sim";
 import { knobForOp, inferCurrent, genMetrics, genCodeMap } from "@/lib/data";
 import type { BuildPlan } from "@/lib/sim/plan";
-import type { WorkspaceBundle, CanvasState, Lens, InspectTarget } from "@/components/workspace/types";
+import type { WorkspaceBundle, CanvasState, InspectTarget } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
@@ -40,18 +40,15 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [chatOpen, setChatOpen] = useState(true);
 
   const [building, setBuilding] = useState(false);
-  const [buildingStep, setBuildingStep] = useState<{ label: string; op?: string } | null>(null);
   const [inFlightId, setInFlightId] = useState<string | null>(null);
   const [pendingPlan, setPendingPlan] = useState<{ turnId: string; plan: BuildPlan; prompt: string; datasetId?: string } | null>(null);
 
-  // Graph is the default lens — open on "how it flows", finding one click away.
-  const initialLens: Lens = bundle.initialLens ?? "graph";
+  // The synthesis canvas is one surface: empty (start-with-data) → live (the
+  // stage-laned graph with the inline result hero). Node detail = the drawer.
   const [canvas, setCanvas] = useState<CanvasState>(() => {
-    if (bundle.isNew && (bundle.initialBuildPrompt || bundle.initialDataId)) return { phase: "live", focus: "", lens: initialLens };
-    if (bundle.isNew) return { phase: "empty" };
-    return { phase: "live", focus: bundle.initialFocus ?? "", lens: initialLens };
+    if (bundle.isNew && !(bundle.initialBuildPrompt || bundle.initialDataId)) return { phase: "empty" };
+    return { phase: "live" };
   });
-  const [stack, setStack] = useState<{ focus: string; lens: Lens }[]>([]);
 
   // refs to read current values inside async streams without stale closures
   const graphRef = useRef(graph);
@@ -83,16 +80,13 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const stream = useCallback(
     async (plan: BuildPlan, turnId: string) => {
       setBuilding(true);
-      // build INTO the lenses: keep the current lens if already live, else land
-      // on the Result narrative; focus the whole analysis so it grows.
-      setCanvas((c) => (c.phase === "live" ? { ...c, focus: "" } : { phase: "live", focus: "", lens: "graph" }));
+      setCanvas({ phase: "live" }); // the build accretes onto the one canvas surface
       for await (const ev of runBuild(plan)) {
         if (ev.type === "step_start") {
           // the node materialises immediately and pulses while in flight, then
           // settles when the step completes — "watch it build", node by node.
           materialize(ev.step);
           setInFlightId(ev.step.node?.id ?? null);
-          setBuildingStep({ label: ev.step.label, op: ev.step.op });
           updatePlanStep(turnId, ev.step.id, "running");
         } else if (ev.type === "step_done") {
           materialize(ev.step);
@@ -101,17 +95,16 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           updatePlanStep(turnId, ev.step.id, "done");
         } else if (ev.type === "done") {
           setBuilding(false);
-          setBuildingStep(null);
           setInFlightId(null);
-          // a pure profile opens the dataset overview; a build leaves you on the
-          // finding-led narrative (focus stays "").
-          if (plan.profileOnly) setCanvas({ phase: "live", focus: ev.producedId, lens: "result" });
+          // a pure profile opens the dataset overview in the inspector; a build
+          // leaves the finding on the canvas as the inline result hero.
+          if (plan.profileOnly) setDrawer({ type: "node", id: ev.producedId });
           addTurn({
             id: uid("done"),
             role: "assistant",
             text: plan.profileOnly
-              ? "loaded — the overview's on the canvas. tell me what to build next."
-              : "done — it's on the canvas. switch to the graph or code lens to see exactly how it was built.",
+              ? "loaded — the overview's open. tell me what to build next."
+              : "done — the finding's on the canvas. click any node to see exactly how it was built.",
             actions: [{ type: "push_node", ref: ev.producedId }],
           });
         }
@@ -199,15 +192,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [pendingPlan, stream]
   );
 
-  const openNode = useCallback(
-    (nodeId: string) => {
-      setStack((s) => (canvas.phase === "live" ? [...s, { focus: canvas.focus, lens: canvas.lens }] : s));
-      setCanvas({ phase: "live", focus: nodeId, lens: "result" });
-    },
-    [canvas]
-  );
-
-  // ── inspector drawer (opened from the Graph lens; graph stays put) ──────
+  // ── the slide-over inspector: opening any node (from chat or the graph) slides
+  // it in from the right while the graph stays put behind it. ──────────────────
+  const openNode = useCallback((nodeId: string) => setDrawer({ type: "node", id: nodeId }), []);
   const inspectNode = useCallback((id: string) => setDrawer({ type: "node", id }), []);
   const inspectEdge = useCallback((e: LineageEdge) => setDrawer({ type: "edge", parentId: e.parentId, childId: e.childId }), []);
   const compare = useCallback((nodeId: string) => setDrawer({ type: "compare", nodeId }), []);
@@ -258,12 +245,6 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [variants, graph]
   );
 
-  const setLens = useCallback((lens: Lens) => {
-    setCanvas((c) => (c.phase === "live" ? { ...c, lens } : c));
-  }, []);
-
-  const openLineage = useCallback(() => setLens("graph"), [setLens]);
-
   // export getters — computed lazily on click so they always reflect the latest
   // graph + conversation. The script is the terminal node's full reproducible code.
   const getScript = useCallback(() => {
@@ -284,15 +265,6 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       .join("\n\n");
     return `${head}\n${body}\n`;
   }, [turns, bundle.workspaceName]);
-
-  const back = useCallback(() => {
-    setStack((s) => {
-      if (!s.length) return s;
-      const prev = s[s.length - 1];
-      setCanvas({ phase: "live", focus: prev.focus, lens: prev.lens });
-      return s.slice(0, -1);
-    });
-  }, []);
 
   const onAction = useCallback(
     (a: NextAction) => {
@@ -319,9 +291,6 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   }, []);
 
   const live = canvas.phase === "live";
-  const liveLens: Lens = live ? canvas.lens : "result";
-  const liveFocus = live ? canvas.focus : "";
-  const focusLabel = liveFocus ? labels[liveFocus] ?? graph.nodes.find((n) => n.id === liveFocus)?.name ?? liveFocus : undefined;
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;
 
   return (
@@ -334,11 +303,6 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
         <WorkspaceTopBar
           workspaceName={bundle.workspaceName}
           live={live}
-          lens={liveLens}
-          onLens={setLens}
-          focusLabel={focusLabel}
-          canBack={stack.length > 0}
-          onBack={back}
           chatOpen={chatOpen}
           onToggleChat={() => setChatOpen((o) => !o)}
           getScript={getScript}
@@ -353,13 +317,10 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           datasets={bundle.datasets}
           concepts={bundle.concepts}
           variants={variants}
-          workspaceName={bundle.workspaceName}
+          sweep={bundle.sweep}
           building={building}
-          buildingStep={buildingStep}
           inFlightId={inFlightId}
           selectedNodeId={selectedNodeId}
-          onOpenNode={openNode}
-          onOpenLineage={openLineage}
           onPickData={pickData}
           drawer={drawer}
           drawerTab={bundle.initialDrawerTab}
