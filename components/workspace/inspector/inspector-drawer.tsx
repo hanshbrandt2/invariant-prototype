@@ -136,8 +136,10 @@ export function InspectorDrawer({
           id={node.id}
           version={node.version}
           state={node.state}
+          op={producerOps[node.id]}
           lineageHash={node.lineageHash}
           policyRefs={node.policyRefs}
+          policyLabels={labels}
           validator={validator}
           checks={isDs ? undefined : checks}
           onOpenChecks={() => setTab("checks")}

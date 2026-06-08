@@ -6,13 +6,18 @@ import { TrustBadge } from "@/components/workspace/trust-badge";
 /** One inspector, kind-aware. Header: kind + state badges, the validator
  *  (TrustBadge at chat zoom), lineage hash, policy chips, breadcrumb. Body =
  *  the faces-by-kind face. */
+/** Friendly policy name from its id, when no presentational label is supplied. */
+const friendlyPolicy = (p: string) => (p.split(":")[1] ?? p).replace(/_/g, " ");
+
 export function InspectorShell({
   kind,
   name,
   version,
   state,
+  op,
   lineageHash,
   policyRefs,
+  policyLabels,
   validator,
   checks,
   onOpenChecks,
@@ -24,8 +29,10 @@ export function InspectorShell({
   id: string;
   version?: string;
   state?: LifecycleState;
+  op?: string; // the operator that produced this node (a verb, not a policy)
   lineageHash?: string;
   policyRefs?: string[];
+  policyLabels?: Record<string, string>; // friendly policy names by ref id
   validator?: Validator;
   checks?: { passed: number; total: number; ok: boolean };
   onOpenChecks?: () => void;
@@ -71,11 +78,18 @@ export function InspectorShell({
               {name}
               {version && <span className="ml-2 font-mono text-[0.8rem] text-faint align-middle">{version}</span>}
             </h1>
-            {policyRefs && policyRefs.length > 0 && (
-              <div className="mt-2.5 flex flex-wrap gap-1.5">
-                {policyRefs.map((p) => (
-                  <span key={p} className="font-mono text-[0.66rem] border border-clay text-clay rounded-full px-2 py-0.5">
-                    {p.split(":")[1] ?? p}
+            {/* what made it (operator = the verb) vs what governs it (policy) —
+                two different layers, labelled so they don't get conflated */}
+            {(op || (policyRefs && policyRefs.length > 0)) && (
+              <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                {op && (
+                  <span className="font-mono text-[0.66rem] text-muted">
+                    operator: <span className="text-ink-2">{op}</span>
+                  </span>
+                )}
+                {policyRefs?.map((p) => (
+                  <span key={p} className="font-mono text-[0.66rem] text-muted">
+                    policy: <span className="ml-0.5 text-clay border border-clay rounded-full px-2 py-0.5">{policyLabels?.[p] ?? friendlyPolicy(p)}</span>
                   </span>
                 ))}
               </div>
