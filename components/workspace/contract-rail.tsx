@@ -18,6 +18,8 @@ export function ContractRail({
   vintages,
   sealOk,
   onToggle,
+  openId,
+  onOpen,
   flashedPin,
   onFlashHandled,
 }: {
@@ -26,10 +28,11 @@ export function ContractRail({
   vintages: Vintage[];
   sealOk: boolean;
   onToggle: (id: string) => void;
+  openId: string | null; // controlled — so it can be closed when a node opens
+  onOpen: (id: string | null) => void;
   flashedPin?: string | null;
   onFlashHandled?: () => void;
 }) {
-  const [openId, setOpenId] = useState<string | null>(null);
   const [showConsequences, setShowConsequences] = useState(false);
   const pinRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -65,7 +68,7 @@ export function ContractRail({
             pin={p}
             open={openId === p.id}
             chipRef={(el) => (pinRefs.current[p.id] = el)}
-            onOpen={() => setOpenId((id) => (id === p.id ? null : p.id))}
+            onOpen={() => onOpen(openId === p.id ? null : p.id)}
           />
         ))}
         <span className="flex-1" />
@@ -74,7 +77,7 @@ export function ContractRail({
 
       {/* the drawer for the open pin */}
       {open && (
-        <PinDrawer pin={open} vintages={vintages} consequences={consequences} onToggle={onToggle} onClose={() => setOpenId(null)} />
+        <PinDrawer pin={open} vintages={vintages} consequences={consequences} onToggle={onToggle} onClose={() => onOpen(null)} />
       )}
 
       {/* one quiet footer row: a consequences toggle (left) + the anti-fab line

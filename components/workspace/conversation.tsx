@@ -42,7 +42,7 @@ export function Conversation({
   };
 
   return (
-    <div className="rise hidden lg:flex flex-col w-[330px] shrink-0">
+    <div className="rise hidden lg:flex flex-col w-[330px] shrink-0 border-r border-hairline bg-paper">
       <div className="flex items-center justify-between h-16 px-5">
         <span className="text-[0.8rem] font-medium text-muted">Chat</span>
         <button onClick={onCollapse} title="hide chat" className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:bg-paper hover:text-ink transition-all text-[0.85rem] leading-none">‹‹</button>

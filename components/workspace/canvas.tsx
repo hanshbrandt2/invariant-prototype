@@ -1,6 +1,6 @@
 "use client";
 
-import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, Sweep, VariantGroup } from "@/lib/types";
+import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, VariantGroup } from "@/lib/types";
 import type { CanvasState, InspectTarget } from "@/components/workspace/types";
 import { EmptyCanvas } from "@/components/workspace/empty-canvas";
 import { WorkflowGraph } from "@/components/workspace/workflow-graph";
@@ -22,7 +22,6 @@ export function Canvas({
   datasets,
   concepts,
   variants,
-  sweep,
   building,
   inFlightId,
   selectedNodeId,
@@ -45,7 +44,6 @@ export function Canvas({
   datasets: Record<string, HostedDataset>;
   concepts: Record<string, Concept>;
   variants: Record<string, VariantGroup>;
-  sweep?: Sweep;
   building: boolean;
   inFlightId?: string | null;
   selectedNodeId?: string;
@@ -72,10 +70,8 @@ export function Canvas({
         graph={graph}
         labels={labels}
         producerOps={producerOps}
-        resultSpecs={resultSpecs}
         concepts={concepts}
         variants={variants}
-        sweep={sweep}
         selectedId={selectedNodeId}
         inFlightId={inFlightId}
         onInspectNode={onInspectNode}

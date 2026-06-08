@@ -47,6 +47,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // can be toggled in/out of force, which the consequences strip reacts to.
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
+  const [openPin, setOpenPin] = useState<string | null>(null); // the expanded contract-rail pin
   const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
@@ -248,11 +249,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
 
   // ── the slide-over inspector: opening any node (from chat or the graph) slides
   // it in from the right while the graph stays put behind it. ──────────────────
-  const openNode = useCallback((nodeId: string) => setDrawer({ type: "node", id: nodeId }), []);
-  const inspectNode = useCallback((id: string) => setDrawer({ type: "node", id }), []);
-  const inspectEdge = useCallback((e: LineageEdge) => setDrawer({ type: "edge", parentId: e.parentId, childId: e.childId }), []);
-  const compare = useCallback((nodeId: string) => setDrawer({ type: "compare", nodeId }), []);
+  // opening a node/edge/compare closes any expanded contract-rail pin (and vice
+  // versa) — the two detail surfaces are mutually exclusive, never cramped.
+  const openNode = useCallback((nodeId: string) => { setDrawer({ type: "node", id: nodeId }); setOpenPin(null); }, []);
+  const inspectNode = useCallback((id: string) => { setDrawer({ type: "node", id }); setOpenPin(null); }, []);
+  const inspectEdge = useCallback((e: LineageEdge) => { setDrawer({ type: "edge", parentId: e.parentId, childId: e.childId }); setOpenPin(null); }, []);
+  const compare = useCallback((nodeId: string) => { setDrawer({ type: "compare", nodeId }); setOpenPin(null); }, []);
   const closeDrawer = useCallback(() => setDrawer(null), []);
+  const onOpenPin = useCallback((id: string | null) => { setOpenPin(id); if (id) setDrawer(null); }, []);
 
   // the validator for a node referenced in chat (the badge's chat zoom).
   const validatorFor = useCallback(
@@ -386,6 +390,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           vintages={bundle.vintages}
           sealOk={sealOk}
           onToggle={togglePin}
+          openId={openPin}
+          onOpen={onOpenPin}
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
@@ -399,7 +405,6 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           datasets={bundle.datasets}
           concepts={bundle.concepts}
           variants={variants}
-          sweep={bundle.sweep}
           building={building}
           inFlightId={inFlightId}
           selectedNodeId={selectedNodeId}

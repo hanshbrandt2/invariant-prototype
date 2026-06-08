@@ -1,29 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Concept, LineageEdge, LineageSubgraph, NodeKind, ResultSpec, Sweep, Validator, VariantGroup } from "@/lib/types";
+import type { Concept, LineageEdge, LineageSubgraph, NodeKind, Validator, VariantGroup } from "@/lib/types";
 import { STAGE_LANES, STAGE_OF_KIND } from "@/lib/types";
 import { knobForOp, deriveValidator } from "@/lib/data";
 import { TrustBadge } from "@/components/workspace/trust-badge";
-import { Metric } from "@/components/workspace/metric";
 
 /* ── geometry ──────────────────────────────────────────────────────────────
    HORIZONTAL = pipeline stage (bounded lanes, left→right). A node's lane is
    LOCKED to its kind. VERTICAL = research breadth: the spine runs along one
    centerline; branches distribute ABOVE and BELOW it (balanced, not bottom-
-   heavy); sweep siblings stack beneath the hero. The whole thing fits to the
-   viewport by default (zoom), so the story reads in one glance. */
+   heavy). The whole thing fits to the viewport by default (zoom), so the story
+   reads in one glance. Every node — the result included — is the same card. */
 const LANE_W = 184; // lane stride — must exceed CARD_W (gutter for edges + routing)
 const PAD_X = 22;
 const PAD_TOP = 24;
 const CARD_W = 150; // a node card (gutter to next lane = LANE_W − CARD_W = 34)
 const CARD_H = 44; // two info lines (name + operator/grain/feeds)
 const ACT_H = 16; // the always-visible action row (fork / compare), when present
-const HERO_W = 178; // the finding — fits within its lane (no overflow)
-const HERO_H = 104; // no chart — name + the metrics, clean
 const ROW_H = 76; // vertical stride — exceeds the tallest card (CARD_H + ACT_H)
-const SIB_H = 40;
-const SIB_GAP = 8;
 
 // strip a trailing grain suffix ("· 1m") from a label — the grain shows on its
 // own line, so it shouldn't be doubled in the name.
@@ -89,17 +84,15 @@ const laneOf = (kind: NodeKind): number => {
  * The canvas: a stage-laned, append-only record of the build. The SPINE (the
  * lineage to the result) is drawn ink + solid along the centerline; branches
  * recede (faint, thin) above and below it, so the eye follows data→finding
- * effortlessly. The terminal result is the inline HERO. Fits to view by default
- * with zoom + a minimap; a leak renders as a flagged BACKWARD edge.
+ * effortlessly. Fits to view by default with zoom + a minimap; a leak renders
+ * as a flagged BACKWARD edge. The finding's numbers live in the inspector.
  */
 export function WorkflowGraph({
   graph,
   labels,
   producerOps,
-  resultSpecs,
   concepts,
   variants,
-  sweep,
   selectedId,
   inFlightId,
   onInspectNode,
@@ -110,10 +103,8 @@ export function WorkflowGraph({
   graph: LineageSubgraph;
   labels: Record<string, string>;
   producerOps: Record<string, string>;
-  resultSpecs: Record<string, ResultSpec>;
   concepts: Record<string, Concept>;
   variants: Record<string, VariantGroup>;
-  sweep?: Sweep;
   selectedId?: string;
   inFlightId?: string | null;
   onInspectNode: (id: string) => void;
@@ -122,12 +113,10 @@ export function WorkflowGraph({
   onFork: (nodeId: string) => void;
 }) {
   const [hover, setHover] = useState<string | null>(null);
-  const [sweepOpen, setSweepOpen] = useState(false);
   const [explain, setExplain] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [vp, setVp] = useState({ l: 0, t: 0, w: 0, h: 0 });
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const heroRef = useRef<HTMLDivElement | null>(null);
   const nodeRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const L = useMemo(() => {
@@ -180,25 +169,22 @@ export function WorkflowGraph({
     const ranks = Object.values(rank);
     const minRank = Math.min(0, ...ranks);
     const maxRank = Math.max(0, ...ranks);
-    const aboveNeed = Math.max(HERO_H / 2, -minRank * ROW_H + CARD_H / 2);
-    const belowNeed = Math.max(HERO_H / 2, maxRank * ROW_H + CARD_H / 2);
+    const tallCard = CARD_H + ACT_H;
+    const aboveNeed = Math.max(tallCard / 2, -minRank * ROW_H + tallCard / 2);
+    const belowNeed = Math.max(tallCard / 2, maxRank * ROW_H + tallCard / 2);
     const SPINE_Y = PAD_TOP + aboveNeed;
 
     const laneX = (lane: number) => PAD_X + lane * LANE_W;
-    const isHero = (id: string) => byId[id]?.kind === "result" && spine.has(id) && !!resultSpecs[id];
-    // nodes with an always-visible fork/compare row are a touch taller
+    // every node (the result included) is a uniform card; ones with an
+    // always-visible fork/compare row are a touch taller.
     const forkable = new Set(flow.filter((n) => variants[n.id] || knobForOp(producerOps[n.id])).map((n) => n.id));
-    const cardW = (id: string) => (isHero(id) ? HERO_W : CARD_W);
-    const cardH = (id: string) => (isHero(id) ? HERO_H : forkable.has(id) ? CARD_H + ACT_H : CARD_H);
+    const cardW = () => CARD_W;
+    const cardH = (id: string) => (forkable.has(id) ? CARD_H + ACT_H : CARD_H);
     const cx = (id: string) => laneX(laneOf(byId[id].kind));
     const cyOf = (id: string) => SPINE_Y + (rank[id] ?? 0) * ROW_H;
     const left = (id: string) => cx(id);
-    const right = (id: string) => cx(id) + cardW(id);
+    const right = (id: string) => cx(id) + cardW();
     const top = (id: string) => cyOf(id) - cardH(id) / 2;
-
-    const heroId = result && isHero(result.id) ? result.id : undefined;
-    const siblings = sweep && sweepOpen && heroId ? sweep.results.filter((r) => r.node.id !== sweep.baseId) : [];
-    const sibTop = (i: number) => (heroId ? top(heroId) + HERO_H + SIB_GAP + i * (SIB_H + SIB_GAP) : 0);
 
     const grainOf = (id: string): string | undefined => {
       const seen = new Set<string>();
@@ -266,12 +252,11 @@ export function WorkflowGraph({
     });
 
     const width = PAD_X * 2 + STAGE_LANES.length * LANE_W;
-    const sibBottom = siblings.length ? sibTop(siblings.length - 1) + SIB_H : 0;
-    const height = Math.max(SPINE_Y + belowNeed + 28, sibBottom + 28);
+    const height = SPINE_Y + belowNeed + 28;
     const presentKinds = (Object.keys(EDGE_STYLE) as LineageEdge["kind"][]).filter((k) => flowEdges.some((e) => e.kind === k));
 
-    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, isHero, heroId, forkable, siblings, sibTop, grain, feeds, paths, width, height, presentKinds };
-  }, [graph, resultSpecs, sweep, sweepOpen, variants, producerOps]);
+    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, forkable, grain, feeds, paths, width, height, presentKinds };
+  }, [graph, variants, producerOps]);
 
   const active = hover ?? selectedId ?? null;
   const up = active ? ancestorsOf(graph, active) : null;
@@ -311,9 +296,8 @@ export function WorkflowGraph({
   // follow the build: keep the in-flight node in view as the graph accretes L→R.
   useEffect(() => {
     if (!inFlightId) return;
-    const el = inFlightId === L.heroId ? heroRef.current : nodeRefs.current[inFlightId];
-    el?.scrollIntoView({ inline: "center", block: "nearest" });
-  }, [inFlightId, L.heroId]);
+    nodeRefs.current[inFlightId]?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [inFlightId]);
 
   const nodeValidator = (id: string): Validator | undefined => {
     const n = L.byId[id];
@@ -412,11 +396,9 @@ export function WorkflowGraph({
               })}
             </svg>
 
-            {/* nodes */}
+            {/* nodes — every kind (the result included) is the same card */}
             {L.flow.map((n) => {
               const lit = isLit(n.id);
-              const hero = L.isHero(n.id);
-              if (hero) return <HeroCard key={n.id} id={n.id} heroRef={heroRef} L={L} spec={resultSpecs[n.id]} validator={nodeValidator(n.id)} label={labels[n.id] ?? n.name} lit={lit} selected={n.id === selectedId} building={n.id === inFlightId} sweep={sweep} sweepOpen={sweepOpen} onToggleSweep={() => setSweepOpen((o) => !o)} onInspect={() => onInspectNode(n.id)} onCompare={onCompare} setHover={setHover} />;
               const onSpine = L.spine.has(n.id);
               const isSelf = n.id === active;
               const isAncestor = up?.has(n.id) ?? false;
@@ -476,27 +458,6 @@ export function WorkflowGraph({
                     </button>
                   ) : null}
                 </div>
-              );
-            })}
-
-            {/* sweep siblings — stacked beneath the hero, each its own hash */}
-            {L.siblings.map((s, i) => {
-              const v = s.validator;
-              const lit = isLit(s.node.id);
-              return (
-                <button
-                  key={s.node.id}
-                  onClick={() => sweep && onCompare(sweep.baseId)}
-                  className={`group absolute flex items-center gap-3 border border-hairline-2 bg-paper-2/60 px-3 text-left hover:border-clay transition-colors ${lit ? "opacity-100" : "opacity-40"}`}
-                  style={{ left: L.left(L.heroId!) + (HERO_W - CARD_W) / 2, top: L.sibTop(i), width: CARD_W, height: SIB_H }}
-                  title={`window ${s.value} · compare`}
-                >
-                  <span className="font-mono text-[0.56rem] uppercase tracking-[0.14em] text-muted shrink-0">{sweep?.param} {s.value}</span>
-                  <span className="flex-1 min-w-0 text-[0.8rem] text-ink-2">
-                    Sharpe <span className="text-ink"><Metric value={s.metrics.sharpe} format="ratio" validator={v} lineageHash={v.lineageHash} /></span>
-                  </span>
-                  <TrustBadge validator={v} zoom="node" />
-                </button>
               );
             })}
 
@@ -572,66 +533,3 @@ function Minimap({
   );
 }
 
-/* ── the inline result hero ───────────────────────────────────────────────── */
-function HeroCard({
-  id, heroRef, L, spec, validator, label, lit, selected, building, sweep, sweepOpen, onToggleSweep, onInspect, onCompare, setHover,
-}: {
-  id: string;
-  heroRef: React.RefObject<HTMLDivElement | null>;
-  L: { left: (id: string) => number; top: (id: string) => number };
-  spec: ResultSpec;
-  validator?: Validator;
-  label: string;
-  lit: boolean;
-  selected: boolean;
-  building: boolean;
-  sweep?: Sweep;
-  sweepOpen: boolean;
-  onToggleSweep: () => void;
-  onInspect: () => void;
-  onCompare: (id: string) => void;
-  setHover: (id: string | null) => void;
-}) {
-  const m = spec.metrics;
-  const ring = selected ? "border-clay ring-2 ring-clay/40 ring-offset-2 ring-offset-white" : "border-clay/60";
-  return (
-    <div
-      ref={heroRef}
-      className={`node-snap absolute overflow-hidden border bg-white ${ring} ${lit ? "opacity-100" : "opacity-30"} ${building ? "node-building" : ""}`}
-      style={{ left: L.left(id), top: L.top(id), width: HERO_W }}
-      onMouseEnter={() => setHover(id)}
-      onMouseLeave={() => setHover(null)}
-    >
-      <button onClick={onInspect} className="block w-full text-left">
-        <div className="flex items-center justify-between gap-2 px-3 pt-2">
-          <span className="font-mono text-[0.52rem] uppercase tracking-[0.14em] text-clay">the finding</span>
-          {validator && <TrustBadge validator={validator} zoom="node" />}
-        </div>
-        <p className="px-3 mt-0.5 mb-2 font-serif text-[0.94rem] leading-tight text-ink truncate">{cleanName(label)}</p>
-        <div className="grid grid-cols-3 border-t border-hairline divide-x divide-hairline">
-          {[
-            { k: "Sharpe", v: m.sharpe, f: "ratio" as const },
-            { k: "Hit", v: m.hit_rate, f: "number" as const },
-            { k: "Ann.", v: m.ann_return, f: "signed-pct" as const },
-          ].map((c) => (
-            <div key={c.k} className="px-2 py-1.5">
-              <div className="font-mono text-[0.5rem] uppercase tracking-[0.1em] text-muted">{c.k}</div>
-              <div className="mt-0.5 text-[0.95rem] text-ink tabular-nums">
-                <Metric value={c.v} format={c.f} validator={validator} lineageHash={validator?.lineageHash} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </button>
-      {sweep && (
-        <div className="flex border-t border-hairline bg-paper-2/40 font-mono text-[0.54rem]">
-          <button onClick={onToggleSweep} className="px-2.5 py-1 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors">⑂{sweep.results.length} {sweepOpen ? "▾" : "▸"}</button>
-          <button onClick={() => onCompare(sweep.baseId)} className="flex-1 flex items-center justify-between px-2.5 py-1 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
-            <span>{sweep.param} sweep</span>
-            <span className="text-faint group-hover/c:text-paper">compare →</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
