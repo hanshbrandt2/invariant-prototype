@@ -299,6 +299,18 @@ export function WorkflowGraph({
     nodeRefs.current[inFlightId]?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [inFlightId]);
 
+  // a node selected elsewhere (e.g. a file in the Code view) scrolls into view
+  // here and pulses — so file ↔ canvas reads as one thing.
+  useEffect(() => {
+    if (!selectedId) return;
+    const el = nodeRefs.current[selectedId];
+    if (!el) return;
+    el.scrollIntoView({ inline: "nearest", block: "nearest" });
+    el.classList.add("node-flash");
+    const t = setTimeout(() => el.classList.remove("node-flash"), 1300);
+    return () => clearTimeout(t);
+  }, [selectedId]);
+
   const nodeValidator = (id: string): Validator | undefined => {
     const n = L.byId[id];
     if (!n || n.kind === "dataset" || n.kind === "raw-dataset") return undefined;
