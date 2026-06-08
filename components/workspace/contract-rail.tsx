@@ -77,21 +77,25 @@ export function ContractRail({
 
   return (
     <section aria-label="contract — the laws on this canvas" className="shrink-0 border-b border-hairline bg-paper-2/60">
-      {/* pins */}
-      <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto">
-        <span className="eyebrow shrink-0 pr-1">contract</span>
-        {pins.map((p) => (
-          <PinChip
-            key={p.id}
-            pin={p}
-            open={openId === p.id}
-            chipRef={(el) => (pinRefs.current[p.id] = el)}
-            onOpen={() => onOpen(openId === p.id ? null : p.id)}
-          />
-        ))}
-        <span className="flex-1" />
+      {/* pins — only the chips scroll; the collapse control (left) and the seal
+          (right) stay fixed, so "hide" is always one click away, never off-screen */}
+      <div className="flex items-center gap-2 px-3 py-2">
+        <button onClick={() => { setExpanded(false); onOpen(null); }} className="group shrink-0 flex items-center gap-1.5" title="hide the contract">
+          <span className="eyebrow group-hover:text-ink transition-colors">contract</span>
+          <span className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">▴ hide</span>
+        </button>
+        <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
+          {pins.map((p) => (
+            <PinChip
+              key={p.id}
+              pin={p}
+              open={openId === p.id}
+              chipRef={(el) => (pinRefs.current[p.id] = el)}
+              onOpen={() => onOpen(openId === p.id ? null : p.id)}
+            />
+          ))}
+        </div>
         <IntegritySeal inForce={inForce} sealOk={sealOk} />
-        <button onClick={() => { setExpanded(false); onOpen(null); }} className="shrink-0 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-faint hover:text-ink transition-colors">hide ▴</button>
       </div>
 
       {/* the drawer for the open pin */}
