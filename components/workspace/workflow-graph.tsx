@@ -15,23 +15,19 @@ import { equityCurve } from "@/components/workspace/curve";
    centerline; branches distribute ABOVE and BELOW it (balanced, not bottom-
    heavy); sweep siblings stack beneath the hero. The whole thing fits to the
    viewport by default (zoom), so the story reads in one glance. */
-const LANE_W = 198;
-const PAD_X = 26;
-const PAD_TOP = 30;
-const CARD_W = 190;
-const CARD_H = 60;
-const HERO_W = 272;
-const HERO_H = 186;
-const ROW_H = 84;
-const SIB_H = 50;
-const SIB_GAP = 10;
+const LANE_W = 170; // lane stride — must exceed CARD_W (gutter for edges)
+const PAD_X = 20;
+const PAD_TOP = 24;
+const CARD_W = 142; // a node card (gutter to next lane = LANE_W − CARD_W = 28)
+const CARD_H = 46; // compact: two tight lines (the lane header carries the kind)
+const HERO_W = 166; // the finding — fits within its lane (no overflow)
+const HERO_H = 138;
+const ROW_H = 60; // vertical stride (gap to next row = ROW_H − CARD_H = 14)
+const SIB_H = 40;
+const SIB_GAP = 8;
 
 const STAGE_TAG: Record<string, string> = {
   dataset: "DATASET", feature: "FEATURE", matrix: "MATRIX", target: "TARGET", model: "MODEL", result: "RESULT", analysis: "ANALYSIS",
-};
-const KIND_TAG: Record<string, string> = {
-  dataset: "DATASET", "raw-dataset": "DATASET", feature: "FEATURE", matrix: "MATRIX",
-  target: "TARGET", model: "MODEL", result: "RESULT", strategy: "STRATEGY", universe: "UNIVERSE", figure: "FIGURE",
 };
 
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -303,10 +299,12 @@ export function WorkflowGraph({
         </div>
       </div>
 
-      {/* the scroll area — owns pan; content is scaled by `zoom` */}
+      {/* the scroll area — owns pan; content is scaled by `zoom`, and vertically
+          centered when it's shorter than the viewport (no dead space below) */}
       <div ref={scrollRef} onScroll={syncVp} className="relative flex-1 overflow-auto p-3">
-        <div style={{ width: L.width * zoom, height: L.height * zoom }}>
-          <div className="relative" style={{ width: L.width, height: L.height, transform: `scale(${zoom})`, transformOrigin: "top left" }}>
+        <div className="flex min-h-full items-center">
+          <div style={{ width: L.width * zoom, height: L.height * zoom, flexShrink: 0 }}>
+            <div className="relative" style={{ width: L.width, height: L.height, transform: `scale(${zoom})`, transformOrigin: "top left" }}>
             {/* stage-lane guides */}
             {STAGE_LANES.map((stage, i) => {
               const designed = stage === "analysis";
@@ -377,46 +375,40 @@ export function WorkflowGraph({
                   key={n.id}
                   ref={(el) => { nodeRefs.current[n.id] = el; }}
                   className={`group node-snap absolute overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-25"} ${isBuilding ? "node-building" : ""}`}
-                  style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, animationDelay: `${Math.min(laneOf(n.kind) * 55, 320)}ms` }}
+                  style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, height: CARD_H, animationDelay: `${Math.min(laneOf(n.kind) * 50, 300)}ms` }}
                   onMouseEnter={() => setHover(n.id)}
                   onMouseLeave={() => setHover(null)}
                 >
-                  <button onClick={() => onInspectNode(n.id)} className="block w-full text-left px-3 py-2 hover:bg-paper-2/60 transition-colors" style={{ height: CARD_H }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="flex items-center gap-1.5">
-                        <span className={`font-mono text-[0.54rem] uppercase tracking-[0.16em] ${onSpine ? "text-ink-2" : "text-muted"}`}>{KIND_TAG[n.kind] ?? n.kind}</span>
-                        {L.grain[n.id] && <span className="font-mono text-[0.52rem] text-faint border border-hairline-2 px-1 leading-[1.4]">{L.grain[n.id]}</span>}
-                      </span>
-                      <span className="flex items-center gap-1.5">
-                        {policies.map((p) => (
-                          <span key={p} className="font-mono text-[0.54rem] text-clay border border-clay rounded-full px-1.5 leading-[1.5]">⚖ {p}</span>
-                        ))}
+                  <button onClick={() => onInspectNode(n.id)} className="block w-full h-full text-left px-2.5 py-1.5 hover:bg-paper-2/50 transition-colors">
+                    {/* line 1 — the name (the lane header already names the kind) + trust */}
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span className={`text-[0.8rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{labels[n.id] ?? n.name}</span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        {policies.length > 0 && <span title={policies.join(" · ")} className="text-[0.66rem] leading-none text-clay">⚖</span>}
                         {v && <TrustBadge validator={v} zoom="node" />}
                       </span>
                     </div>
-                    <div className={`mt-1 text-[0.88rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{labels[n.id] ?? n.name}</div>
-                    {/* metadata reveals on hover — the canvas leads with the shape of the flow */}
-                    <div className={`mt-0.5 flex items-center justify-between gap-2 transition-opacity ${isBuilding ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                      <span className="font-mono text-[0.58rem] text-faint truncate">{isBuilding ? "building…" : n.name}</span>
-                      <span className="flex items-center gap-2 shrink-0">
-                        {L.feeds[n.id] > 0 && <span className="font-mono text-[0.55rem] text-faint">feeds {L.feeds[n.id]}</span>}
-                        {producerOps[n.id] && <span className="font-mono text-[0.58rem] text-faint">{producerOps[n.id]}</span>}
+                    {/* line 2 — operator · grain · downstream (dense, but quiet) */}
+                    <div className="mt-1 flex items-center justify-between gap-1.5 font-mono text-[0.56rem] text-faint">
+                      <span className="truncate">{isBuilding ? "building…" : producerOps[n.id] ?? n.name}</span>
+                      <span className="flex items-center gap-1.5 shrink-0">
+                        {L.grain[n.id] && <span>{L.grain[n.id]}</span>}
+                        {L.feeds[n.id] > 0 && <span>↳{L.feeds[n.id]}</span>}
+                        {vg && <span className="text-clay">⑂{vg.members.length}</span>}
                       </span>
                     </div>
                   </button>
-                  {vg ? (
-                    <div className="flex border-t border-hairline bg-paper-2/40 font-mono text-[0.58rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => onFork(n.id)} className="px-2.5 py-1 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors" title={`fork ${vg.param}`}>⑂ fork</button>
-                      <button onClick={() => onCompare(n.id)} className="flex-1 flex items-center justify-between px-2.5 py-1 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
-                        <span>×{vg.members.length} · {vg.param}</span>
-                        <span className="text-faint group-hover/c:text-paper">compare →</span>
-                      </button>
+                  {/* hover action overlay — fork / compare; absolute, so it never shifts layout */}
+                  {(vg || knob) && (
+                    <div className="absolute inset-x-0 bottom-0 z-10 flex border-t border-hairline bg-paper/95 font-mono text-[0.56rem] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="px-2 py-0.5 text-clay hover:bg-clay hover:text-paper transition-colors" title={`fork ${vg?.param ?? knob?.param ?? ""}`}>⑂ fork</button>
+                      {vg && (
+                        <button onClick={(e) => { e.stopPropagation(); onCompare(n.id); }} className="flex-1 text-left px-2 py-0.5 text-clay border-l border-hairline hover:bg-clay hover:text-paper transition-colors">
+                          compare ×{vg.members.length} →
+                        </button>
+                      )}
                     </div>
-                  ) : knob ? (
-                    <button onClick={() => onFork(n.id)} className="w-full text-left border-t border-hairline px-2.5 py-1 bg-paper-2/40 font-mono text-[0.58rem] text-muted hover:bg-clay hover:text-paper transition-colors opacity-0 group-hover:opacity-100">
-                      ⑂ fork · {knob.param}
-                    </button>
-                  ) : null}
+                  )}
                 </div>
               );
             })}
@@ -452,6 +444,7 @@ export function WorkflowGraph({
                 {concepts[L.byId[hover].kind].what}
               </div>
             )}
+            </div>
           </div>
         </div>
       </div>
@@ -544,13 +537,13 @@ function HeroCard({
       onMouseLeave={() => setHover(null)}
     >
       <button onClick={onInspect} className="block w-full text-left">
-        <div className="flex items-center justify-between gap-2 px-4 pt-3">
-          <span className="font-mono text-[0.56rem] uppercase tracking-[0.16em] text-clay">RESULT · the finding</span>
+        <div className="flex items-center justify-between gap-2 px-3 pt-2">
+          <span className="font-mono text-[0.52rem] uppercase tracking-[0.14em] text-clay">the finding</span>
           {validator && <TrustBadge validator={validator} zoom="node" />}
         </div>
-        <p className="px-4 mt-0.5 font-serif text-[1.02rem] leading-tight text-ink truncate">{label}</p>
-        <div className="px-3 mt-1">
-          <PreviewChart data={equityCurve(m)} height={80} />
+        <p className="px-3 mt-0.5 font-serif text-[0.92rem] leading-tight text-ink truncate">{label}</p>
+        <div className="px-2 mt-0.5">
+          <PreviewChart data={equityCurve(m)} height={56} />
         </div>
         <div className="grid grid-cols-3 border-t border-hairline divide-x divide-hairline">
           {[
@@ -558,9 +551,9 @@ function HeroCard({
             { k: "Hit", v: m.hit_rate, f: "number" as const },
             { k: "Ann.", v: m.ann_return, f: "signed-pct" as const },
           ].map((c) => (
-            <div key={c.k} className="px-3 py-2">
-              <div className="eyebrow text-[0.52rem]">{c.k}</div>
-              <div className="mt-0.5 text-[0.95rem] text-ink">
+            <div key={c.k} className="px-2 py-1">
+              <div className="font-mono text-[0.5rem] uppercase tracking-[0.1em] text-muted">{c.k}</div>
+              <div className="mt-0.5 text-[0.8rem] text-ink">
                 <Metric value={c.v} format={c.f} validator={validator} lineageHash={validator?.lineageHash} />
               </div>
             </div>
@@ -568,13 +561,11 @@ function HeroCard({
         </div>
       </button>
       {sweep && (
-        <div className="flex border-t border-hairline bg-paper-2/40 font-mono text-[0.58rem]">
-          <button onClick={onToggleSweep} className="px-3 py-1.5 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors">
-            ⑂ ×{sweep.results.length} · {sweep.param} {sweepOpen ? "▾" : "▸"}
-          </button>
-          <button onClick={() => onCompare(sweep.baseId)} className="flex-1 flex items-center justify-between px-3 py-1.5 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
-            <span>compare</span>
-            <span className="text-faint group-hover/c:text-paper">leaderboard →</span>
+        <div className="flex border-t border-hairline bg-paper-2/40 font-mono text-[0.54rem]">
+          <button onClick={onToggleSweep} className="px-2.5 py-1 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors">⑂{sweep.results.length} {sweepOpen ? "▾" : "▸"}</button>
+          <button onClick={() => onCompare(sweep.baseId)} className="flex-1 flex items-center justify-between px-2.5 py-1 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
+            <span>{sweep.param} sweep</span>
+            <span className="text-faint group-hover/c:text-paper">compare →</span>
           </button>
         </div>
       )}
