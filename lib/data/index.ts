@@ -19,8 +19,9 @@ import { buildCodeMap, datasetCode } from "@/lib/fixtures/code";
 import { variantGroupsByWorkspace } from "@/lib/fixtures/variants";
 import { PINS, CONSEQUENCES, VINTAGES } from "@/lib/fixtures/invariants";
 import { sweepsByWorkspace } from "@/lib/fixtures/sweeps";
+import { recipes as recipeCatalog } from "@/lib/fixtures/recipes-catalog";
 import { deriveValidator } from "@/lib/validator";
-import type { Concept, VariantGroup, Pin, Consequence, Vintage, Sweep, Validator } from "@/lib/types";
+import type { Concept, VariantGroup, Pin, Consequence, Vintage, Sweep, Validator, Recipe } from "@/lib/types";
 
 /**
  * The only place that knows where data comes from. Fixtures-backed now,
@@ -189,6 +190,16 @@ export async function getVintages(): Promise<Vintage[]> {
 /** The parameter sweep for a workspace — N sibling results in one lane. */
 export async function getSweeps(workspaceId: string): Promise<Sweep | undefined> {
   return sweepsByWorkspace[workspaceId];
+}
+
+/** Saved recipes — validated, parameterised workflows (the Templates shelf). */
+export async function listRecipes(): Promise<Recipe[]> {
+  return recipeCatalog;
+}
+
+/** A recipe crystallised from a workspace (used by the Promote panel). */
+export async function getRecipeForWorkspace(workspaceId: string): Promise<Recipe | undefined> {
+  return recipeCatalog.find((r) => r.workspaceId === workspaceId);
 }
 
 /** The single validator object for one artifact (derived from the lineage). */

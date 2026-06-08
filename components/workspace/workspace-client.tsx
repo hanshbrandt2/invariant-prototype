@@ -12,16 +12,18 @@ import type {
   PlanView,
   VariantGroup,
   Pin,
+  AgenticConfig,
 } from "@/lib/types";
 import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
-import { estimateBuild, runBuild, narrate } from "@/lib/sim";
+import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
 import { knobForOp, inferCurrent, genMetrics, genCodeMap, deriveValidator, validatorOk } from "@/lib/data";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
 import { ContractRail } from "@/components/workspace/contract-rail";
+import { PromotePanel } from "@/components/workspace/promote-panel";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
@@ -45,6 +47,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // can be toggled in/out of force, which the consequences strip reacts to.
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
+  const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
   }, []);
@@ -202,6 +205,47 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [pendingPlan, stream]
   );
 
+  // ── agentic run: the agent re-runs a promoted recipe on its own, WITHIN the
+  // pinned laws — and HALTS the moment an artifact would violate one. ─────────
+  const runAgenticPreview = useCallback(
+    async (cfg: AgenticConfig) => {
+      void cfg;
+      setPromoting(false);
+      const recipe = bundle.recipe;
+      if (!recipe) return;
+      setBuilding(true);
+      setCanvas({ phase: "live" });
+      addTurn({ id: uid("ag"), role: "system", text: `⚙ Agentic run · ${recipe.name} — re-running on new data (2025-Q1), within ${recipe.pins.length} pinned laws.` });
+      for await (const ev of runAgentic(recipe)) {
+        if (ev.type === "thinking") {
+          addTurn({ id: uid("ag"), role: "assistant", text: ev.text });
+        } else if (ev.type === "step_start") {
+          materialize(ev.step);
+          setInFlightId(ev.step.node?.id ?? null);
+        } else if (ev.type === "step_done") {
+          materialize(ev.step);
+          setInFlightId(null);
+          debit(ev.step.credits);
+          addTurn({ id: uid("ag"), role: "assistant", text: `✓ ${ev.step.label}`, actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined });
+        } else if (ev.type === "halt") {
+          materialize(ev.step);
+          setInFlightId(null);
+          setBuilding(false);
+          const pinLabel = pins.find((p) => p.id === ev.pinId)?.label ?? ev.pinId;
+          addTurn({
+            id: uid("ag"),
+            role: "system",
+            text: `⛔ HALTED at “${ev.step.label}” — violates pinned invariant ‘${pinLabel}’. ${ev.reason} The run stopped instead of shipping a wrong number.`,
+            actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined,
+          });
+          setFlashedPin(ev.pinId);
+          return;
+        }
+      }
+    },
+    [bundle.recipe, addTurn, materialize, debit, pins]
+  );
+
   // ── the slide-over inspector: opening any node (from chat or the graph) slides
   // it in from the right while the graph stays put behind it. ──────────────────
   const openNode = useCallback((nodeId: string) => setDrawer({ type: "node", id: nodeId }), []);
@@ -306,6 +350,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     } else if (bundle.isNew && bundle.initialDataId) {
       const d = bundle.datasets[bundle.initialDataId];
       pickData(bundle.initialDataId, d?.name ?? bundle.initialDataId);
+    } else if (bundle.initialAgentic) {
+      void runAgenticPreview({ scope: ["new_data"], trigger: "on_demand", budget: 25, enabledAt: "" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -331,6 +377,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onToggleChat={() => setChatOpen((o) => !o)}
           getScript={getScript}
           getConversation={getConversation}
+          canPromote={!!bundle.recipe && live}
+          onPromote={() => setPromoting(true)}
         />
         <ContractRail
           pins={pins}
@@ -366,6 +414,15 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onFork={openFork}
         />
       </div>
+      {promoting && bundle.recipe && (
+        <PromotePanel
+          recipe={bundle.recipe}
+          pins={pins.filter((p) => bundle.recipe!.pins.includes(p.id))}
+          onSaveRecipe={(n) => addTurn({ id: uid("rec"), role: "system", text: `✓ saved “${n}” to your recipes — reproducible by construction. promote it to agentic to run it on its own.` })}
+          onEnableAgentic={(cfg) => void runAgenticPreview(cfg)}
+          onClose={() => setPromoting(false)}
+        />
+      )}
       {forkNode &&
         (() => {
           const node = graph.nodes.find((n) => n.id === forkNode);

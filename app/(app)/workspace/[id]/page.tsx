@@ -13,6 +13,7 @@ import {
   getInvariants,
   getConsequences,
   getVintages,
+  getRecipeForWorkspace,
 } from "@/lib/data";
 import type { Node, HostedDataset, ResultSpec } from "@/lib/types";
 import { WorkspaceClient } from "@/components/workspace/workspace-client";
@@ -26,7 +27,7 @@ export default async function WorkspacePage({
   searchParams: Promise<{ build?: string; data?: string; view?: string; lens?: string; focus?: string; inspect?: string; compare?: string; fork?: string }>;
 }) {
   const { id } = await params;
-  const { build, data, view, lens, focus, inspect, compare, fork, drawertab } = (await searchParams) as Record<string, string | undefined>;
+  const { build, data, view, lens, focus, inspect, compare, fork, drawertab, promote, agentic } = (await searchParams) as Record<string, string | undefined>;
   const LENSES = ["result", "graph", "code", "concepts"] as const;
   const initialLens = (LENSES as readonly string[]).includes(lens ?? "")
     ? (lens as (typeof LENSES)[number])
@@ -74,6 +75,7 @@ export default async function WorkspacePage({
   // a result-level variant group so the hero's "compare" opens the leaderboard.
   const sweep = isNew ? undefined : await getSweeps(id);
   const [invariants, consequences, vintages] = await Promise.all([getInvariants(), getConsequences(), getVintages()]);
+  const recipe = isNew ? undefined : await getRecipeForWorkspace(id);
   const variantsAll = sweep
     ? {
         ...variants,
@@ -105,6 +107,9 @@ export default async function WorkspacePage({
     invariants,
     consequences,
     vintages,
+    recipe,
+    initialPromote: promote === "1" && !!recipe,
+    initialAgentic: agentic === "1" && !!recipe,
     initialBuildPrompt: build,
     initialDataId: data,
     initialView: view === "lineage" ? "lineage" : undefined,

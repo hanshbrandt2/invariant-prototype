@@ -57,5 +57,8 @@ export function narrate(plan: BuildPlan): string {
     return `loading ${plan.datasetLabel} — registering, profiling, and landing the overview on the canvas.`;
   }
   const n = plan.steps.length;
-  return `here's the plan — ${n} step${n === 1 ? "" : "s"} over ${plan.datasetLabel}. i'll build it onto the canvas; watch it grow through the lenses.`;
+  return `here's the plan — ${n} step${n === 1 ? "" : "s"} over ${plan.datasetLabel}. i'll build it onto the canvas; watch it grow.`;
 }
+
+/** The simulated agentic run — re-runs a promoted recipe within its pins. */
+export { runAgentic } from "@/lib/sim/agentic";

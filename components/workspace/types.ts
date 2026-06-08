@@ -1,4 +1,4 @@
-import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup, Sweep, Pin, Consequence, Vintage } from "@/lib/types";
+import type { Concept, LineageSubgraph, NodeKind, Node, HostedDataset, ResultSpec, Turn, VariantGroup, Sweep, Pin, Consequence, Vintage, Recipe } from "@/lib/types";
 
 /** Everything the (client) workspace needs, pre-loaded server-side. */
 export interface WorkspaceBundle {
@@ -19,6 +19,9 @@ export interface WorkspaceBundle {
   invariants: Pin[]; // the contract rail's pins (the laws on this canvas)
   consequences: Consequence[]; // what the pinned laws DO to a build
   vintages: Vintage[]; // the As-of pin's revision-bearing series
+  recipe?: Recipe; // this workspace crystallised as a recipe (the Promote panel)
+  initialPromote?: boolean; // deep-link: open the Promote panel on mount
+  initialAgentic?: boolean; // deep-link: fire a simulated agentic run on mount
   initialBuildPrompt?: string;
   initialDataId?: string;
   initialView?: "lineage";

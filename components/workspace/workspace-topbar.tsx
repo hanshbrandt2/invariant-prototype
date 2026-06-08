@@ -16,6 +16,8 @@ export function WorkspaceTopBar({
   onToggleChat,
   getScript,
   getConversation,
+  canPromote,
+  onPromote,
 }: {
   workspaceName: string;
   live: boolean;
@@ -23,6 +25,8 @@ export function WorkspaceTopBar({
   onToggleChat: () => void;
   getScript: () => string;
   getConversation: () => string;
+  canPromote?: boolean;
+  onPromote?: () => void;
 }) {
   const { balance } = useCredits();
 
@@ -44,6 +48,15 @@ export function WorkspaceTopBar({
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
+        {canPromote && onPromote && (
+          <button
+            onClick={onPromote}
+            title="crystallise this validated workflow as a recipe — then make it agentic"
+            className="font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper transition-colors"
+          >
+            promote ⚙
+          </button>
+        )}
         {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} />}
         <div className="flex items-center gap-2 rounded-lg border border-hairline bg-paper px-3 py-1.5 " title="credit balance — ticks down as you build">
           <span className="eyebrow">credits</span>

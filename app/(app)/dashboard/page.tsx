@@ -3,6 +3,8 @@ import {
   listHostedDatasets,
   listStarterPrompts,
   getStarterPrompt,
+  listRecipes,
+  getInvariants,
 } from "@/lib/data";
 import Link from "next/link";
 import { StartInput } from "@/components/dashboard/start-input";
@@ -10,6 +12,7 @@ import { HostedDataPicker } from "@/components/dashboard/hosted-data-picker";
 import { UploadData } from "@/components/dashboard/upload-data";
 import { WorkspaceViews } from "@/components/dashboard/workspace-views";
 import { StarterStrip } from "@/components/dashboard/starter-strip";
+import { RecipesShelf } from "@/components/dashboard/recipes-shelf";
 
 type View = "recent" | "all" | "starred";
 
@@ -20,11 +23,14 @@ export default async function DashboardPage({
 }) {
   const { state, view } = await searchParams;
   const initialView: View = view === "all" || view === "starred" ? view : "recent";
-  const [workspaces, datasets, pool] = await Promise.all([
+  const [workspaces, datasets, pool, recipes, invariants] = await Promise.all([
     listWorkspaces(),
     listHostedDatasets(),
     Promise.resolve(listStarterPrompts()),
+    listRecipes(),
+    getInvariants(),
   ]);
+  const pinLabels = Object.fromEntries(invariants.map((p) => [p.id, p.label]));
   const dateKey = new Date().toISOString().slice(0, 10);
   const starter = getStarterPrompt(dateKey);
   const examples = pool.filter((p) => p.text !== starter.text).slice(0, 3);
@@ -66,6 +72,17 @@ export default async function DashboardPage({
 
       {/* ── your workspaces (Recent / All / Starred) ──────────────── */}
       {!newUser && <WorkspaceViews workspaces={workspaces} initial={initialView} />}
+
+      {/* ── recipes: validated workflows · manual → agentic ───────── */}
+      {!newUser && recipes.length > 0 && (
+        <section className="mt-12">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="font-serif text-[1.5rem] font-semibold">Recipes</h2>
+            <span className="eyebrow">validated workflows · manual → agentic</span>
+          </div>
+          <RecipesShelf recipes={recipes} pinLabels={pinLabels} />
+        </section>
+      )}
 
       {newUser && (
         <p className="mt-10 text-[0.9rem] text-muted">

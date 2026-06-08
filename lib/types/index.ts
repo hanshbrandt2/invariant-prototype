@@ -357,3 +357,54 @@ export interface Sweep {
   op: string; // the operator swept, e.g. "rolling_zscore"
   results: SweepResult[]; // includes the base; siblings stack downward
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Recipes & the manual → agentic promotion.
+   A Recipe is a validated, parameterised workflow crystallised from a
+   workspace (its DAG + the knobs that may vary + the pins it must obey).
+   "Agentic" = the agent may RUN that recipe on its own, but only ever
+   INSIDE the pinned invariants — a violation halts the run.
+   ───────────────────────────────────────────────────────────────── */
+
+/** One degree of freedom the agent is allowed to vary (a typed operator knob). */
+export interface RecipeKnob {
+  param: string; // human knob name, e.g. "z-window"
+  current: string; // the value on the spine
+  options: string[];
+  op?: string; // the operator it belongs to
+}
+
+/** When promoted to agentic: what the agent may vary, when it runs, the cap. */
+export interface AgenticConfig {
+  scope: ("new_data" | "param_sweep" | "universe")[];
+  trigger: "on_demand" | "weekly" | "on_new_data";
+  triggerNote?: string; // e.g. "Mon 06:00"
+  budget: number; // credits / run
+  enabledAt: string;
+}
+
+export interface Recipe {
+  id: string;
+  name: string;
+  summary: string;
+  workspaceId?: string; // where it was crystallised from
+  lineage: LineageSubgraph; // the DAG (drives the mini thumbnail)
+  labels: Record<string, string>;
+  producerOps: Record<string, string>;
+  knobs: RecipeKnob[];
+  pins: string[]; // pin ids in force — the guardrails that travel with it
+  state: "draft" | "validated";
+  agentic?: AgenticConfig; // present once promoted
+  producedId: string; // the terminal result
+  metrics?: Record<string, number>; // the headline finding
+  createdAt: string;
+}
+
+/** The simulated agentic run — streams like a build, but can HALT when an
+ *  artifact would violate a pinned invariant (the trust moment). */
+export type AgenticEvent =
+  | { type: "thinking"; text: string }
+  | { type: "step_start"; step: BuildStep; index: number; total: number }
+  | { type: "step_done"; step: BuildStep; index: number; total: number }
+  | { type: "halt"; step: BuildStep; pinId: string; reason: string }
+  | { type: "done"; producedId: string };
