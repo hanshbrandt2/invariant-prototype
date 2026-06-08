@@ -1,11 +1,11 @@
 "use client";
 
 import type { NodeKind } from "@/lib/types";
-import { PreviewChart } from "@/components/workspace/preview-chart";
 import { DatasetOverview } from "@/components/workspace/dataset-overview";
 import { ResultFace } from "@/components/workspace/result-face";
 import { FallbackFace } from "@/components/workspace/inspector/fallback-face";
-import { type FaceProps, inputsOf, nodeById, opSeries, KIND_NOUN } from "@/components/workspace/inspector/face-types";
+import { ArtifactData } from "@/components/workspace/inspector/artifact-data";
+import { type FaceProps, inputsOf, nodeById, KIND_NOUN } from "@/components/workspace/inspector/face-types";
 
 /* ── shared bits ─────────────────────────────────────────────────────────── */
 
@@ -59,17 +59,8 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </div>
 );
 
-const Chart = ({ p, height = 200, caption }: { p: FaceProps; height?: number; caption: string }) => (
-  <div className="mt-6">
-    <div className="flex items-baseline justify-between mb-2">
-      <span className="eyebrow">{caption}</span>
-      <span className="eyebrow">{p.node.name}</span>
-    </div>
-    <div className="border border-hairline bg-paper p-4">
-      <PreviewChart data={opSeries(p.op, p.node.name)} height={height} />
-    </div>
-  </div>
-);
+/** Every derived artifact leads with its real output data (tables-first). */
+const Data = ({ p }: { p: FaceProps }) => <ArtifactData node={p.node} op={p.op} graph={p.graph} producerOps={p.producerOps} />;
 
 /* ── kind faces ──────────────────────────────────────────────────────────── */
 
@@ -99,7 +90,7 @@ function FeatureFace(p: FaceProps) {
   return (
     <div className="p-6">
       <Lede p={p} />
-      <Chart p={p} caption="feature values · preview" />
+      <Data p={p} />
       {expr && (
         <Section title="how it's computed">
           <div className="rounded-lg border border-ink bg-ink text-paper p-4 font-mono text-[0.82rem]">{expr}</div>
@@ -112,35 +103,10 @@ function FeatureFace(p: FaceProps) {
 }
 
 function MatrixFace(p: FaceProps) {
-  const cols = inputsOf(p.graph, p.node.id).map((i) => ({ id: i.id, n: nodeById(p.graph, i.id) }));
   return (
     <div className="p-6">
       <Lede p={p} />
-      <Section title="aligned columns">
-        <div className="border border-hairline bg-paper overflow-x-auto">
-          <table className="w-full font-mono text-[0.78rem]">
-            <thead>
-              <tr className="border-b border-hairline text-faint">
-                <th className="text-left font-normal px-4 py-2">ts_event</th>
-                {cols.map((c) => (
-                  <th key={c.id} className="text-left font-normal px-4 py-2 text-clay">{c.n?.name ?? c.id}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 4 }).map((_, r) => (
-                <tr key={r} className="border-b border-hairline/60 text-ink-2">
-                  <td className="px-4 py-1.5 text-faint">t−{3 - r}</td>
-                  {cols.map((c) => (
-                    <td key={c.id} className="px-4 py-1.5 tabular-nums">{opSeries(p.producerOps[c.id], c.n?.name ?? c.id)[r].v}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-2 font-mono text-[0.72rem] text-faint">{cols.length} feature column{cols.length === 1 ? "" : "s"}, aligned on a shared point-in-time index.</p>
-      </Section>
+      <Data p={p} />
       <Inputs p={p} title="columns" />
     </div>
   );
@@ -150,7 +116,7 @@ function TargetFace(p: FaceProps) {
   return (
     <div className="p-6">
       <Lede p={p} />
-      <Chart p={p} caption="forward target · preview" height={170} />
+      <Data p={p} />
       <div className="mt-6 border border-[#3B6D11]/40 bg-paper px-5 py-4">
         <p className="eyebrow text-[#3B6D11]">no lookahead</p>
         <p className="mt-2 text-[0.92rem] leading-relaxed text-ink-2">
@@ -293,7 +259,7 @@ function FigureFace(p: FaceProps) {
   return (
     <div className="p-6">
       <Lede p={p} />
-      <Chart p={p} caption="figure · preview" />
+      <Data p={p} />
       <Inputs p={p} title="drawn from" />
     </div>
   );
