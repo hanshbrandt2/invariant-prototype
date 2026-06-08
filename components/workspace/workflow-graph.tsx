@@ -36,6 +36,26 @@ const STAGE_TAG: Record<string, string> = {
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const clamp = (z: number, lo = 0.4, hi = 2) => Math.min(hi, Math.max(lo, z));
 
+/** An orthogonal polyline (right-angle segments) with rounded corners — clean,
+ *  circuit-like connectors that fit the lane grid far better than swooping
+ *  beziers. `pts` are the corner points; corners are filleted with radius r. */
+function roundedOrtho(pts: [number, number][], r = 7): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+    const d1 = Math.hypot(x1 - x0, y1 - y0) || 1;
+    const d2 = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const rr = Math.min(r, d1 / 2, d2 / 2);
+    const ax = x1 - ((x1 - x0) / d1) * rr, ay = y1 - ((y1 - y0) / d1) * rr;
+    const bx = x1 + ((x2 - x1) / d2) * rr, by = y1 + ((y2 - y1) / d2) * rr;
+    d += ` L ${ax.toFixed(1)} ${ay.toFixed(1)} Q ${x1.toFixed(1)} ${y1.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  d += ` L ${lx.toFixed(1)} ${ly.toFixed(1)}`;
+  return d;
+}
+
 // edge.kind → dash signature + legend label. Dash encodes the KIND of dependency.
 const EDGE_STYLE: Record<LineageEdge["kind"], { dash?: string; heavy?: boolean; label: string }> = {
   input_dependency: { label: "input" },
@@ -206,6 +226,7 @@ export function WorkflowGraph({
     //  · same-lane chain: a vertical hop bowed into the left gutter;
     //  · backward (reads a later stage): a leak — flagged, arcs up.
     const flowEdges = graph.edges.filter((e) => byId[e.parentId] && byId[e.childId] && laneOf(byId[e.parentId].kind) >= 0 && laneOf(byId[e.childId].kind) >= 0);
+    const GUT = (LANE_W - CARD_W) / 2; // half the inter-lane gutter (the routing channel)
     const paths = flowEdges.map((e) => {
       const pl = laneOf(byId[e.parentId].kind);
       const cl = laneOf(byId[e.childId].kind);
@@ -215,19 +236,31 @@ export function WorkflowGraph({
       let d: string;
       let back = false;
       if (cl === pl) {
-        // vertical chain within one lane — bow into the left gutter
-        const x0 = left(e.parentId), x1 = left(e.childId), bx = x0 - 16;
-        d = `M ${x0} ${py} C ${bx} ${py}, ${bx} ${cy}, ${x1} ${cy}`;
+        // vertical chain within a lane — a straight hop, centre-to-centre,
+        // between the facing edges of the two stacked cards
+        const cxv = left(e.parentId) + CARD_W / 2;
+        const down = cy > py;
+        const y0 = down ? top(e.parentId) + cardH(e.parentId) : top(e.parentId);
+        const y1 = down ? top(e.childId) : top(e.childId) + cardH(e.childId);
+        d = `M ${cxv} ${y0} L ${cxv} ${y1}`;
       } else if (cl > pl) {
         const px = right(e.parentId), ccx = left(e.childId);
-        const bow = cl - pl >= 2 ? 52 : 0; // arc below the lane(s) it skips
-        const dx = Math.max(26, (ccx - px) / 2.2);
-        d = `M ${px} ${py} C ${px + dx} ${py + bow}, ${ccx - dx} ${cy + bow}, ${ccx} ${cy}`;
+        if (cl - pl >= 2) {
+          // skips a lane — drop into a routing band BELOW the cards, then rise
+          const dipY = Math.max(py, cy) + CARD_H / 2 + 16;
+          d = roundedOrtho([[px, py], [px + GUT, py], [px + GUT, dipY], [ccx - GUT, dipY], [ccx - GUT, cy], [ccx, cy]]);
+        } else if (Math.abs(py - cy) < 1) {
+          d = `M ${px} ${py} L ${ccx} ${cy}`; // straight — same row, next lane
+        } else {
+          const chX = (px + ccx) / 2; // elbow through the gutter channel
+          d = roundedOrtho([[px, py], [chX, py], [chX, cy], [ccx, cy]]);
+        }
       } else {
+        // backward (a leak) — route up into a band ABOVE the cards, flagged
         back = true;
         const px = left(e.parentId), ccx = right(e.childId);
-        const dx = Math.max(26, Math.abs(ccx - px) / 2);
-        d = `M ${px} ${py} C ${px - dx} ${py - 28}, ${ccx + dx} ${cy - 28}, ${ccx} ${cy}`;
+        const upY = Math.min(py, cy) - CARD_H / 2 - 16;
+        d = roundedOrtho([[px, py], [px - GUT, py], [px - GUT, upY], [ccx + GUT, upY], [ccx + GUT, cy], [ccx, cy]]);
       }
       return { e, d, back, spineEdge };
     });
