@@ -65,6 +65,7 @@ export function InspectorDrawer({
   onPromote,
   onFork,
   onFlashPin,
+  onOpenCode,
 }: {
   target: InspectTarget;
   initialTab?: FaceTab;
@@ -79,6 +80,7 @@ export function InspectorDrawer({
   onPromote: (nodeId: string, value: string) => void;
   onFork: (nodeId: string) => void;
   onFlashPin?: (pinId: string) => void;
+  onOpenCode?: () => void;
 }) {
   const [stack, setStack] = useState<InspectTarget[]>([target]);
   const [tab, setTab] = useState<FaceTab>(initialTab);
@@ -168,7 +170,18 @@ export function InspectorDrawer({
               {tab === "spec" && <SpecTable spec={node.spec} />}
               {tab === "contract" && <ContractTab node={node} />}
               {tab === "checks" && <ValidationTab node={node} graph={graph} validator={validator} onFlashPin={onFlashPin} />}
-              {tab === "code" && <CodeLens code={nodeCode} name={label} highlightName={node.name} />}
+              {tab === "code" && (
+                <div>
+                  {onOpenCode && (
+                    <div className="px-6 pt-4 -mb-2">
+                      <button onClick={onOpenCode} className="font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-ink px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors">
+                        open in code view →
+                      </button>
+                    </div>
+                  )}
+                  <CodeLens code={nodeCode} name={label} highlightName={node.name} />
+                </div>
+              )}
               {tab === "lineage" && <LineageMini node={node} graph={graph} labels={labels} onOpenNode={openNode} />}
             </>
           )}

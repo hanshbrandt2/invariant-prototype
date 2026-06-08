@@ -35,6 +35,7 @@ export function Canvas({
   onPromote,
   onFork,
   onFlashPin,
+  onOpenCode,
 }: {
   canvas: CanvasState;
   graph: LineageSubgraph;
@@ -57,6 +58,7 @@ export function Canvas({
   onPromote: (nodeId: string, value: string) => void;
   onFork: (nodeId: string) => void;
   onFlashPin?: (pinId: string) => void;
+  onOpenCode?: () => void;
 }) {
   const datasetList: HostedDataset[] = Array.from(new Map(Object.values(datasets).map((d) => [d.id, d])).values());
 
@@ -100,6 +102,7 @@ export function Canvas({
           onPromote={onPromote}
           onFork={onFork}
           onFlashPin={onFlashPin}
+          onOpenCode={onOpenCode}
         />
       )}
     </div>

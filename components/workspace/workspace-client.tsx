@@ -400,11 +400,12 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onFlashHandled={() => setFlashedPin(null)}
         />
         {view === "code" ? (
-          <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} />
+          <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} onSelectNode={inspectNode} />
         ) : (
           <Canvas
             canvas={canvas}
             onFlashPin={setFlashedPin}
+            onOpenCode={() => setView("code")}
             graph={graph}
             labels={labels}
             producerOps={producerOps}
