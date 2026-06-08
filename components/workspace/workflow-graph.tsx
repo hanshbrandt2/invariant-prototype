@@ -6,8 +6,6 @@ import { STAGE_LANES, STAGE_OF_KIND } from "@/lib/types";
 import { knobForOp, deriveValidator } from "@/lib/data";
 import { TrustBadge } from "@/components/workspace/trust-badge";
 import { Metric } from "@/components/workspace/metric";
-import { PreviewChart } from "@/components/workspace/preview-chart";
-import { equityCurve } from "@/components/workspace/curve";
 
 /* ── geometry ──────────────────────────────────────────────────────────────
    HORIZONTAL = pipeline stage (bounded lanes, left→right). A node's lane is
@@ -15,16 +13,21 @@ import { equityCurve } from "@/components/workspace/curve";
    centerline; branches distribute ABOVE and BELOW it (balanced, not bottom-
    heavy); sweep siblings stack beneath the hero. The whole thing fits to the
    viewport by default (zoom), so the story reads in one glance. */
-const LANE_W = 170; // lane stride — must exceed CARD_W (gutter for edges)
-const PAD_X = 20;
+const LANE_W = 184; // lane stride — must exceed CARD_W (gutter for edges + routing)
+const PAD_X = 22;
 const PAD_TOP = 24;
-const CARD_W = 142; // a node card (gutter to next lane = LANE_W − CARD_W = 28)
-const CARD_H = 46; // compact: two tight lines (the lane header carries the kind)
-const HERO_W = 166; // the finding — fits within its lane (no overflow)
-const HERO_H = 138;
-const ROW_H = 60; // vertical stride (gap to next row = ROW_H − CARD_H = 14)
+const CARD_W = 150; // a node card (gutter to next lane = LANE_W − CARD_W = 34)
+const CARD_H = 44; // two info lines (name + operator/grain/feeds)
+const ACT_H = 16; // the always-visible action row (fork / compare), when present
+const HERO_W = 178; // the finding — fits within its lane (no overflow)
+const HERO_H = 104; // no chart — name + the metrics, clean
+const ROW_H = 76; // vertical stride — exceeds the tallest card (CARD_H + ACT_H)
 const SIB_H = 40;
 const SIB_GAP = 8;
+
+// strip a trailing grain suffix ("· 1m") from a label — the grain shows on its
+// own line, so it shouldn't be doubled in the name.
+const cleanName = (s: string) => s.replace(/\s*·\s*\d+[smhd]$/, "");
 
 const STAGE_TAG: Record<string, string> = {
   dataset: "DATASET", feature: "FEATURE", matrix: "MATRIX", target: "TARGET", model: "MODEL", result: "RESULT", analysis: "ANALYSIS",
@@ -163,8 +166,10 @@ export function WorkflowGraph({
 
     const laneX = (lane: number) => PAD_X + lane * LANE_W;
     const isHero = (id: string) => byId[id]?.kind === "result" && spine.has(id) && !!resultSpecs[id];
+    // nodes with an always-visible fork/compare row are a touch taller
+    const forkable = new Set(flow.filter((n) => variants[n.id] || knobForOp(producerOps[n.id])).map((n) => n.id));
     const cardW = (id: string) => (isHero(id) ? HERO_W : CARD_W);
-    const cardH = (id: string) => (isHero(id) ? HERO_H : CARD_H);
+    const cardH = (id: string) => (isHero(id) ? HERO_H : forkable.has(id) ? CARD_H + ACT_H : CARD_H);
     const cx = (id: string) => laneX(laneOf(byId[id].kind));
     const cyOf = (id: string) => SPINE_Y + (rank[id] ?? 0) * ROW_H;
     const left = (id: string) => cx(id);
@@ -196,20 +201,35 @@ export function WorkflowGraph({
       feeds[n.id] = graph.edges.filter((e) => e.parentId === n.id && laneOf(byId[e.childId]?.kind ?? "operator") >= 0).length;
     }
 
-    // edges: horizontal bezier, parent-right → child-left. A read from a LATER
-    // lane is a leak — a flagged BACKWARD edge. `spineEdge` carries the emphasis.
+    // edges: routed so they connect at card EDGES and never cut through a card.
+    //  · forward (left→right): a bezier that ARCS below any lane it spans;
+    //  · same-lane chain: a vertical hop bowed into the left gutter;
+    //  · backward (reads a later stage): a leak — flagged, arcs up.
     const flowEdges = graph.edges.filter((e) => byId[e.parentId] && byId[e.childId] && laneOf(byId[e.parentId].kind) >= 0 && laneOf(byId[e.childId].kind) >= 0);
     const paths = flowEdges.map((e) => {
-      const back = laneOf(byId[e.parentId].kind) > laneOf(byId[e.childId].kind);
-      const px = back ? left(e.parentId) : right(e.parentId);
+      const pl = laneOf(byId[e.parentId].kind);
+      const cl = laneOf(byId[e.childId].kind);
       const py = cyOf(e.parentId);
-      const ccx = back ? right(e.childId) : left(e.childId);
       const cy = cyOf(e.childId);
-      const dx = Math.max(34, Math.abs(ccx - px) / 2);
-      const d = back
-        ? `M ${px} ${py} C ${px - dx} ${py - 26}, ${ccx + dx} ${cy - 26}, ${ccx} ${cy}`
-        : `M ${px} ${py} C ${px + dx} ${py}, ${ccx - dx} ${cy}, ${ccx} ${cy}`;
-      return { e, d, back, spineEdge: spine.has(e.parentId) && spine.has(e.childId) };
+      const spineEdge = spine.has(e.parentId) && spine.has(e.childId);
+      let d: string;
+      let back = false;
+      if (cl === pl) {
+        // vertical chain within one lane — bow into the left gutter
+        const x0 = left(e.parentId), x1 = left(e.childId), bx = x0 - 16;
+        d = `M ${x0} ${py} C ${bx} ${py}, ${bx} ${cy}, ${x1} ${cy}`;
+      } else if (cl > pl) {
+        const px = right(e.parentId), ccx = left(e.childId);
+        const bow = cl - pl >= 2 ? 52 : 0; // arc below the lane(s) it skips
+        const dx = Math.max(26, (ccx - px) / 2.2);
+        d = `M ${px} ${py} C ${px + dx} ${py + bow}, ${ccx - dx} ${cy + bow}, ${ccx} ${cy}`;
+      } else {
+        back = true;
+        const px = left(e.parentId), ccx = right(e.childId);
+        const dx = Math.max(26, Math.abs(ccx - px) / 2);
+        d = `M ${px} ${py} C ${px - dx} ${py - 28}, ${ccx + dx} ${cy - 28}, ${ccx} ${cy}`;
+      }
+      return { e, d, back, spineEdge };
     });
 
     const width = PAD_X * 2 + STAGE_LANES.length * LANE_W;
@@ -217,8 +237,8 @@ export function WorkflowGraph({
     const height = Math.max(SPINE_Y + belowNeed + 28, sibBottom + 28);
     const presentKinds = (Object.keys(EDGE_STYLE) as LineageEdge["kind"][]).filter((k) => flowEdges.some((e) => e.kind === k));
 
-    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, isHero, heroId, siblings, sibTop, grain, feeds, paths, width, height, presentKinds };
-  }, [graph, resultSpecs, sweep, sweepOpen]);
+    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, isHero, heroId, forkable, siblings, sibTop, grain, feeds, paths, width, height, presentKinds };
+  }, [graph, resultSpecs, sweep, sweepOpen, variants, producerOps]);
 
   const active = hover ?? selectedId ?? null;
   const up = active ? ancestorsOf(graph, active) : null;
@@ -321,24 +341,33 @@ export function WorkflowGraph({
 
             {/* edges */}
             <svg className="absolute inset-0" width={L.width} height={L.height} style={{ overflow: "visible" }}>
+              <defs>
+                {([["dim", "var(--color-hairline-2)"], ["ink", "var(--color-ink-2)"], ["clay", "var(--color-clay)"]] as const).map(([id, c]) => (
+                  <marker key={id} id={`ar-${id}`} markerWidth="8" markerHeight="8" refX="6" refY="3.5" orient="auto">
+                    <path d="M0,0 L7,3.5 L0,7 Z" style={{ fill: c }} />
+                  </marker>
+                ))}
+              </defs>
               {L.paths.map(({ e, d, back, spineEdge }, i) => {
                 const st = EDGE_STYLE[e.kind];
                 const litEdge = isLit(e.parentId) && isLit(e.childId);
                 const isUpEdge = active != null && (e.childId === active || up?.has(e.childId)) && (up?.has(e.parentId) ?? false);
                 let stroke: string, w: number, op: number;
                 if (back) {
-                  stroke = "var(--color-clay)"; w = 1.6; op = litEdge ? 1 : 0.4;
+                  stroke = "var(--color-clay)"; w = 1.8; op = litEdge ? 1 : 0.45;
                 } else if (active) {
+                  // a selected node lights its whole path BOLD; everything else fades
                   stroke = !litEdge ? "var(--color-hairline-2)" : isUpEdge ? "var(--color-ink-2)" : "var(--color-clay)";
-                  w = (st.heavy ? 1.7 : 1.2) + (litEdge ? 0.4 : 0); op = litEdge ? 1 : 0.26;
+                  w = litEdge ? (st.heavy ? 2.4 : 2.0) : 1.0; op = litEdge ? 1 : 0.16;
                 } else {
                   // resting: spine ink + solid, branches faint + thin
                   stroke = spineEdge ? "var(--color-ink-2)" : "var(--color-hairline-2)";
-                  w = spineEdge ? 1.6 : 1.0; op = spineEdge ? 0.95 : 0.5;
+                  w = spineEdge ? 1.7 : 1.1; op = spineEdge ? 0.95 : 0.55;
                 }
+                const marker = stroke.includes("clay") ? "ar-clay" : stroke.includes("ink") ? "ar-ink" : "ar-dim";
                 return (
                   <g key={i}>
-                    <path d={d} fill="none" stroke={stroke} strokeWidth={w} strokeDasharray={back ? "4 3" : st.dash} opacity={op} />
+                    <path d={d} fill="none" stroke={stroke} strokeWidth={w} strokeDasharray={back ? "4 3" : st.dash} opacity={op} markerEnd={`url(#${marker})`} />
                     {back && <title>look-ahead leak — reads from a later stage</title>}
                     <path d={d} fill="none" stroke="transparent" strokeWidth={14} style={{ cursor: "pointer" }} onClick={() => onInspectEdge(e)}>
                       <title>{`${st.label} — inspect dependency`}</title>
@@ -374,41 +403,43 @@ export function WorkflowGraph({
                 <div
                   key={n.id}
                   ref={(el) => { nodeRefs.current[n.id] = el; }}
-                  className={`group node-snap absolute overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-25"} ${isBuilding ? "node-building" : ""}`}
-                  style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, height: CARD_H, animationDelay: `${Math.min(laneOf(n.kind) * 50, 300)}ms` }}
+                  className={`group node-snap absolute flex flex-col overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-25"} ${isBuilding ? "node-building" : ""}`}
+                  style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, height: L.cardH(n.id), animationDelay: `${Math.min(laneOf(n.kind) * 50, 300)}ms` }}
                   onMouseEnter={() => setHover(n.id)}
                   onMouseLeave={() => setHover(null)}
                 >
-                  <button onClick={() => onInspectNode(n.id)} className="block w-full h-full text-left px-2.5 py-1.5 hover:bg-paper-2/50 transition-colors">
+                  <button onClick={() => onInspectNode(n.id)} className="flex-1 w-full text-left px-2.5 py-1.5 hover:bg-paper-2/50 transition-colors">
                     {/* line 1 — the name (the lane header already names the kind) + trust */}
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className={`text-[0.8rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{labels[n.id] ?? n.name}</span>
+                      <span className={`text-[0.74rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{cleanName(labels[n.id] ?? n.name)}</span>
                       <span className="flex items-center gap-1 shrink-0">
-                        {policies.length > 0 && <span title={policies.join(" · ")} className="text-[0.66rem] leading-none text-clay">⚖</span>}
+                        {policies.length > 0 && <span title={policies.join(" · ")} className="text-[0.62rem] leading-none text-clay">⚖</span>}
                         {v && <TrustBadge validator={v} zoom="node" />}
                       </span>
                     </div>
-                    {/* line 2 — operator · grain · downstream (dense, but quiet) */}
-                    <div className="mt-1 flex items-center justify-between gap-1.5 font-mono text-[0.56rem] text-faint">
+                    {/* line 2 — operator · grain · downstream (always visible) */}
+                    <div className="mt-0.5 flex items-center justify-between gap-1.5 font-mono text-[0.55rem] text-faint">
                       <span className="truncate">{isBuilding ? "building…" : producerOps[n.id] ?? n.name}</span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         {L.grain[n.id] && <span>{L.grain[n.id]}</span>}
                         {L.feeds[n.id] > 0 && <span>↳{L.feeds[n.id]}</span>}
-                        {vg && <span className="text-clay">⑂{vg.members.length}</span>}
                       </span>
                     </div>
                   </button>
-                  {/* hover action overlay — fork / compare; absolute, so it never shifts layout */}
-                  {(vg || knob) && (
-                    <div className="absolute inset-x-0 bottom-0 z-10 flex border-t border-hairline bg-paper/95 font-mono text-[0.56rem] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="px-2 py-0.5 text-clay hover:bg-clay hover:text-paper transition-colors" title={`fork ${vg?.param ?? knob?.param ?? ""}`}>⑂ fork</button>
-                      {vg && (
-                        <button onClick={(e) => { e.stopPropagation(); onCompare(n.id); }} className="flex-1 text-left px-2 py-0.5 text-clay border-l border-hairline hover:bg-clay hover:text-paper transition-colors">
-                          compare ×{vg.members.length} →
-                        </button>
-                      )}
+                  {/* action row — ALWAYS visible (fork / compare) */}
+                  {vg ? (
+                    <div className="shrink-0 flex border-t border-hairline bg-paper-2/40 font-mono text-[0.54rem]">
+                      <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="px-2 py-0.5 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors" title={`fork ${vg.param}`}>⑂</button>
+                      <button onClick={(e) => { e.stopPropagation(); onCompare(n.id); }} className="flex-1 flex items-center justify-between px-2 py-0.5 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
+                        <span>×{vg.members.length} {vg.param}</span>
+                        <span className="text-faint group-hover/c:text-paper">compare →</span>
+                      </button>
                     </div>
-                  )}
+                  ) : knob ? (
+                    <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="shrink-0 text-left border-t border-hairline px-2 py-0.5 bg-paper-2/40 font-mono text-[0.54rem] text-muted hover:bg-clay hover:text-paper transition-colors">
+                      ⑂ fork · {knob.param}
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
@@ -541,19 +572,16 @@ function HeroCard({
           <span className="font-mono text-[0.52rem] uppercase tracking-[0.14em] text-clay">the finding</span>
           {validator && <TrustBadge validator={validator} zoom="node" />}
         </div>
-        <p className="px-3 mt-0.5 font-serif text-[0.92rem] leading-tight text-ink truncate">{label}</p>
-        <div className="px-2 mt-0.5">
-          <PreviewChart data={equityCurve(m)} height={56} />
-        </div>
+        <p className="px-3 mt-0.5 mb-2 font-serif text-[0.94rem] leading-tight text-ink truncate">{cleanName(label)}</p>
         <div className="grid grid-cols-3 border-t border-hairline divide-x divide-hairline">
           {[
             { k: "Sharpe", v: m.sharpe, f: "ratio" as const },
             { k: "Hit", v: m.hit_rate, f: "number" as const },
             { k: "Ann.", v: m.ann_return, f: "signed-pct" as const },
           ].map((c) => (
-            <div key={c.k} className="px-2 py-1">
+            <div key={c.k} className="px-2 py-1.5">
               <div className="font-mono text-[0.5rem] uppercase tracking-[0.1em] text-muted">{c.k}</div>
-              <div className="mt-0.5 text-[0.8rem] text-ink">
+              <div className="mt-0.5 text-[0.95rem] text-ink tabular-nums">
                 <Metric value={c.v} format={c.f} validator={validator} lineageHash={validator?.lineageHash} />
               </div>
             </div>
