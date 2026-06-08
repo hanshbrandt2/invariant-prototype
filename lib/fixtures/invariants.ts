@@ -152,8 +152,8 @@ export const PINS: Pin[] = [
  * on); lines with no `dependsOnPin` are always in force (the structural axioms).
  */
 export const CONSEQUENCES: Consequence[] = [
-  { kind: "blocked", text: "lead() / net forward-reach > 0 on a feature → the build fails" },
-  { kind: "required", text: "every artifact carries lineage_hash = H(recipe ‖ code ‖ as_of ‖ inputs)" },
+  { kind: "blocked", text: "lead() / net forward-reach > 0 on a feature → the build fails", dependsOnPin: "no_lookahead" },
+  { kind: "required", text: "every artifact carries lineage_hash = H(recipe ‖ code ‖ as_of ‖ inputs)", dependsOnPin: "reproducible" },
   { kind: "required", text: "revision-bearing reads pass through vintage_collapse(as_of)", dependsOnPin: "as_of" },
   { kind: "blocked", text: "a present-day-snapshot universe → rejected", dependsOnPin: "pit_universe" },
   { kind: "blocked", text: "a full-sample GARCH fit → rejected outside research", dependsOnPin: "no_full_sample_fit" },

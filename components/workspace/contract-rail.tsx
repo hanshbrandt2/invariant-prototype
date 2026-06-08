@@ -30,11 +30,14 @@ export function ContractRail({
   onFlashHandled?: () => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [showConsequences, setShowConsequences] = useState(false);
   const pinRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const inForce = pins.filter((p) => p.state === "structural" || p.state === "active").length;
   const activeIds = useMemo(() => new Set(pins.filter((p) => p.state === "structural" || p.state === "active").map((p) => p.id)), [pins]);
   const shownConsequences = consequences.filter((c) => !c.dependsOnPin || activeIds.has(c.dependsOnPin));
+  const nBlocked = shownConsequences.filter((c) => c.kind === "blocked").length;
+  const nRequired = shownConsequences.filter((c) => c.kind === "required").length;
   const open = pins.find((p) => p.id === openId) ?? null;
 
   // a red validator facet flashes the violated pin on the rail: scroll it into
@@ -71,21 +74,33 @@ export function ContractRail({
 
       {/* the drawer for the open pin */}
       {open && (
-        <PinDrawer pin={open} vintages={vintages} onToggle={onToggle} onClose={() => setOpenId(null)} />
+        <PinDrawer pin={open} vintages={vintages} consequences={consequences} onToggle={onToggle} onClose={() => setOpenId(null)} />
       )}
 
-      {/* consequences — what the pinned laws DO to a build */}
-      <div className="flex items-center gap-x-5 gap-y-1 flex-wrap px-3 py-1.5 border-t border-hairline">
-        {shownConsequences.map((c, i) => (
-          <span key={i} className="flex items-center gap-1.5 text-[0.72rem]">
-            <span className={`font-mono text-[0.72rem] leading-none ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
-            <span className={c.kind === "blocked" ? "text-ink-2" : "text-ink-2"}>{c.text}</span>
-          </span>
-        ))}
+      {/* one quiet footer row: a consequences toggle (left) + the anti-fab line
+          (right). The full strip is a wall, so it expands only on demand. */}
+      <div className="flex items-center justify-between gap-4 px-3 py-1.5 border-t border-hairline">
+        <button
+          onClick={() => setShowConsequences((v) => !v)}
+          aria-expanded={showConsequences}
+          className="flex items-center gap-2 font-mono text-[0.62rem] text-muted hover:text-ink transition-colors"
+        >
+          <span className="text-faint">{showConsequences ? "▾" : "▸"}</span>
+          <span className="eyebrow">consequences</span>
+          <span className="tabular-nums">{inForce} laws · <span className="text-clay">{nBlocked} block</span> · <span className="text-green">{nRequired} require</span></span>
+        </button>
+        <p className="font-mono text-[0.6rem] text-faint shrink-0 hidden sm:block">No metric reaches this canvas without a lineage_hash.</p>
       </div>
-
-      {/* anti-fabrication line — enforced by the Metric gate, not decoration */}
-      <p className="px-3 pb-1.5 font-mono text-[0.62rem] text-faint">No metric reaches this canvas without a lineage_hash.</p>
+      {showConsequences && (
+        <div className="flex flex-wrap gap-x-5 gap-y-1 px-3 pb-2 border-t border-hairline">
+          {shownConsequences.map((c, i) => (
+            <span key={i} className="flex items-center gap-1.5 text-[0.72rem]">
+              <span className={`font-mono text-[0.72rem] leading-none ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
+              <span className="text-ink-2">{c.text}</span>
+            </span>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -128,9 +143,10 @@ function IntegritySeal({ inForce, sealOk }: { inForce: number; sealOk: boolean }
 }
 
 /* ── a pin's drawer ────────────────────────────────────────────────────────── */
-function PinDrawer({ pin, vintages, onToggle, onClose }: { pin: Pin; vintages: Vintage[]; onToggle: (id: string) => void; onClose: () => void }) {
+function PinDrawer({ pin, vintages, consequences, onToggle, onClose }: { pin: Pin; vintages: Vintage[]; consequences: Consequence[]; onToggle: (id: string) => void; onClose: () => void }) {
   const togglable = pin.kind === "invariant" || pin.kind === "policy";
   const inForce = pin.state === "structural" || pin.state === "active";
+  const effects = consequences.filter((c) => c.dependsOnPin === pin.id);
   return (
     <div className="border-t border-hairline bg-paper px-4 py-4 md:px-6">
       <div className="flex items-start justify-between gap-4 max-w-[78ch]">
@@ -178,6 +194,21 @@ function PinDrawer({ pin, vintages, onToggle, onClose }: { pin: Pin; vintages: V
           <code className="block font-mono text-[0.74rem] text-ink bg-paper-2 border border-hairline px-2.5 py-1.5 break-words">{pin.mechanism}</code>
         </div>
       </div>
+
+      {/* what it does to a build — this pin's lines from the consequences strip */}
+      {effects.length > 0 && (
+        <div className="mt-4 max-w-[80ch]">
+          <p className="eyebrow mb-1.5">what it does to a build</p>
+          <div className="space-y-1">
+            {effects.map((c, i) => (
+              <div key={i} className="flex items-start gap-2 text-[0.84rem]">
+                <span className={`font-mono leading-5 ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
+                <span className="text-ink-2">{c.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* the As-of pin owns the vintage slider */}
       {pin.id === "as_of" && <VintageSlider vintages={vintages} />}
