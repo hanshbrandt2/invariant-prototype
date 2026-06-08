@@ -375,9 +375,11 @@ export function WorkflowGraph({
             {/* edges */}
             <svg className="absolute inset-0" width={L.width} height={L.height} style={{ overflow: "visible" }}>
               <defs>
+                {/* markerUnits=userSpaceOnUse → a FIXED small arrowhead, not one
+                    that grows with stroke width */}
                 {([["dim", "var(--color-hairline-2)"], ["ink", "var(--color-ink-2)"], ["clay", "var(--color-clay)"]] as const).map(([id, c]) => (
-                  <marker key={id} id={`ar-${id}`} markerWidth="8" markerHeight="8" refX="6" refY="3.5" orient="auto">
-                    <path d="M0,0 L7,3.5 L0,7 Z" style={{ fill: c }} />
+                  <marker key={id} id={`ar-${id}`} markerUnits="userSpaceOnUse" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">
+                    <path d="M0,0.5 L5,3 L0,5.5 Z" style={{ fill: c }} />
                   </marker>
                 ))}
               </defs>
@@ -387,15 +389,15 @@ export function WorkflowGraph({
                 const isUpEdge = active != null && (e.childId === active || up?.has(e.childId)) && (up?.has(e.parentId) ?? false);
                 let stroke: string, w: number, op: number;
                 if (back) {
-                  stroke = "var(--color-clay)"; w = 1.8; op = litEdge ? 1 : 0.45;
+                  stroke = "var(--color-clay)"; w = 1.2; op = litEdge ? 1 : 0.45;
                 } else if (active) {
-                  // a selected node lights its whole path BOLD; everything else fades
+                  // a selected node lights its whole path; everything else fades
                   stroke = !litEdge ? "var(--color-hairline-2)" : isUpEdge ? "var(--color-ink-2)" : "var(--color-clay)";
-                  w = litEdge ? (st.heavy ? 2.4 : 2.0) : 1.0; op = litEdge ? 1 : 0.16;
+                  w = litEdge ? 1.5 : 0.8; op = litEdge ? 1 : 0.16;
                 } else {
                   // resting: spine ink + solid, branches faint + thin
                   stroke = spineEdge ? "var(--color-ink-2)" : "var(--color-hairline-2)";
-                  w = spineEdge ? 1.7 : 1.1; op = spineEdge ? 0.95 : 0.55;
+                  w = spineEdge ? 1.2 : 0.85; op = spineEdge ? 0.92 : 0.5;
                 }
                 const marker = stroke.includes("clay") ? "ar-clay" : stroke.includes("ink") ? "ar-ink" : "ar-dim";
                 return (
