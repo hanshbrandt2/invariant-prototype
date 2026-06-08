@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { AgenticConfig, Pin, Recipe } from "@/lib/types";
+import type { AgenticConfig, Pin, Recipe, RecipeRun } from "@/lib/types";
 
 type ScopeId = AgenticConfig["scope"][number];
 const SCOPES: { id: ScopeId; label: string }[] = [
@@ -25,14 +25,16 @@ const TRIGGERS: { id: AgenticConfig["trigger"]; label: string }[] = [
 export function PromotePanel({
   recipe,
   pins,
+  runs,
   onSaveRecipe,
   onEnableAgentic,
   onClose,
 }: {
   recipe: Recipe;
   pins: Pin[];
+  runs: RecipeRun[];
   onSaveRecipe: (name: string) => void;
-  onEnableAgentic: (config: AgenticConfig) => void;
+  onEnableAgentic: (config: AgenticConfig, scenario: "clean" | "halt") => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(recipe.name);
@@ -43,6 +45,10 @@ export function PromotePanel({
 
   const toggleScope = (id: ScopeId) => setScope((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const Section = "font-mono text-[0.62rem] uppercase tracking-[0.14em]";
+  const cfg = (): AgenticConfig => ({ scope, trigger, triggerNote: trigger === "weekly" ? "Mon 06:00" : undefined, budget, enabledAt: "" });
+  const pinLabel = (id?: string) => pins.find((p) => p.id === id)?.label ?? id ?? "—";
+  const validated = runs.filter((r) => r.outcome === "validated").length;
+  const halted = runs.filter((r) => r.outcome === "halted").length;
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink/20 p-4" onClick={onClose}>
@@ -147,16 +153,52 @@ export function PromotePanel({
             </p>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
             <button
-              onClick={() => onEnableAgentic({ scope, trigger, triggerNote: trigger === "weekly" ? "Mon 06:00" : undefined, budget, enabledAt: "" })}
+              onClick={() => onEnableAgentic(cfg(), "clean")}
               className="font-mono text-[0.66rem] uppercase tracking-[0.12em] bg-clay text-paper px-3.5 py-1.5 hover:bg-clay-deep transition-colors"
             >
               enable ⚙ &amp; preview a run →
             </button>
-            <span className="font-mono text-[0.62rem] text-faint">prototype — the preview run is simulated</span>
+            <button
+              onClick={() => onEnableAgentic(cfg(), "halt")}
+              className="font-mono text-[0.64rem] text-muted hover:text-clay underline decoration-dotted underline-offset-2 transition-colors"
+            >
+              or preview a run that breaks a law →
+            </button>
+            <span className="w-full font-mono text-[0.62rem] text-faint">prototype — both preview runs are simulated</span>
           </div>
         </div>
+
+        {/* recent runs — the audit log. Validated runs carry a lineage_hash;
+            halted ones name the pin they tripped (the guardrail, in the record). */}
+        {runs.length > 0 && (
+          <div className="px-6 py-5 border-t border-hairline">
+            <div className="flex items-baseline justify-between mb-2.5">
+              <span className={`${Section} text-ink`}>recent runs</span>
+              <span className="font-mono text-[0.62rem] text-muted">
+                <span className="text-green">{validated} ✓</span>
+                {halted > 0 && <span className="text-clay"> · {halted} halted</span>}
+              </span>
+            </div>
+            <div className="border border-hairline bg-white divide-y divide-hairline">
+              {runs.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 px-3 py-2">
+                  <span className={`shrink-0 font-mono text-[0.72rem] ${r.outcome === "validated" ? "text-green" : "text-clay"}`}>{r.outcome === "validated" ? "✓" : "⛔"}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-[0.66rem] text-ink-2 truncate">{r.at.slice(0, 10)} · {r.scope}</p>
+                    <p className="font-mono text-[0.6rem] text-faint truncate">
+                      {r.outcome === "validated"
+                        ? `${r.lineageHash ?? ""}${r.metrics?.sharpe != null ? ` · Sharpe ${r.metrics.sharpe.toFixed(2)}` : ""}`
+                        : `halted on ‘${pinLabel(r.violatedPin)}’ — no number shipped`}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[0.56rem] uppercase tracking-[0.08em] text-faint">{r.trigger.replace(/_/g, " ")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

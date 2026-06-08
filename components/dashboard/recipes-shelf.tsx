@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Recipe } from "@/lib/types";
+import type { Recipe, RecipeRun } from "@/lib/types";
 import { ResearchGraph } from "@/components/landing/research-graph";
 
 /**
@@ -9,19 +9,20 @@ import { ResearchGraph } from "@/components/landing/research-graph";
  * show how they run. Starting from a recipe drops you into the workspace with
  * it (and its pins) already loaded.
  */
-export function RecipesShelf({ recipes, pinLabels }: { recipes: Recipe[]; pinLabels: Record<string, string> }) {
+export function RecipesShelf({ recipes, pinLabels, runsByRecipe = {} }: { recipes: Recipe[]; pinLabels: Record<string, string>; runsByRecipe?: Record<string, RecipeRun[]> }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       {recipes.map((r) => (
-        <RecipeCard key={r.id} r={r} pinLabels={pinLabels} />
+        <RecipeCard key={r.id} r={r} pinLabels={pinLabels} runs={runsByRecipe[r.id] ?? []} />
       ))}
     </div>
   );
 }
 
-function RecipeCard({ r, pinLabels }: { r: Recipe; pinLabels: Record<string, string> }) {
+function RecipeCard({ r, pinLabels, runs }: { r: Recipe; pinLabels: Record<string, string>; runs: RecipeRun[] }) {
   const href = `/workspace/${r.workspaceId ?? "new"}`;
   const cta = r.agentic ? "run ▸" : r.state === "validated" ? "make agentic ▸" : "finish it ▸";
+  const halted = runs.filter((x) => x.outcome === "halted").length;
   const status = r.agentic
     ? `runs ${r.agentic.trigger === "weekly" ? `weekly · ${r.agentic.triggerNote}` : r.agentic.trigger.replace(/_/g, " ")}`
     : r.state === "validated"
@@ -50,6 +51,13 @@ function RecipeCard({ r, pinLabels }: { r: Recipe; pinLabels: Record<string, str
           ))}
           {r.pins.length > 4 && <span className="font-mono text-[0.52rem] text-faint self-center">+{r.pins.length - 4}</span>}
         </div>
+        {runs.length > 0 && (
+          <p className="mt-2 font-mono text-[0.56rem] text-faint">
+            {runs.length} run{runs.length > 1 ? "s" : ""}
+            {halted > 0 && <span className="text-clay"> · {halted} halted ⛔</span>}
+            <span className="text-muted"> · last {runs[0].at.slice(0, 10)}</span>
+          </p>
+        )}
         <div className="mt-auto pt-3 flex items-center justify-between">
           <span className="font-mono text-[0.6rem] text-faint">{status}</span>
           <Link href={href} className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-clay hover:underline">{cta}</Link>

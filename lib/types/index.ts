@@ -400,6 +400,24 @@ export interface Recipe {
   createdAt: string;
 }
 
+/** One run of a recipe — the audit log. Each run is a reproducible attempt:
+ *  a `lineageHash` if it validated, the pin it tripped if it `halted`. The Runs
+ *  history is this list, newest first; the halted ones are the proof the
+ *  guardrail fires on its own, not just in a demo. */
+export interface RecipeRun {
+  id: string;
+  recipeId: string;
+  at: string; // ISO timestamp
+  trigger: "weekly" | "on_new_data" | "on_demand" | "manual";
+  scope: string; // what varied this run, e.g. "2025-Q1 data"
+  outcome: "validated" | "halted";
+  lineageHash?: string; // present when validated — the reproducible fingerprint
+  violatedPin?: string; // present when halted — the pin id it tripped
+  metrics?: Record<string, number>; // the headline finding, when validated
+  credits: number;
+  note?: string;
+}
+
 /** One file in the workspace's reproducible code project (the Code view). Each
  *  artifact is a file under its stage folder; `nodeId` links it back to the
  *  graph node so canvas ⟷ file selection stays in sync. */

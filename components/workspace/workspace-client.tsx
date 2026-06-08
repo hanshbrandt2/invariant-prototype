@@ -211,7 +211,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // ── agentic run: the agent re-runs a promoted recipe on its own, WITHIN the
   // pinned laws — and HALTS the moment an artifact would violate one. ─────────
   const runAgenticPreview = useCallback(
-    async (cfg: AgenticConfig) => {
+    async (cfg: AgenticConfig, scenario: "clean" | "halt" = "clean") => {
       void cfg;
       setPromoting(false);
       const recipe = bundle.recipe;
@@ -219,7 +219,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       setBuilding(true);
       setCanvas({ phase: "live" });
       addTurn({ id: uid("ag"), role: "system", text: `⚙ Agentic run · ${recipe.name} — re-running on new data (2025-Q1), within ${recipe.pins.length} pinned laws.` });
-      for await (const ev of runAgentic(recipe)) {
+      for await (const ev of runAgentic(recipe, scenario)) {
         if (ev.type === "thinking") {
           addTurn({ id: uid("ag"), role: "assistant", text: ev.text });
         } else if (ev.type === "step_start") {
@@ -230,6 +230,19 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           setInFlightId(null);
           debit(ev.step.credits);
           addTurn({ id: uid("ag"), role: "assistant", text: `✓ ${ev.step.label}`, actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined });
+        } else if (ev.type === "done") {
+          // happy path: every artifact validated → a fresh point-in-time result.
+          setBuilding(false);
+          setInFlightId(null);
+          setDrawer({ type: "node", id: ev.producedId });
+          setOpenPin(null);
+          addTurn({
+            id: uid("ag"),
+            role: "system",
+            text: `✓ Run complete — Backtest · 2025-Q1 validated against all ${recipe.pins.length} pinned laws. Logged to runs — the finding's open on the canvas.`,
+            actions: [{ type: "push_node", ref: ev.producedId }],
+          });
+          return;
         } else if (ev.type === "halt") {
           materialize(ev.step);
           setInFlightId(null);
@@ -357,7 +370,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       const d = bundle.datasets[bundle.initialDataId];
       pickData(bundle.initialDataId, d?.name ?? bundle.initialDataId);
     } else if (bundle.initialAgentic) {
-      void runAgenticPreview({ scope: ["new_data"], trigger: "on_demand", budget: 25, enabledAt: "" });
+      void runAgenticPreview({ scope: ["new_data"], trigger: "on_demand", budget: 25, enabledAt: "" }, bundle.initialAgentic);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -432,8 +445,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
         <PromotePanel
           recipe={bundle.recipe}
           pins={pins.filter((p) => bundle.recipe!.pins.includes(p.id))}
+          runs={bundle.runs ?? []}
           onSaveRecipe={(n) => addTurn({ id: uid("rec"), role: "system", text: `✓ saved “${n}” to your recipes — reproducible by construction. promote it to agentic to run it on its own.` })}
-          onEnableAgentic={(cfg) => void runAgenticPreview(cfg)}
+          onEnableAgentic={(cfg, scenario) => void runAgenticPreview(cfg, scenario)}
           onClose={() => setPromoting(false)}
         />
       )}

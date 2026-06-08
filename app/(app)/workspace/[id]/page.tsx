@@ -14,6 +14,7 @@ import {
   getConsequences,
   getVintages,
   getRecipeForWorkspace,
+  getRuns,
 } from "@/lib/data";
 import type { Node, HostedDataset, ResultSpec } from "@/lib/types";
 import { WorkspaceClient } from "@/components/workspace/workspace-client";
@@ -76,6 +77,7 @@ export default async function WorkspacePage({
   const sweep = isNew ? undefined : await getSweeps(id);
   const [invariants, consequences, vintages] = await Promise.all([getInvariants(), getConsequences(), getVintages()]);
   const recipe = isNew ? undefined : await getRecipeForWorkspace(id);
+  const runs = recipe ? await getRuns(recipe.id) : [];
   const variantsAll = sweep
     ? {
         ...variants,
@@ -108,8 +110,9 @@ export default async function WorkspacePage({
     consequences,
     vintages,
     recipe,
+    runs,
     initialPromote: promote === "1" && !!recipe,
-    initialAgentic: agentic === "1" && !!recipe,
+    initialAgentic: recipe ? (agentic === "clean" ? "clean" : agentic === "1" || agentic === "halt" ? "halt" : undefined) : undefined,
     initialCodeView: view === "code",
     initialBuildPrompt: build,
     initialDataId: data,

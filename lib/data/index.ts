@@ -20,8 +20,9 @@ import { variantGroupsByWorkspace } from "@/lib/fixtures/variants";
 import { PINS, CONSEQUENCES, VINTAGES } from "@/lib/fixtures/invariants";
 import { sweepsByWorkspace } from "@/lib/fixtures/sweeps";
 import { recipes as recipeCatalog } from "@/lib/fixtures/recipes-catalog";
+import { runsByRecipe } from "@/lib/fixtures/runs";
 import { deriveValidator } from "@/lib/validator";
-import type { Concept, VariantGroup, Pin, Consequence, Vintage, Sweep, Validator, Recipe } from "@/lib/types";
+import type { Concept, VariantGroup, Pin, Consequence, Vintage, Sweep, Validator, Recipe, RecipeRun } from "@/lib/types";
 
 /**
  * The only place that knows where data comes from. Fixtures-backed now,
@@ -200,6 +201,17 @@ export async function listRecipes(): Promise<Recipe[]> {
 /** A recipe crystallised from a workspace (used by the Promote panel). */
 export async function getRecipeForWorkspace(workspaceId: string): Promise<Recipe | undefined> {
   return recipeCatalog.find((r) => r.workspaceId === workspaceId);
+}
+
+/** The Runs history (audit log) for one recipe — newest first. */
+export async function getRuns(recipeId: string): Promise<RecipeRun[]> {
+  return [...(runsByRecipe[recipeId] ?? [])].sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+
+/** Every recipe's runs, keyed by recipe id — drives the dashboard shelf's
+ *  per-card run summary without N round-trips. */
+export async function listRunsByRecipe(): Promise<Record<string, RecipeRun[]>> {
+  return runsByRecipe;
 }
 
 /** The single validator object for one artifact (derived from the lineage). */

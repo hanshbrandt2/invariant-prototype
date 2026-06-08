@@ -4,6 +4,7 @@ import {
   listStarterPrompts,
   getStarterPrompt,
   listRecipes,
+  listRunsByRecipe,
   getInvariants,
 } from "@/lib/data";
 import Link from "next/link";
@@ -23,11 +24,12 @@ export default async function DashboardPage({
 }) {
   const { state, view } = await searchParams;
   const initialView: View = view === "all" || view === "starred" ? view : "recent";
-  const [workspaces, datasets, pool, recipes, invariants] = await Promise.all([
+  const [workspaces, datasets, pool, recipes, runsByRecipe, invariants] = await Promise.all([
     listWorkspaces(),
     listHostedDatasets(),
     Promise.resolve(listStarterPrompts()),
     listRecipes(),
+    listRunsByRecipe(),
     getInvariants(),
   ]);
   const pinLabels = Object.fromEntries(invariants.map((p) => [p.id, p.label]));
@@ -80,7 +82,7 @@ export default async function DashboardPage({
             <h2 className="font-serif text-[1.5rem] font-semibold">Recipes</h2>
             <span className="eyebrow">validated workflows · manual → agentic</span>
           </div>
-          <RecipesShelf recipes={recipes} pinLabels={pinLabels} />
+          <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
         </section>
       )}
 
