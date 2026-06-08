@@ -34,7 +34,11 @@ export function ContractRail({
   onFlashHandled?: () => void;
 }) {
   const [showConsequences, setShowConsequences] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const pinRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  // collapsed by default — a quiet seal. Expands on click, or whenever a pin is
+  // open / being flashed (so the rail is showing when those need it).
+  const railOpen = expanded || !!flashedPin || !!openId;
 
   const inForce = pins.filter((p) => p.state === "structural" || p.state === "active").length;
   const activeIds = useMemo(() => new Set(pins.filter((p) => p.state === "structural" || p.state === "active").map((p) => p.id)), [pins]);
@@ -57,8 +61,22 @@ export function ContractRail({
     return () => clearTimeout(t);
   }, [flashedPin, onFlashHandled]);
 
+  // collapsed — a single quiet seal line; the laws are one click away
+  if (!railOpen) {
+    return (
+      <section aria-label="contract" className="shrink-0 border-b border-hairline bg-paper-2/50">
+        <button onClick={() => setExpanded(true)} className="group flex w-full items-center gap-3 px-3 py-1.5 text-left">
+          <span className="eyebrow shrink-0">⚖ contract</span>
+          <IntegritySeal inForce={inForce} sealOk={sealOk} />
+          <span className="flex-1" />
+          <span className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">show ▸</span>
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section aria-label="contract — the laws on this canvas" className="rise shrink-0 border-b border-hairline bg-paper-2/60" style={{ animationDelay: "40ms" }}>
+    <section aria-label="contract — the laws on this canvas" className="shrink-0 border-b border-hairline bg-paper-2/60">
       {/* pins */}
       <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto">
         <span className="eyebrow shrink-0 pr-1">contract</span>
@@ -73,6 +91,7 @@ export function ContractRail({
         ))}
         <span className="flex-1" />
         <IntegritySeal inForce={inForce} sealOk={sealOk} />
+        <button onClick={() => { setExpanded(false); onOpen(null); }} className="shrink-0 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-faint hover:text-ink transition-colors">hide ▴</button>
       </div>
 
       {/* the drawer for the open pin */}

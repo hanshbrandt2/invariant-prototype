@@ -29,7 +29,7 @@ export function WorkspaceRail() {
   const initial = (email ?? "you")[0]?.toUpperCase() ?? "Y";
 
   return (
-    <nav className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 py-4">
+    <nav className="flex w-[60px] shrink-0 flex-col items-center gap-1.5 py-4 bg-paper-2">
       <Link href="/" title="Invariant" className="mb-3 inline-block h-3 w-3 rounded-[3px] bg-clay" />
       <Ico href="/dashboard" title="Home">{I.home}</Ico>
       <Ico href="/dashboard#hosted-data" title="Hosted data">{I.data}</Ico>
