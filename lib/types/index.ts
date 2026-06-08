@@ -400,6 +400,18 @@ export interface Recipe {
   createdAt: string;
 }
 
+/** One file in the workspace's reproducible code project (the Code view). Each
+ *  artifact is a file under its stage folder; `nodeId` links it back to the
+ *  graph node so canvas ⟷ file selection stays in sync. */
+export interface ProjectFile {
+  path: string; // "features/zscore_20.py"
+  folder: string; // "features" ("" for project root)
+  name: string; // "zscore_20.py"
+  lang: "python" | "yaml" | "text";
+  code: string;
+  nodeId?: string; // the artifact this file is
+}
+
 /** The simulated agentic run — streams like a build, but can HALT when an
  *  artifact would violate a pinned invariant (the trust moment). */
 export type AgenticEvent =

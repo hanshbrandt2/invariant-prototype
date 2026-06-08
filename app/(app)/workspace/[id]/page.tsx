@@ -110,6 +110,7 @@ export default async function WorkspacePage({
     recipe,
     initialPromote: promote === "1" && !!recipe,
     initialAgentic: agentic === "1" && !!recipe,
+    initialCodeView: view === "code",
     initialBuildPrompt: build,
     initialDataId: data,
     initialView: view === "lineage" ? "lineage" : undefined,

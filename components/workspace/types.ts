@@ -22,6 +22,7 @@ export interface WorkspaceBundle {
   recipe?: Recipe; // this workspace crystallised as a recipe (the Promote panel)
   initialPromote?: boolean; // deep-link: open the Promote panel on mount
   initialAgentic?: boolean; // deep-link: fire a simulated agentic run on mount
+  initialCodeView?: boolean; // deep-link: open the Code view on mount
   initialBuildPrompt?: string;
   initialDataId?: string;
   initialView?: "lineage";

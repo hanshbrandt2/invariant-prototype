@@ -10,7 +10,6 @@ import { useState } from "react";
  */
 export function CodeLens({ code, name, highlightName }: { code: string; name: string; highlightName?: string }) {
   const [copied, setCopied] = useState(false);
-  const lines = code.split("\n");
 
   const copy = () => {
     navigator.clipboard?.writeText(code).then(() => {
@@ -28,9 +27,6 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
     URL.revokeObjectURL(url);
   };
 
-  const isHi = (line: string) =>
-    !!highlightName && (line.trimStart().startsWith(`${highlightName} =`) || line.trimStart().startsWith(`${highlightName}  #`) || line.trimStart() === highlightName);
-
   return (
     <div className="p-5 md:p-6">
       <div className="flex items-center justify-between gap-3 mb-3">
@@ -44,19 +40,28 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
           </button>
         </div>
       </div>
+      <CodeBlock code={code} highlightName={highlightName} />
+    </div>
+  );
+}
 
-      <div className="rounded-lg border border-ink bg-ink overflow-hidden">
-        <pre className="py-3 text-[0.8rem] leading-[1.7] font-mono">
-          {lines.map((line, i) => (
-            <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay/25" : ""}`}>
-              <span className="select-none shrink-0 w-9 pr-3 text-right text-[#56534a]">{line.trim() ? i + 1 : ""}</span>
-              <code className="flex-1 pr-5 whitespace-pre-wrap break-words text-paper/90">
-                <Tokens line={line} />
-              </code>
-            </div>
-          ))}
-        </pre>
-      </div>
+/** Just the dark, line-numbered, tokenised code block — reused by the Code view. */
+export function CodeBlock({ code, highlightName }: { code: string; highlightName?: string }) {
+  const lines = code.split("\n");
+  const isHi = (line: string) =>
+    !!highlightName && (line.trimStart().startsWith(`${highlightName} =`) || line.trimStart().startsWith(`${highlightName}  #`) || line.trimStart() === highlightName);
+  return (
+    <div className="rounded-lg border border-ink bg-ink overflow-hidden">
+      <pre className="py-3 text-[0.8rem] leading-[1.7] font-mono">
+        {lines.map((line, i) => (
+          <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay/25" : ""}`}>
+            <span className="select-none shrink-0 w-9 pr-3 text-right text-[#56534a]">{line.trim() ? i + 1 : ""}</span>
+            <code className="flex-1 pr-5 whitespace-pre-wrap break-words text-paper/90">
+              <Tokens line={line} />
+            </code>
+          </div>
+        ))}
+      </pre>
     </div>
   );
 }

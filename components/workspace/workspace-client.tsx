@@ -22,6 +22,7 @@ import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
+import { CodeView } from "@/components/workspace/code-view";
 import { ContractRail } from "@/components/workspace/contract-rail";
 import { PromotePanel } from "@/components/workspace/promote-panel";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
@@ -48,6 +49,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
   const [openPin, setOpenPin] = useState<string | null>(null); // the expanded contract-rail pin
+  const [view, setView] = useState<"canvas" | "code">(bundle.initialCodeView ? "code" : "canvas"); // the canvas vs the code behind it
   const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
@@ -383,6 +385,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           getConversation={getConversation}
           canPromote={!!bundle.recipe && live}
           onPromote={() => setPromoting(true)}
+          view={view}
+          onView={setView}
         />
         <ContractRail
           pins={pins}
@@ -395,29 +399,33 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
-        <Canvas
-          canvas={canvas}
-          onFlashPin={setFlashedPin}
-          graph={graph}
-          labels={labels}
-          producerOps={producerOps}
-          resultSpecs={resultSpecs}
-          datasets={bundle.datasets}
-          concepts={bundle.concepts}
-          variants={variants}
-          building={building}
-          inFlightId={inFlightId}
-          selectedNodeId={selectedNodeId}
-          onPickData={pickData}
-          drawer={drawer}
-          drawerTab={bundle.initialDrawerTab}
-          onInspectNode={inspectNode}
-          onInspectEdge={inspectEdge}
-          onCompare={compare}
-          onCloseDrawer={closeDrawer}
-          onPromote={promote}
-          onFork={openFork}
-        />
+        {view === "code" ? (
+          <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} />
+        ) : (
+          <Canvas
+            canvas={canvas}
+            onFlashPin={setFlashedPin}
+            graph={graph}
+            labels={labels}
+            producerOps={producerOps}
+            resultSpecs={resultSpecs}
+            datasets={bundle.datasets}
+            concepts={bundle.concepts}
+            variants={variants}
+            building={building}
+            inFlightId={inFlightId}
+            selectedNodeId={selectedNodeId}
+            onPickData={pickData}
+            drawer={drawer}
+            drawerTab={bundle.initialDrawerTab}
+            onInspectNode={inspectNode}
+            onInspectEdge={inspectEdge}
+            onCompare={compare}
+            onCloseDrawer={closeDrawer}
+            onPromote={promote}
+            onFork={openFork}
+          />
+        )}
       </div>
       {promoting && bundle.recipe && (
         <PromotePanel

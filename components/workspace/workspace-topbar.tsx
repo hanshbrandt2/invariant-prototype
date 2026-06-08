@@ -18,6 +18,8 @@ export function WorkspaceTopBar({
   getConversation,
   canPromote,
   onPromote,
+  view,
+  onView,
 }: {
   workspaceName: string;
   live: boolean;
@@ -27,6 +29,8 @@ export function WorkspaceTopBar({
   getConversation: () => string;
   canPromote?: boolean;
   onPromote?: () => void;
+  view?: "canvas" | "code";
+  onView?: (v: "canvas" | "code") => void;
 }) {
   const { balance } = useCredits();
 
@@ -45,6 +49,21 @@ export function WorkspaceTopBar({
           <span className="text-faint">/</span>
           <span className="font-mono text-[0.92rem] text-ink truncate">{workspaceName}</span>
         </div>
+
+        {/* the two views of the workspace: the canvas, and the code behind it */}
+        {live && view && onView && (
+          <div className="inline-flex shrink-0 border border-hairline-2 overflow-hidden font-mono text-[0.64rem] uppercase tracking-[0.1em]">
+            {(["canvas", "code"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => onView(v)}
+                className={`px-3 py-1 transition-colors ${view === v ? "bg-ink text-paper" : "text-muted hover:text-ink"}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2.5 shrink-0">
