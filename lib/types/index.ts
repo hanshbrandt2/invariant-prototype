@@ -422,12 +422,13 @@ export interface RecipeRun {
  *  artifact is a file under its stage folder; `nodeId` links it back to the
  *  graph node so canvas ⟷ file selection stays in sync. */
 export interface ProjectFile {
-  path: string; // "features/zscore_20.py"
-  folder: string; // "features" ("" for project root)
-  name: string; // "zscore_20.py"
+  path: string; // "invariant_research/features.py"
+  folder: string; // "invariant_research" ("" for project root)
+  name: string; // "features.py"
   lang: "python" | "yaml" | "text";
   code: string;
-  nodeId?: string; // the artifact this file is
+  nodeId?: string; // the single artifact this file is (when 1:1, e.g. a result spec)
+  nodeIds?: string[]; // every artifact whose code lives in this module (grouped modules)
 }
 
 /** The simulated agentic run — streams like a build, but can HALT when an

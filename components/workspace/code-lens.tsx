@@ -45,20 +45,20 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
   );
 }
 
-/* ── syntax theme (One-Dark-ish, on the warm-dark editor bg) ───────────────── */
+/* ── syntax theme (restrained, editorial — low-chroma, on warm paper) ──────── */
 type Cls = "default" | "comment" | "string" | "number" | "keyword" | "fn" | "type" | "builtin" | "decorator" | "op" | "punct";
 const COLOR: Record<Cls, string> = {
-  default: "#c8c2b6",
-  comment: "#6b665a",
-  string: "#98c379",
-  number: "#d19a66",
-  keyword: "#c678dd",
-  fn: "#61afef",
-  type: "#56b6c2",
-  builtin: "#e5c07b",
-  decorator: "#e5c07b",
-  op: "#9aa0a6",
-  punct: "#8f8a7c",
+  default: "#3a3833",
+  comment: "#A89F8C",
+  string: "#5f7330",
+  number: "#9a6a2f",
+  keyword: "#B0432A",
+  fn: "#3a5a78",
+  type: "#2f6d62",
+  builtin: "#8a6d3a",
+  decorator: "#8a6d3a",
+  op: "#8a8478",
+  punct: "#9a948a",
 };
 const KEYWORDS = new Set(["def", "return", "import", "from", "if", "elif", "else", "for", "while", "in", "as", "with", "class", "lambda", "None", "True", "False", "and", "or", "not", "is", "try", "except", "finally", "raise", "yield", "assert", "pass", "break", "continue", "global", "nonlocal", "del", "async", "await"]);
 const BUILTINS = new Set(["print", "len", "range", "list", "dict", "set", "tuple", "int", "float", "str", "bool", "abs", "min", "max", "sum", "round", "sorted", "enumerate", "zip", "map", "filter", "open", "load"]);
@@ -125,14 +125,17 @@ function tokenize(code: string): Tok[][] {
 export function CodeBlock({ code, highlightName, flush }: { code: string; highlightName?: string; flush?: boolean }) {
   const lines = code.split("\n");
   const tokens = tokenize(code);
-  const isHi = (line: string) =>
-    !!highlightName && (line.trimStart().startsWith(`${highlightName} =`) || line.trimStart().startsWith(`${highlightName}  #`) || line.trimStart() === highlightName);
+  const isHi = (line: string) => {
+    if (!highlightName) return false;
+    const t = line.trimStart();
+    return t.startsWith(`def ${highlightName}(`) || t.startsWith(`${highlightName} =`) || t.startsWith(`${highlightName}  #`) || t === highlightName;
+  };
   return (
-    <div className={flush ? "bg-ink min-h-full" : "rounded-lg border border-ink bg-ink overflow-hidden"}>
-      <pre className="py-2.5 text-[0.72rem] leading-[1.55] font-mono">
+    <div className={flush ? "bg-[#FBF9F4] min-h-full" : "rounded-lg border border-hairline bg-[#FBF9F4] overflow-hidden"}>
+      <pre className="py-2.5 text-[0.72rem] leading-[1.6] font-mono">
         {lines.map((line, i) => (
-          <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay/20" : ""}`}>
-            <span className="select-none shrink-0 w-10 pr-3 text-right text-[0.66rem] text-[#4f4c44] tabular-nums">{line.trim() ? i + 1 : ""}</span>
+          <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay-wash" : ""}`}>
+            <span className="select-none shrink-0 w-10 pr-3 text-right text-[0.66rem] text-[#B5AFA2] tabular-nums">{line.trim() ? i + 1 : ""}</span>
             <code className="flex-1 pr-5 whitespace-pre-wrap break-words">
               {tokens[i].map((t, j) => (
                 <span key={j} style={{ color: COLOR[t.cls], fontStyle: t.cls === "comment" ? "italic" : undefined }}>{t.text}</span>
