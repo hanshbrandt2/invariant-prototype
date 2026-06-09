@@ -18,6 +18,7 @@ export function WorkspaceTopBar({
   onToggleChat,
   getScript,
   getConversation,
+  getProject,
   canPromote,
   onPromote,
   lens,
@@ -29,6 +30,7 @@ export function WorkspaceTopBar({
   onToggleChat: () => void;
   getScript: () => string;
   getConversation: () => string;
+  getProject?: () => import("@/lib/zip").ZipEntry[];
   canPromote?: boolean;
   onPromote?: () => void;
   lens?: Lens;
@@ -78,7 +80,7 @@ export function WorkspaceTopBar({
             promote ⚙
           </button>
         )}
-        {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} />}
+        {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} getProject={getProject} />}
         <div className="flex items-center gap-2 rounded-lg border border-hairline bg-paper px-3 py-1.5 " title="credit balance — ticks down as you build">
           <span className="eyebrow">credits</span>
           <span className={`font-mono text-[0.85rem] tabular-nums transition-colors ${balance < 10 ? "text-clay" : "text-ink"}`}>{balance.toFixed(1)}</span>

@@ -1,16 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { zipSync, type ZipEntry } from "@/lib/zip";
 
-/** Trigger a client-side file download from a string (no backend). */
-function download(name: string, content: string, type = "text/plain") {
-  const blob = new Blob([content], { type });
+/** Trigger a client-side file download from a Blob (no backend). */
+function downloadBlob(name: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Trigger a client-side file download from a string (no backend). */
+function download(name: string, content: string, type = "text/plain") {
+  downloadBlob(name, new Blob([content], { type }));
 }
 
 /**
@@ -23,10 +28,12 @@ export function ExportMenu({
   workspaceName,
   getScript,
   getConversation,
+  getProject,
 }: {
   workspaceName: string;
   getScript: () => string;
   getConversation: () => string;
+  getProject?: () => ZipEntry[];
 }) {
   const [open, setOpen] = useState(false);
   const [ghNote, setGhNote] = useState(false);
@@ -57,14 +64,26 @@ export function ExportMenu({
 
       {open && (
         <div className="absolute right-0 top-full mt-1.5 w-64 rounded-lg bg-white  border border-hairline overflow-hidden z-40">
+          {getProject && (
+            <button
+              onClick={() => { downloadBlob(`${slug}.zip`, zipSync(getProject())); setOpen(false); }}
+              className="flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left"
+            >
+              <span className="font-mono text-[0.7rem] text-clay mt-0.5">.zip</span>
+              <span className="min-w-0">
+                <span className="block text-[0.85rem] text-ink">Project — full repo</span>
+                <span className="block font-mono text-[0.66rem] text-faint">every module + requirements — clone, pip install, run</span>
+              </span>
+            </button>
+          )}
           <button
             onClick={() => { download(`${slug}.py`, getScript(), "text/x-python"); setOpen(false); }}
-            className="flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left"
+            className={`flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left ${getProject ? "border-t border-hairline" : ""}`}
           >
             <span className="font-mono text-[0.7rem] text-clay mt-0.5">.py</span>
             <span className="min-w-0">
-              <span className="block text-[0.85rem] text-ink">Project script</span>
-              <span className="block font-mono text-[0.66rem] text-faint">the whole pipeline, reproducible</span>
+              <span className="block text-[0.85rem] text-ink">Pipeline only</span>
+              <span className="block font-mono text-[0.66rem] text-faint">pipeline.py, the whole DAG end-to-end</span>
             </span>
           </button>
           <button

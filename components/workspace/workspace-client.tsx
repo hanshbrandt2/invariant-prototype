@@ -18,6 +18,7 @@ import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
 import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk } from "@/lib/data";
+import { buildProject } from "@/lib/code-project";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
@@ -336,6 +337,12 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [graph, producerOps, bundle.workspaceName]
   );
 
+  // the whole runnable repo, for the .zip export (clone → pip install → run)
+  const getProject = useCallback(
+    () => buildProject(graph, producerOps, bundle.workspaceName).map((f) => ({ path: f.path, content: f.code })),
+    [graph, producerOps, bundle.workspaceName]
+  );
+
   const getConversation = useCallback(() => {
     const head = `# ${bundle.workspaceName} — conversation\n`;
     const body = turns
@@ -396,6 +403,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onToggleChat={() => setChatOpen((o) => !o)}
           getScript={getScript}
           getConversation={getConversation}
+          getProject={getProject}
           canPromote={!!bundle.recipe && live}
           onPromote={() => setPromoting(true)}
           lens={lens}
