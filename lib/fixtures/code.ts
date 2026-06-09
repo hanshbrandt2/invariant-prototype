@@ -363,6 +363,31 @@ export function buildCodeMap(sg: LineageSubgraph, producerOps: Record<string, st
   return map;
 }
 
+/** The key params that ride an operator, formatted for a call signature. */
+function opParams(child: Node, op: string): string[] {
+  const s = sp(child);
+  if (op === "rolling_zscore") return [`window=${num(s.window, 20)}`];
+  if (op === "coint_spread") return [`lookback=${num(s.lookback, 60)}`];
+  if (op === "lead") return [`periods=${num(s.periods, 5)}`];
+  if (op === "fit_model") return [`alpha=${num(s.alpha, 0.1)}`];
+  if (op === "evaluate_strategy" && s.policy) return [`policy="${s.policy}"`];
+  if (op === "stitch_contracts") return [s.roll ? `roll="${s.roll}"` : "", s.adjust ? `adjust="${s.adjust}"` : ""].filter(Boolean);
+  return [];
+}
+
+/** A readable one-line composition: `child = op(parents, params)` — the exact
+ *  pipeline.py expression that realises an edge. Ties a graph edge to its code. */
+export function callLine(child: Node, parents: Node[], op: string): string {
+  const args = [...parents.map((p) => p.name), ...opParams(child, op)].join(", ");
+  return `${child.name} = ${op || "compute"}(${args})`;
+}
+
+/** A compact edge label for the graph: the operator + its headline param. */
+export function opLabel(child: Node, op: string): string {
+  const p = opParams(child, op);
+  return p.length ? `${op} · ${p[0].replace(/^(\w+)=/, "")}` : op;
+}
+
 /** Standalone load snippet for a hosted dataset not yet in a lineage. */
 export function datasetCode(id: string): string {
   return [

@@ -122,7 +122,7 @@ export default async function WorkspacePage({
     initialDrawer: compare
       ? { type: "compare", nodeId: compare }
       : inspect?.startsWith("edge:")
-        ? (() => { const [, p, c] = inspect.split(/[:|]/); return { type: "edge" as const, parentId: p, childId: c }; })()
+        ? (() => { const [p, c] = inspect.slice(5).split("|"); return { type: "edge" as const, parentId: p, childId: c }; })()
         : inspect
           ? { type: "node", id: inspect }
           : undefined,

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Concept, HostedDataset, LineageSubgraph, Node, ResultSpec, VariantGroup } from "@/lib/types";
-import { genCodeMap, deriveValidator } from "@/lib/data";
+import { genCodeMap, deriveValidator, callLine } from "@/lib/data";
 import type { InspectTarget } from "@/components/workspace/types";
 import { InspectorShell } from "@/components/workspace/inspector/inspector-shell";
 import { EdgeInspector } from "@/components/workspace/inspector/edge-inspector";
@@ -197,14 +197,19 @@ export function InspectorDrawer({
     const child = byId[cur.childId];
     const edgeKind = graph.edges.find((e) => e.parentId === cur.parentId && e.childId === cur.childId)?.kind ?? "input_dependency";
     title = `${labels[cur.parentId] ?? parent?.name ?? "?"} → ${labels[cur.childId] ?? child?.name ?? "?"}`;
+    // the composition: the exact pipeline.py line that builds the child from all its inputs
+    const childOp = child ? producerOps[child.id] : undefined;
+    const childParents = child ? graph.edges.filter((e) => e.childId === child.id).map((e) => byId[e.parentId]).filter(Boolean) : [];
+    const composition = child && childOp && child.kind !== "dataset" && child.kind !== "raw-dataset" ? callLine(child, childParents, childOp) : undefined;
     body = (
       <EdgeInspector
         parent={parent}
         child={child}
         edgeKind={edgeKind}
-        op={child ? producerOps[child.id] : undefined}
+        op={childOp}
         parentLabel={labels[cur.parentId] ?? parent?.name ?? cur.parentId}
         childLabel={labels[cur.childId] ?? child?.name ?? cur.childId}
+        composition={composition}
         onOpenNode={openNode}
       />
     );

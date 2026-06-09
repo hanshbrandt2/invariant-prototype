@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Concept, LineageEdge, LineageSubgraph, NodeKind, Validator, VariantGroup } from "@/lib/types";
 import { STAGE_LANES, STAGE_OF_KIND } from "@/lib/types";
-import { knobForOp, deriveValidator } from "@/lib/data";
+import { knobForOp, deriveValidator, opLabel } from "@/lib/data";
 import { TrustBadge } from "@/components/workspace/trust-badge";
 
 /* ── geometry ──────────────────────────────────────────────────────────────
@@ -113,6 +113,7 @@ export function WorkflowGraph({
   onFork: (nodeId: string) => void;
 }) {
   const [hover, setHover] = useState<string | null>(null);
+  const [hoverEdge, setHoverEdge] = useState<number | null>(null);
   const [explain, setExplain] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [vp, setVp] = useState({ l: 0, t: 0, w: 0, h: 0 });
@@ -221,6 +222,7 @@ export function WorkflowGraph({
       const spineEdge = spine.has(e.parentId) && spine.has(e.childId);
       let d: string;
       let back = false;
+      let mid: [number, number];
       if (cl === pl) {
         // vertical chain within a lane — a straight hop, centre-to-centre,
         // between the facing edges of the two stacked cards
@@ -229,17 +231,21 @@ export function WorkflowGraph({
         const y0 = down ? top(e.parentId) + cardH(e.parentId) : top(e.parentId);
         const y1 = down ? top(e.childId) : top(e.childId) + cardH(e.childId);
         d = `M ${cxv} ${y0} L ${cxv} ${y1}`;
+        mid = [cxv, (y0 + y1) / 2];
       } else if (cl > pl) {
         const px = right(e.parentId), ccx = left(e.childId);
         if (cl - pl >= 2) {
           // skips a lane — drop into a routing band BELOW the cards, then rise
           const dipY = Math.max(py, cy) + CARD_H / 2 + 16;
           d = roundedOrtho([[px, py], [px + GUT, py], [px + GUT, dipY], [ccx - GUT, dipY], [ccx - GUT, cy], [ccx, cy]]);
+          mid = [(px + ccx) / 2, dipY];
         } else if (Math.abs(py - cy) < 1) {
           d = `M ${px} ${py} L ${ccx} ${cy}`; // straight — same row, next lane
+          mid = [(px + ccx) / 2, py];
         } else {
           const chX = (px + ccx) / 2; // elbow through the gutter channel
           d = roundedOrtho([[px, py], [chX, py], [chX, cy], [ccx, cy]]);
+          mid = [chX, (py + cy) / 2];
         }
       } else {
         // backward (a leak) — route up into a band ABOVE the cards, flagged
@@ -247,8 +253,12 @@ export function WorkflowGraph({
         const px = left(e.parentId), ccx = right(e.childId);
         const upY = Math.min(py, cy) - CARD_H / 2 - 16;
         d = roundedOrtho([[px, py], [px - GUT, py], [px - GUT, upY], [ccx + GUT, upY], [ccx + GUT, cy], [ccx, cy]]);
+        mid = [(px + ccx) / 2, upY];
       }
-      return { e, d, back, spineEdge };
+      // the transform this edge carries (the child's producing operator + param)
+      const childNode = byId[e.childId];
+      const label = childNode ? opLabel(childNode, producerOps[e.childId] ?? "") : "";
+      return { e, d, back, spineEdge, mid, label };
     });
 
     const width = PAD_X * 2 + STAGE_LANES.length * LANE_W;
@@ -383,6 +393,7 @@ export function WorkflowGraph({
                 const st = EDGE_STYLE[e.kind];
                 const litEdge = isLit(e.parentId) && isLit(e.childId);
                 const isUpEdge = active != null && (e.childId === active || up?.has(e.childId)) && (up?.has(e.parentId) ?? false);
+                const hovered = hoverEdge === i;
                 let stroke: string, w: number, op: number;
                 if (back) {
                   stroke = "var(--color-clay)"; w = 1.2; op = litEdge ? 1 : 0.45;
@@ -395,14 +406,18 @@ export function WorkflowGraph({
                   stroke = spineEdge ? "var(--color-ink-2)" : "var(--color-hairline-2)";
                   w = spineEdge ? 1.2 : 0.85; op = spineEdge ? 0.92 : 0.5;
                 }
+                if (hovered) { stroke = "var(--color-clay)"; w = Math.max(w, 1.8); op = 1; }
                 const marker = stroke.includes("clay") ? "ar-clay" : stroke.includes("ink") ? "ar-ink" : "ar-dim";
                 return (
                   <g key={i}>
                     <path d={d} fill="none" stroke={stroke} strokeWidth={w} strokeDasharray={back ? "4 3" : st.dash} opacity={op} markerEnd={`url(#${marker})`} />
                     {back && <title>look-ahead leak — reads from a later stage</title>}
-                    <path d={d} fill="none" stroke="transparent" strokeWidth={14} style={{ cursor: "pointer" }} onClick={() => onInspectEdge(e)}>
-                      <title>{`${st.label} — inspect dependency`}</title>
-                    </path>
+                    <path
+                      d={d} fill="none" stroke="transparent" strokeWidth={14} style={{ cursor: "pointer" }}
+                      onClick={() => onInspectEdge(e)}
+                      onMouseEnter={() => setHoverEdge(i)}
+                      onMouseLeave={() => setHoverEdge((h) => (h === i ? null : h))}
+                    />
                   </g>
                 );
               })}
@@ -472,6 +487,16 @@ export function WorkflowGraph({
                 </div>
               );
             })}
+
+            {/* edge hover — the transform this edge carries (op · param), at its midpoint */}
+            {hoverEdge != null && L.paths[hoverEdge]?.label && (
+              <div
+                className="absolute z-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap border border-clay/50 bg-clay-wash px-2 py-0.5 font-mono text-[0.58rem] text-clay-deep"
+                style={{ left: L.paths[hoverEdge].mid[0], top: L.paths[hoverEdge].mid[1] }}
+              >
+                {L.paths[hoverEdge].label}
+              </div>
+            )}
 
             {/* contextual concept caption — the "explain" overlay, on the hovered node */}
             {explain && hover && L.byId[hover] && concepts[L.byId[hover].kind]?.what && (

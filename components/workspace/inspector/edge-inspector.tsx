@@ -26,6 +26,7 @@ export function EdgeInspector({
   op,
   parentLabel,
   childLabel,
+  composition,
   onOpenNode,
 }: {
   parent?: Node;
@@ -34,6 +35,7 @@ export function EdgeInspector({
   op?: string;
   parentLabel: string;
   childLabel: string;
+  composition?: string; // the exact pipeline.py line that realises this edge
   onOpenNode: (id: string) => void;
 }) {
   const meta = EDGE_KIND[edgeKind];
@@ -54,7 +56,21 @@ export function EdgeInspector({
         <EndpointCard node={child} label={childLabel} onOpen={() => child && onOpenNode(child.id)} role="to" />
       </div>
 
-      <div className="mt-7 border border-hairline bg-paper px-5 py-4">
+      {/* the composition: the exact line of code this edge IS */}
+      {composition && (
+        <div className="mt-7">
+          <p className="eyebrow mb-2">how it composes · pipeline.py</p>
+          <pre className="border border-hairline bg-paper-2/50 px-4 py-3 overflow-x-auto font-mono text-[0.8rem] leading-relaxed text-ink">
+            <span className="text-faint">{parent?.name ?? "—"}</span>
+            <span className="text-faint"> → </span>
+            <span className="text-ink">{child?.name ?? "—"}</span>
+            {"\n"}
+            {composition}
+          </pre>
+        </div>
+      )}
+
+      <div className="mt-6 border border-hairline bg-paper px-5 py-4">
         <p className="eyebrow mb-2">what this dependency means</p>
         <p className="text-[0.95rem] leading-[1.7] text-ink-2">{meta.explain(parentLabel, childLabel)}</p>
       </div>
