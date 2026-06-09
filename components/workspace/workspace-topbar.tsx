@@ -21,6 +21,9 @@ export function WorkspaceTopBar({
   getProject,
   canPromote,
   onPromote,
+  canPublish,
+  published,
+  onPublish,
   lens,
   onLens,
 }: {
@@ -33,6 +36,9 @@ export function WorkspaceTopBar({
   getProject?: () => import("@/lib/zip").ZipEntry[];
   canPromote?: boolean;
   onPromote?: () => void;
+  canPublish?: boolean;
+  published?: boolean;
+  onPublish?: () => void;
   lens?: Lens;
   onLens?: (l: Lens) => void;
 }) {
@@ -78,6 +84,15 @@ export function WorkspaceTopBar({
             className="font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper transition-colors"
           >
             promote ⚙
+          </button>
+        )}
+        {canPublish && onPublish && (
+          <button
+            onClick={onPublish}
+            title="pin this finding as a read-only, citable artifact — sealed & shareable"
+            className={`font-mono text-[0.66rem] uppercase tracking-[0.1em] border px-3 py-1.5 transition-colors ${published ? "border-[#3B6D11] text-[#3B6D11] hover:bg-[#3B6D11] hover:text-paper" : "border-ink text-ink hover:bg-ink hover:text-paper"}`}
+          >
+            {published ? "published ✓" : "publish ⤴"}
           </button>
         )}
         {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} getProject={getProject} />}

@@ -26,6 +26,7 @@ import { Canvas } from "@/components/workspace/canvas";
 import { CodeView } from "@/components/workspace/code-view";
 import { ContractRail } from "@/components/workspace/contract-rail";
 import { PromotePanel } from "@/components/workspace/promote-panel";
+import { PublishPanel } from "@/components/workspace/publish-panel";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
@@ -82,6 +83,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // is the default; a deep-linked ?lens= or legacy ?view=code overrides it.
   const [lens, setLens] = useState<Lens>(bundle.initialLens ?? (bundle.initialCodeView ? "code" : "graph"));
   const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
+  // publish-a-finding: pin the terminal result as a read-only, citable artifact.
+  const [publishOpen, setPublishOpen] = useState(false);
+  const [published, setPublished] = useState(false);
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
   }, []);
@@ -418,6 +422,18 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [variants, reviseFrom]
   );
 
+  // publish the terminal result as a frozen, sealed, shareable finding.
+  const onPublishConfirm = useCallback(() => {
+    const r = graphRef.current.nodes.find((n) => n.kind === "result");
+    if (!r) return;
+    setPublished(true);
+    addTurn({
+      id: uid("pub"),
+      role: "system",
+      text: `✓ Published “${resultSpecs[r.id]?.friendlyName ?? r.name}” — pinned read-only at lineage ${r.lineageHash ?? ""}, as-of ${(r.asOfKnowledgeTime ?? "").slice(0, 10)}. Sealed: no-lookahead · reproducible. Frozen & shareable.`,
+    });
+  }, [resultSpecs, addTurn]);
+
   // export getters — computed lazily on click so they always reflect the latest
   // graph + conversation. The script is the terminal node's full reproducible code.
   const getScript = useCallback(
@@ -468,6 +484,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       void runAgenticPreview({ scope: ["new_data"], trigger: "on_demand", budget: 25, enabledAt: "" }, bundle.initialAgentic);
     }
     if (bundle.initialRevise) reviseFrom(bundle.initialRevise); // deep-link: open on a stale state
+    if (bundle.initialFinding) { setPublished(true); setPublishOpen(true); } // deep-link: the read-only published finding
+    else if (bundle.initialPublish) setPublishOpen(true); // deep-link: the publish panel (author mode, shows the gate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -478,6 +496,10 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // A stale graph can't be reproducible-by-construction, so the seal drops too.
   const resultNode = graph.nodes.find((n) => n.kind === "result");
   const sealOk = stale.size > 0 ? false : resultNode ? validatorOk(deriveValidator(resultNode, graph)) : true;
+  // why publish is gated, if it is — staleness first (actionable), else the harness.
+  const publishBlockedReason = stale.size > 0
+    ? `${stale.size} downstream ${stale.size === 1 ? "artifact is" : "artifacts are"} stale — rebuild first`
+    : !sealOk ? "the harness blocks this result (an invariant is violated)" : undefined;
 
   return (
     <div className="flex h-screen bg-paper">
@@ -496,6 +518,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           getProject={getProject}
           canPromote={!!bundle.recipe && live}
           onPromote={() => setPromoting(true)}
+          canPublish={!!resultNode && live}
+          published={published}
+          onPublish={() => setPublishOpen(true)}
           lens={lens}
           onLens={setLens}
         />
@@ -557,6 +582,19 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           />
         )}
       </div>
+      {publishOpen && resultNode && (
+        <PublishPanel
+          result={resultNode}
+          spec={resultSpecs[resultNode.id]}
+          validator={deriveValidator(resultNode, graph)}
+          sealOk={sealOk}
+          blockedReason={publishBlockedReason}
+          workspaceId={bundle.workspaceId}
+          published={published}
+          onPublish={onPublishConfirm}
+          onClose={() => setPublishOpen(false)}
+        />
+      )}
       {promoting && bundle.recipe && (
         <PromotePanel
           recipe={bundle.recipe}
