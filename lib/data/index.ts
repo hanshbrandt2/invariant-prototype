@@ -241,7 +241,7 @@ export function getDatasetCode(id: string): string {
 
 /** Sync codegen for the live (client-grown) graph — used by the Code lens.
  *  Re-exported through the data seam so components never import fixtures. */
-export { buildCodeMap as genCodeMap, datasetCode as genDatasetCode } from "@/lib/fixtures/code";
+export { buildCodeMap as genCodeMap, datasetCode as genDatasetCode, buildPipeline } from "@/lib/fixtures/code";
 
 /** Fork helpers (typed knobs, current value, generated metrics) — re-exported
  *  through the seam so components never import fixtures directly. */

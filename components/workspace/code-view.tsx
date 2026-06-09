@@ -29,10 +29,12 @@ export function CodeView({
   workspaceName: string;
   onSelectNode?: (id: string) => void; // clicking a file highlights its node back on the canvas
 }) {
-  const files = useMemo(() => buildProject(graph, producerOps), [graph, producerOps]);
+  const files = useMemo(() => buildProject(graph, producerOps, workspaceName), [graph, producerOps, workspaceName]);
   const byId = useMemo(() => Object.fromEntries(graph.nodes.map((n) => [n.id, n])), [graph]);
 
-  const initial = files.find((f) => f.nodeId === selectedNodeId)?.path ?? "pipeline.py";
+  // open the selected node's file if there is one; otherwise the runnable entrypoint
+  // (guard on selectedNodeId so we don't match the first file that simply has no nodeId)
+  const initial = (selectedNodeId && files.find((f) => f.nodeId === selectedNodeId)?.path) || "pipeline.py";
   const [path, setPath] = useState(initial);
   const [query, setQuery] = useState("");
   const file = files.find((f) => f.path === path) ?? files[0];

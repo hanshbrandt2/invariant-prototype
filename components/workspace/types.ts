@@ -45,11 +45,11 @@ export type InspectTarget =
   | { type: "compare"; nodeId: string };
 
 /**
- * The synthesis canvas is ONE surface — the live-building stage-laned graph,
- * with the terminal result promoted to an inline hero. `empty` is the
- * start-with-data invitation; `live` is the graph (it grows node-by-node).
- * Per-node detail opens in the slide-over inspector (the drawer), not by
- * switching the whole canvas — so there is no lens/focus on the canvas itself.
+ * The canvas PHASE: `empty` is the start-with-data invitation; `live` is the
+ * built analysis (it grows node-by-node as builds stream). How the live
+ * analysis is *told* is the orthogonal `Lens` (Result / Graph / Code /
+ * Concepts) — a top-level switcher. Per-node detail still opens in the
+ * slide-over inspector (the drawer), over whichever lens is showing.
  */
 export type CanvasState = { phase: "empty" } | { phase: "live" };
 

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useCredits } from "@/components/app/credits-context";
 import { ExportMenu } from "@/components/workspace/export-menu";
+import type { Lens } from "@/components/workspace/types";
 
 /**
- * The workspace top bar: breadcrumb + the export menu, the credit balance, and
- * the chat toggle. There is no lens switcher — the canvas below is one surface
- * (the stage-laned graph); node detail opens in the slide-over inspector.
+ * The workspace top bar: breadcrumb + the lens switcher, the export menu, the
+ * credit balance, and the chat toggle. The lens switcher tells the same analysis
+ * four ways (Result / Graph / Code / Concepts); node detail opens in the
+ * slide-over inspector over whichever lens is showing.
  */
 export function WorkspaceTopBar({
   workspaceName,
@@ -18,8 +20,8 @@ export function WorkspaceTopBar({
   getConversation,
   canPromote,
   onPromote,
-  view,
-  onView,
+  lens,
+  onLens,
 }: {
   workspaceName: string;
   live: boolean;
@@ -29,8 +31,8 @@ export function WorkspaceTopBar({
   getConversation: () => string;
   canPromote?: boolean;
   onPromote?: () => void;
-  view?: "canvas" | "code";
-  onView?: (v: "canvas" | "code") => void;
+  lens?: Lens;
+  onLens?: (l: Lens) => void;
 }) {
   const { balance } = useCredits();
 
@@ -50,16 +52,16 @@ export function WorkspaceTopBar({
           <span className="font-mono text-[0.92rem] text-ink truncate">{workspaceName}</span>
         </div>
 
-        {/* the two views of the workspace: the canvas, and the code behind it */}
-        {live && view && onView && (
+        {/* the four lenses: one analysis told four ways (a switcher, not stacked) */}
+        {live && lens && onLens && (
           <div className="inline-flex shrink-0 border border-hairline-2 overflow-hidden font-mono text-[0.64rem] uppercase tracking-[0.1em]">
-            {(["canvas", "code"] as const).map((v) => (
+            {(["result", "graph", "code", "concepts"] as const).map((l) => (
               <button
-                key={v}
-                onClick={() => onView(v)}
-                className={`px-3 py-1 transition-colors ${view === v ? "bg-ink text-paper" : "text-muted hover:text-ink"}`}
+                key={l}
+                onClick={() => onLens(l)}
+                className={`px-3 py-1 transition-colors ${lens === l ? "bg-ink text-paper" : "text-muted hover:text-ink"}`}
               >
-                {v}
+                {l}
               </button>
             ))}
           </div>

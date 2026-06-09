@@ -1,29 +1,26 @@
 import type { LineageSubgraph, Node, ProjectFile } from "@/lib/types";
-import { genCodeMap } from "@/lib/data";
+import {
+  buildCodeMap,
+  buildPipeline,
+  buildReadme,
+  buildConfigYaml,
+  buildSpecYaml,
+  REQUIREMENTS,
+  LOAD_PY,
+  GITIGNORE,
+  STAGE_FOLDER,
+} from "@/lib/fixtures/code";
 
 /**
- * The workspace as a reproducible code project — every artifact is a file under
- * its pipeline-stage folder, mirroring the canvas lanes, plus a runnable
- * `pipeline.py` (the whole DAG end-to-end) and `requirements.txt`. The Code view
- * browses this; clicking a graph node opens its file. Built from the live graph
- * + the same per-node codegen the inspector uses — nothing fabricated.
+ * The workspace as a REAL, runnable code project — every artifact is a Python
+ * module under its pipeline-stage folder (mirroring the canvas lanes), a
+ * `data/load.py` seam, a `pipeline.py` that runs the whole DAG end-to-end, the
+ * policies + result specs as YAML, and a pinned `requirements.txt`. The Code
+ * lens browses this; clicking a graph node opens its file. Built from the live
+ * graph + the same per-node codegen the inspector uses — nothing fabricated.
  */
 
-const FOLDER: Record<string, string> = {
-  dataset: "data",
-  "raw-dataset": "data",
-  universe: "data",
-  feature: "features",
-  matrix: "matrices",
-  target: "targets",
-  model: "models",
-  strategy: "models",
-  result: "results",
-  figure: "results",
-  policy: "policies",
-};
-
-export const FOLDER_ORDER = ["data", "features", "matrices", "targets", "models", "results", "policies"];
+export const FOLDER_ORDER = ["data", "features", "matrices", "targets", "models", "results", "policies", "specs"];
 
 function policyYaml(n: Node): string {
   const s = (n.spec ?? {}) as { policyClass?: string; intendedInvariant?: string; scopeOfApplicability?: string[]; reviewStatus?: string; author?: string };
@@ -41,35 +38,40 @@ function policyYaml(n: Node): string {
   ].join("\n");
 }
 
-export function buildProject(graph: LineageSubgraph, producerOps: Record<string, string>): ProjectFile[] {
-  const codeMap = genCodeMap(graph, producerOps);
+export function buildProject(graph: LineageSubgraph, producerOps: Record<string, string>, projectName = "pipeline"): ProjectFile[] {
+  const codeMap = buildCodeMap(graph, producerOps);
   const files: ProjectFile[] = [];
+
+  // per-dataset + per-artifact modules (and policies as YAML), by stage folder
   for (const n of graph.nodes) {
-    const folder = FOLDER[n.kind];
+    const folder = STAGE_FOLDER[n.kind];
     if (!folder) continue; // operators / unknown kinds aren't files
-    const isPolicy = n.kind === "policy";
-    const lang: ProjectFile["lang"] = isPolicy ? "yaml" : "python";
-    const name = `${n.name}.${isPolicy ? "yaml" : "py"}`;
-    const code = isPolicy ? policyYaml(n) : codeMap[n.id] ?? `# ${n.name}\n# (no code generated for this artifact yet)\n`;
-    files.push({ path: `${folder}/${name}`, folder, name, lang, code, nodeId: n.id });
+    if (n.kind === "policy") {
+      files.push({ path: `policies/${n.name}.yaml`, folder: "policies", name: `${n.name}.yaml`, lang: "yaml", code: policyYaml(n), nodeId: n.id });
+      continue;
+    }
+    const code = codeMap[n.id];
+    if (code == null) continue;
+    files.push({ path: `${folder}/${n.name}.py`, folder, name: `${n.name}.py`, lang: "python", code, nodeId: n.id });
   }
-  // pipeline.py — the whole DAG, runnable end to end (the terminal result's code
-  // already threads every upstream step).
+
+  // each result's spec, as a config file alongside the code
+  for (const n of graph.nodes) {
+    if (n.kind === "result") {
+      files.push({ path: `specs/${n.name}.yaml`, folder: "specs", name: `${n.name}.yaml`, lang: "yaml", code: buildSpecYaml(n), nodeId: n.id });
+    }
+  }
+
+  // the one data seam
+  files.push({ path: "data/load.py", folder: "data", name: "load.py", lang: "python", code: LOAD_PY });
+
+  // project root — runnable entrypoint + deps + config + readme
   const terminal = [...graph.nodes].reverse().find((n) => n.kind === "result") ?? graph.nodes[graph.nodes.length - 1];
-  files.push({
-    path: "pipeline.py",
-    folder: "",
-    name: "pipeline.py",
-    lang: "python",
-    code: codeMap[terminal?.id ?? ""] ?? "# the full pipeline — build something first\n",
-    nodeId: terminal?.id,
-  });
-  files.push({
-    path: "requirements.txt",
-    folder: "",
-    name: "requirements.txt",
-    lang: "text",
-    code: "polars>=0.20\nnumpy>=1.26\nscikit-learn>=1.4\n",
-  });
+  files.push({ path: "pipeline.py", folder: "", name: "pipeline.py", lang: "python", code: buildPipeline(graph, producerOps, projectName), nodeId: terminal?.id });
+  files.push({ path: "requirements.txt", folder: "", name: "requirements.txt", lang: "text", code: REQUIREMENTS });
+  files.push({ path: "config.yaml", folder: "", name: "config.yaml", lang: "yaml", code: buildConfigYaml(graph) });
+  files.push({ path: "README.md", folder: "", name: "README.md", lang: "text", code: buildReadme(projectName, graph) });
+  files.push({ path: ".gitignore", folder: "", name: ".gitignore", lang: "text", code: GITIGNORE });
+
   return files;
 }

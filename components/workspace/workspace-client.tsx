@@ -17,9 +17,9 @@ import type {
 import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
-import { knobForOp, inferCurrent, genMetrics, genCodeMap, deriveValidator, validatorOk } from "@/lib/data";
+import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk } from "@/lib/data";
 import type { BuildPlan } from "@/lib/sim/plan";
-import type { WorkspaceBundle, CanvasState, InspectTarget } from "@/components/workspace/types";
+import type { WorkspaceBundle, CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
 import { CodeView } from "@/components/workspace/code-view";
@@ -49,7 +49,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
   const [openPin, setOpenPin] = useState<string | null>(null); // the expanded contract-rail pin
-  const [view, setView] = useState<"canvas" | "code">(bundle.initialCodeView ? "code" : "canvas"); // the canvas vs the code behind it
+  // the active lens — one analysis told four ways. The Graph is the hero, so it
+  // is the default; a deep-linked ?lens= or legacy ?view=code overrides it.
+  const [lens, setLens] = useState<Lens>(bundle.initialLens ?? (bundle.initialCodeView ? "code" : "graph"));
   const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
@@ -329,12 +331,10 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
 
   // export getters — computed lazily on click so they always reflect the latest
   // graph + conversation. The script is the terminal node's full reproducible code.
-  const getScript = useCallback(() => {
-    const cm = genCodeMap(graph, producerOps);
-    const terminal = [...graph.nodes].reverse().find((n) => n.kind === "result") ?? graph.nodes[graph.nodes.length - 1];
-    const code = cm[terminal?.id ?? ""] ?? cm[graph.nodes[graph.nodes.length - 1]?.id ?? ""] ?? "# nothing to reproduce yet";
-    return `# ${bundle.workspaceName} — reproducible pipeline\n# exported from Invariant · ${graph.nodes.length} artifacts\n\n${code}\n`;
-  }, [graph, producerOps, bundle.workspaceName]);
+  const getScript = useCallback(
+    () => buildPipeline(graph, producerOps, bundle.workspaceName),
+    [graph, producerOps, bundle.workspaceName]
+  );
 
   const getConversation = useCallback(() => {
     const head = `# ${bundle.workspaceName} — conversation\n`;
@@ -398,8 +398,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           getConversation={getConversation}
           canPromote={!!bundle.recipe && live}
           onPromote={() => setPromoting(true)}
-          view={view}
-          onView={setView}
+          lens={lens}
+          onLens={setLens}
         />
         <ContractRail
           pins={pins}
@@ -412,13 +412,15 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
-        {view === "code" ? (
+        {lens === "code" ? (
           <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} onSelectNode={inspectNode} />
         ) : (
           <Canvas
             canvas={canvas}
+            lens={lens}
+            workspaceName={bundle.workspaceName}
             onFlashPin={setFlashedPin}
-            onOpenCode={() => setView("code")}
+            onOpenCode={() => setLens("code")}
             graph={graph}
             labels={labels}
             producerOps={producerOps}

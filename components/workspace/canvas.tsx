@@ -4,17 +4,22 @@ import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, 
 import type { CanvasState, InspectTarget } from "@/components/workspace/types";
 import { EmptyCanvas } from "@/components/workspace/empty-canvas";
 import { WorkflowGraph } from "@/components/workspace/workflow-graph";
+import { WorkflowNarrative } from "@/components/workspace/workflow-narrative";
+import { ConceptsLens } from "@/components/workspace/concepts-lens";
+import { KIND_NOUN } from "@/components/workspace/inspector/face-types";
 import { InspectorDrawer } from "@/components/workspace/inspector/inspector-drawer";
 
 /**
- * The synthesis canvas: ONE surface. When live it is the stage-laned graph that
- * builds node-by-node, with the terminal result promoted to an inline hero.
- * Per-node detail slides in from the right (the inspector drawer) over the graph
- * — no lens switcher, no full-canvas mode swap. Code lives in the inspector's
- * Code tab + export; concepts are contextual.
+ * The canvas frame: when live it tells the analysis through the chosen non-code
+ * lens — Graph (the stage-laned DAG that builds node-by-node), Result (the
+ * finding-led scrollable narrative), or Concepts (what each piece is). Per-node
+ * detail slides in from the right (the inspector drawer) over whichever lens is
+ * showing. The Code lens is a separate full-pane surface (CodeView) above this.
  */
 export function Canvas({
   canvas,
+  lens,
+  workspaceName,
   graph,
   labels,
   producerOps,
@@ -38,6 +43,8 @@ export function Canvas({
   onOpenCode,
 }: {
   canvas: CanvasState;
+  lens: "result" | "graph" | "concepts";
+  workspaceName: string;
   graph: LineageSubgraph;
   labels: Record<string, string>;
   producerOps: Record<string, string>;
@@ -62,11 +69,47 @@ export function Canvas({
 }) {
   const datasetList: HostedDataset[] = Array.from(new Map(Object.values(datasets).map((d) => [d.id, d])).values());
 
-  const content =
-    canvas.phase === "empty" ? (
-      <EmptyCanvas datasets={datasetList} onPickData={onPickData} />
-    ) : graph.nodes.length === 0 ? (
+  // the live analysis told through the chosen lens (Graph / Result / Concepts)
+  const liveContent =
+    graph.nodes.length === 0 ? (
       <div className="p-10 font-mono text-sm text-muted">{building ? "building the graph…" : "no graph yet — start a build."}</div>
+    ) : lens === "result" ? (
+      <WorkflowNarrative
+        graph={graph}
+        labels={labels}
+        producerOps={producerOps}
+        resultSpecs={resultSpecs}
+        datasets={datasets}
+        building={building}
+        buildingLabel={inFlightId ? labels[inFlightId] : undefined}
+        buildingOp={inFlightId ? producerOps[inFlightId] : undefined}
+        workspaceName={workspaceName}
+        onOpenNode={onInspectNode}
+      />
+    ) : lens === "concepts" ? (
+      (() => {
+        const focus =
+          (selectedNodeId && graph.nodes.find((n) => n.id === selectedNodeId)) ||
+          [...graph.nodes].reverse().find((n) => n.kind === "result") ||
+          graph.nodes[graph.nodes.length - 1];
+        const seen = new Set<string>();
+        const pieces = graph.nodes
+          .filter((n) => {
+            if (seen.has(n.kind) || !concepts[n.kind]) return false;
+            seen.add(n.kind);
+            return true;
+          })
+          .map((n) => ({ kind: KIND_NOUN[n.kind] ?? n.kind, what: concepts[n.kind].what }));
+        return (
+          <ConceptsLens
+            focusLabel={labels[focus.id] ?? focus.name}
+            focusKind={KIND_NOUN[focus.kind] ?? focus.kind}
+            op={producerOps[focus.id]}
+            concept={concepts[focus.kind]}
+            pieces={pieces}
+          />
+        );
+      })()
     ) : (
       <WorkflowGraph
         graph={graph}
@@ -83,9 +126,13 @@ export function Canvas({
       />
     );
 
+  const content = canvas.phase === "empty" ? <EmptyCanvas datasets={datasetList} onPickData={onPickData} /> : liveContent;
+  // the graph manages its own pan/zoom; the scrollable narrative/concepts need overflow
+  const scroll = canvas.phase === "live" && lens !== "graph";
+
   return (
     <div className="rise flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-lg border border-hairline bg-white  overflow-hidden" style={{ animationDelay: "110ms" }}>
-      <div className="absolute inset-0 overflow-hidden">{content}</div>
+      <div className={`absolute inset-0 ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>{content}</div>
       {drawer && (
         <InspectorDrawer
           key={JSON.stringify(drawer)}
