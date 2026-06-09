@@ -45,13 +45,15 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
   );
 }
 
-/** Just the dark, line-numbered, tokenised code block — reused by the Code view. */
-export function CodeBlock({ code, highlightName }: { code: string; highlightName?: string }) {
+/** Just the dark, line-numbered, tokenised code block — reused by the Code view.
+ *  `flush` fills its container edge-to-edge (for the dark Code-lens pane) instead
+ *  of being a rounded card (the inspector's Code tab). */
+export function CodeBlock({ code, highlightName, flush }: { code: string; highlightName?: string; flush?: boolean }) {
   const lines = code.split("\n");
   const isHi = (line: string) =>
     !!highlightName && (line.trimStart().startsWith(`${highlightName} =`) || line.trimStart().startsWith(`${highlightName}  #`) || line.trimStart() === highlightName);
   return (
-    <div className="rounded-lg border border-ink bg-ink overflow-hidden">
+    <div className={flush ? "bg-ink min-h-full" : "rounded-lg border border-ink bg-ink overflow-hidden"}>
       <pre className="py-3 text-[0.8rem] leading-[1.7] font-mono">
         {lines.map((line, i) => (
           <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay/25" : ""}`}>
