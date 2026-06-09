@@ -32,6 +32,7 @@ export interface WorkspaceBundle {
   initialDrawer?: InspectTarget; // deep-link the inspector drawer
   initialDrawerTab?: "overview" | "spec" | "contract" | "checks" | "code" | "lineage"; // deep-link the drawer tab
   initialFork?: string; // deep-link the fork dialog (node id)
+  initialRevise?: string; // deep-link: mark this node changed → downstream stale (reactive demo)
 }
 
 /** The four ways the same analysis is told (a switcher, not stacked sections). */

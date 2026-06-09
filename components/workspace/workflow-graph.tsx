@@ -95,6 +95,7 @@ export function WorkflowGraph({
   variants,
   selectedId,
   inFlightId,
+  staleIds,
   onInspectNode,
   onInspectEdge,
   onCompare,
@@ -107,6 +108,7 @@ export function WorkflowGraph({
   variants: Record<string, VariantGroup>;
   selectedId?: string;
   inFlightId?: string | null;
+  staleIds?: Set<string>;
   onInspectNode: (id: string) => void;
   onInspectEdge: (e: LineageEdge) => void;
   onCompare: (nodeId: string) => void;
@@ -431,6 +433,7 @@ export function WorkflowGraph({
               const isAncestor = up?.has(n.id) ?? false;
               const isDescendant = down?.has(n.id) ?? false;
               const isBuilding = n.id === inFlightId;
+              const isStale = staleIds?.has(n.id) ?? false;
               const vg = variants[n.id];
               const knob = knobForOp(producerOps[n.id]);
               const policies = (n.policyRefs ?? []).map((pid) => labels[pid] ?? L.byId[pid]?.name ?? pid.split(":")[1]);
@@ -443,11 +446,13 @@ export function WorkflowGraph({
                 : onSpine ? "border-ink-2"
                 : "border-hairline-2";
               const fill = isDescendant && active ? "bg-clay/[0.09]" : onSpine ? "bg-paper" : "bg-paper-2/50";
+              // stale wins the border treatment: dashed clay = "out of date until rebuilt"
+              const staleCls = isStale ? "border-dashed !border-clay/70 bg-clay-wash/40" : "";
               return (
                 <div
                   key={n.id}
                   ref={(el) => { nodeRefs.current[n.id] = el; }}
-                  className={`group node-snap absolute flex flex-col overflow-hidden border transition-opacity ${fill} ${ring} ${lit ? "opacity-100" : "opacity-25"} ${isBuilding ? "node-building" : ""}`}
+                  className={`group node-snap absolute flex flex-col overflow-hidden border transition-opacity ${fill} ${ring} ${staleCls} ${lit ? "opacity-100" : "opacity-25"} ${isBuilding ? "node-building" : ""}`}
                   style={{ left: L.left(n.id), top: L.top(n.id), width: CARD_W, height: L.cardH(n.id), animationDelay: `${Math.min(laneOf(n.kind) * 50, 300)}ms` }}
                   onMouseEnter={() => setHover(n.id)}
                   onMouseLeave={() => setHover(null)}
@@ -457,8 +462,9 @@ export function WorkflowGraph({
                     <div className="flex items-center justify-between gap-1.5">
                       <span className={`text-[0.74rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{cleanName(labels[n.id] ?? n.name)}</span>
                       <span className="flex items-center gap-1 shrink-0">
+                        {isStale && <span title="out of date — rebuild to restore reproducibility" className="font-mono text-[0.5rem] uppercase tracking-[0.06em] leading-none text-clay">stale</span>}
                         {policies.length > 0 && <span title={policies.join(" · ")} className="text-[0.62rem] leading-none text-clay">⚖</span>}
-                        {v && <TrustBadge validator={v} zoom="node" />}
+                        {!isStale && v && <TrustBadge validator={v} zoom="node" />}
                       </span>
                     </div>
                     {/* line 2 — operator · grain · downstream (always visible) */}

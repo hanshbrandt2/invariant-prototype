@@ -19,6 +19,7 @@ import { InspectorDrawer } from "@/components/workspace/inspector/inspector-draw
 export function Canvas({
   canvas,
   lens,
+  staleIds,
   workspaceName,
   graph,
   labels,
@@ -44,6 +45,7 @@ export function Canvas({
 }: {
   canvas: CanvasState;
   lens: "result" | "graph" | "concepts";
+  staleIds?: Set<string>;
   workspaceName: string;
   graph: LineageSubgraph;
   labels: Record<string, string>;
@@ -119,6 +121,7 @@ export function Canvas({
         variants={variants}
         selectedId={selectedNodeId}
         inFlightId={inFlightId}
+        staleIds={staleIds}
         onInspectNode={onInspectNode}
         onInspectEdge={onInspectEdge}
         onCompare={onCompare}

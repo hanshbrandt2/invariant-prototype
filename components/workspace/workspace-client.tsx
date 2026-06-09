@@ -30,6 +30,34 @@ import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
 
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** All artifacts reachable downstream of `id` over lineage edges (exclusive). */
+function descendantsOf(g: LineageSubgraph, id: string): Set<string> {
+  const out = new Set<string>();
+  const down = (n: string) => g.edges.forEach((e) => { if (e.parentId === n && !out.has(e.childId)) { out.add(e.childId); down(e.childId); } });
+  down(id);
+  return out;
+}
+
+/** Longest-path depth per node — used to rebuild a stale subgraph in dependency order. */
+function depthMap(g: LineageSubgraph): Record<string, number> {
+  const parents: Record<string, string[]> = {};
+  for (const n of g.nodes) parents[n.id] = [];
+  for (const e of g.edges) if (parents[e.childId]) parents[e.childId].push(e.parentId);
+  const d: Record<string, number> = {};
+  const visit = (id: string, seen: Set<string>): number => {
+    if (d[id] != null) return d[id];
+    if (seen.has(id)) return 0;
+    seen.add(id);
+    const ps = parents[id] ?? [];
+    d[id] = ps.length ? Math.max(...ps.map((p) => visit(p, seen))) + 1 : 0;
+    return d[id];
+  };
+  for (const n of g.nodes) visit(n.id, new Set());
+  return d;
+}
+
 export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const { debit } = useCredits();
   const { requireAuth } = useAuth();
@@ -61,6 +89,13 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [building, setBuilding] = useState(false);
   const [inFlightId, setInFlightId] = useState<string | null>(null);
   const [pendingPlan, setPendingPlan] = useState<{ turnId: string; plan: BuildPlan; prompt: string; datasetId?: string } | null>(null);
+
+  // reactive lineage: when an upstream artifact changes, every downstream artifact
+  // is STALE (no longer reflects its inputs) until rebuilt. `pendingMetric` is the
+  // new figure held back until the rebuild commits it — you don't get it for free.
+  const [stale, setStale] = useState<Set<string>>(new Set());
+  const [changed, setChanged] = useState<{ id: string; label: string } | null>(null);
+  const [pendingMetric, setPendingMetric] = useState<Record<string, number> | null>(null);
 
   // The synthesis canvas is one surface: empty (start-with-data) → live (the
   // stage-laned graph with the inline result hero). Node detail = the drawer.
@@ -314,20 +349,73 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [graph, variants, producerOps, debit]
   );
 
-  // promote a variant onto the spine: it becomes canonical, and the finding
-  // updates to its metrics (if the sweep carries any).
+  // ── reactive lineage ───────────────────────────────────────────────────────
+  // mark everything downstream of a changed artifact as stale + announce it.
+  const reviseFrom = useCallback(
+    (id: string, note?: string) => {
+      const g = graphRef.current;
+      const node = g.nodes.find((n) => n.id === id);
+      const desc = descendantsOf(g, id);
+      if (!desc.size) return;
+      const label = labels[id] ?? node?.name ?? id;
+      setStale(desc);
+      setChanged({ id, label });
+      setCanvas({ phase: "live" });
+      addTurn({
+        id: uid("stale"),
+        role: "system",
+        text: `⚠ ${label} changed${note ? ` (${note})` : ""} — ${desc.size} downstream ${desc.size === 1 ? "artifact is" : "artifacts are"} now stale (no longer reflect their inputs). Rebuild to restore reproducibility.`,
+      });
+    },
+    [labels, addTurn]
+  );
+
+  // rebuild ONLY the stale sub-lineage, in dependency order, then commit the held-
+  // back figure and clear staleness — the finding reflects its inputs again.
+  const rebuildStale = useCallback(async () => {
+    const ids = [...stale];
+    if (!ids.length || building) return;
+    const d = depthMap(graphRef.current);
+    const order = ids.slice().sort((a, b) => (d[a] ?? 0) - (d[b] ?? 0));
+    setBuilding(true);
+    setCanvas({ phase: "live" });
+    addTurn({ id: uid("rb"), role: "system", text: `⟲ Rebuilding ${ids.length} affected ${ids.length === 1 ? "artifact" : "artifacts"} — only the changed sub-lineage re-runs.` });
+    for (const id of order) {
+      setInFlightId(id);
+      await sleep(460);
+      debit(0.6);
+    }
+    setInFlightId(null);
+    if (pendingMetric) {
+      const result = graphRef.current.nodes.find((n) => n.kind === "result");
+      if (result) setResultSpecs((rs) => (rs[result.id] ? { ...rs, [result.id]: { ...rs[result.id], metrics: { ...rs[result.id].metrics, ...pendingMetric } } } : rs));
+    }
+    setPendingMetric(null);
+    setStale(new Set());
+    setChanged(null);
+    setBuilding(false);
+    const result = graphRef.current.nodes.find((n) => n.kind === "result");
+    addTurn({
+      id: uid("rb"),
+      role: "system",
+      text: `✓ Rebuilt ${ids.length} ${ids.length === 1 ? "artifact" : "artifacts"} — lineage re-pinned, the finding reflects its inputs again.`,
+      actions: result ? [{ type: "push_node", ref: result.id }] : undefined,
+    });
+  }, [stale, building, pendingMetric, debit, addTurn]);
+
+  // promote a variant onto the spine: changing the parameter doesn't silently
+  // re-number the finding — it makes the downstream stale; you rebuild to get
+  // (and own) the new figure.
   const promote = useCallback(
     (nodeId: string, value: string) => {
       const g = variants[nodeId];
       if (!g) return;
       setVariants((prev) => ({ ...prev, [nodeId]: { ...prev[nodeId], chosen: value } }));
-      const m = g.members.find((x) => x.value === value)?.metrics;
-      if (m) {
-        const result = graph.nodes.find((n) => n.kind === "result");
-        if (result) setResultSpecs((rs) => (rs[result.id] ? { ...rs, [result.id]: { ...rs[result.id], metrics: { ...rs[result.id].metrics, ...m } } } : rs));
-      }
+      setPendingMetric(g.members.find((x) => x.value === value)?.metrics ?? null);
+      setDrawer(null); // close the compare drawer so the stale graph is visible
+      reviseFrom(nodeId, `${g.param} → ${value}`);
     },
-    [variants, graph]
+    [variants, reviseFrom]
   );
 
   // export getters — computed lazily on click so they always reflect the latest
@@ -379,15 +467,17 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     } else if (bundle.initialAgentic) {
       void runAgenticPreview({ scope: ["new_data"], trigger: "on_demand", budget: 25, enabledAt: "" }, bundle.initialAgentic);
     }
+    if (bundle.initialRevise) reviseFrom(bundle.initialRevise); // deep-link: open on a stale state
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const live = canvas.phase === "live";
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;
-  // the integrity seal's verdict — the terminal result's harness verdict, honest
+  // the integrity seal's verdict — the terminal result's harness verdict, honest.
+  // A stale graph can't be reproducible-by-construction, so the seal drops too.
   const resultNode = graph.nodes.find((n) => n.kind === "result");
-  const sealOk = resultNode ? validatorOk(deriveValidator(resultNode, graph)) : true;
+  const sealOk = stale.size > 0 ? false : resultNode ? validatorOk(deriveValidator(resultNode, graph)) : true;
 
   return (
     <div className="flex h-screen bg-paper">
@@ -420,12 +510,28 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
+        {stale.size > 0 && (
+          <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 border-b border-clay/40 bg-clay-wash">
+            <span className="text-[0.82rem] text-clay-deep">
+              ⚠ {changed && <><span className="italic">{changed.label}</span> changed — </>}
+              {stale.size} downstream {stale.size === 1 ? "artifact is" : "artifacts are"} stale · the finding no longer reflects its inputs (not reproducible until rebuilt)
+            </span>
+            <button
+              onClick={() => void rebuildStale()}
+              disabled={building}
+              className="shrink-0 font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1 hover:bg-clay hover:text-paper transition-colors disabled:opacity-50"
+            >
+              {building ? "rebuilding…" : `rebuild ${stale.size} →`}
+            </button>
+          </div>
+        )}
         {lens === "code" ? (
           <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} onSelectNode={inspectNode} />
         ) : (
           <Canvas
             canvas={canvas}
             lens={lens}
+            staleIds={stale}
             workspaceName={bundle.workspaceName}
             onFlashPin={setFlashedPin}
             onOpenCode={() => setLens("code")}
