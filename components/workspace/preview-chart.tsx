@@ -15,7 +15,7 @@ export function PreviewChart({
   return (
     <div style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 8, right: 10, bottom: 0, left: -8 }}>
+        <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 4 }}>
           <XAxis
             dataKey="t"
             tick={{ fontFamily: "var(--font-jetbrains)", fontSize: 9, fill: "#9A9388" }}
@@ -27,8 +27,10 @@ export function PreviewChart({
             tick={{ fontFamily: "var(--font-jetbrains)", fontSize: 9, fill: "#9A9388" }}
             axisLine={false}
             tickLine={false}
-            width={38}
-            domain={["dataMin", "dataMax"]}
+            width={46}
+            allowDecimals={false}
+            tickFormatter={(v: number) => `${Math.round(v)}`}
+            domain={["auto", "auto"]}
           />
           <Tooltip
             contentStyle={{

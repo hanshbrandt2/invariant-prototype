@@ -99,41 +99,42 @@ export function WorkflowNarrative({
   const ok = validator ? validatorOk(validator) : false;
 
   return (
-    <div className="px-6 md:px-10 py-7 max-w-[760px] mx-auto">
+    <div className="px-6 md:px-8 py-7 max-w-[1080px] mx-auto">
       {/* finding — leads with a plain-language headline, the visual, human-labelled
           numbers, a calm trust mark, and the depth (graph / code) one click away */}
       {result && spec && (
-        <div className="border border-clay bg-paper mb-8">
-          <div className="px-5 pt-4 pb-3 border-b border-hairline">
+        <div className="border border-clay bg-paper mb-9">
+          <div className="px-6 pt-5 pb-4 border-b border-hairline">
             <p className="eyebrow text-clay">the finding</p>
-            <p className="mt-1.5 font-serif text-[1.3rem] leading-[1.4] text-ink max-w-[48ch]">{plainHeadline(spec)}</p>
+            <p className="mt-2 font-serif text-[1.5rem] leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
           </div>
-          <button onClick={() => onOpenNode(result.id)} className="block w-full text-left px-5 py-4 hover:bg-paper-2/40 transition-colors">
-            <div className="border border-hairline bg-paper p-3">
-              <PreviewChart data={equityCurve(spec.metrics)} height={150} />
-            </div>
-            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
+          <div className="grid md:grid-cols-12">
+            <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
+              <PreviewChart data={equityCurve(spec.metrics)} height={236} />
+              <p className="mt-2 font-mono text-[0.62rem] text-faint">cumulative return % · {spec.evalWindow.start} → {spec.evalWindow.end} · click to inspect</p>
+            </button>
+            <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
               {Object.entries(spec.metrics).slice(0, 4).map(([k, v]) => {
                 const lbl = PLAIN_LABEL[k];
                 return (
                   <div key={k}>
-                    <div className="font-mono text-[1.2rem] text-ink tabular-nums">{fmtMetric(k, v)}</div>
-                    <div className="mt-0.5 text-[0.72rem] text-muted">
+                    <div className="font-mono text-[1.45rem] text-ink tabular-nums leading-none">{fmtMetric(k, v)}</div>
+                    <div className="mt-1 text-[0.74rem] text-muted">
                       {lbl?.plain ?? METRIC_LABEL[k] ?? k}
                       {lbl?.jargon && <span className="font-mono text-[0.6rem] text-faint"> ({lbl.jargon})</span>}
                     </div>
                   </div>
                 );
               })}
+              {spec.nextProposal && (
+                <div className="mt-1 pt-3 border-t border-hairline">
+                  <p className="eyebrow text-clay mb-1">next move</p>
+                  <p className="text-[0.86rem] leading-relaxed text-ink-2">{spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}</p>
+                </div>
+              )}
             </div>
-            {spec.nextProposal && (
-              <p className="mt-4 text-[0.9rem] leading-relaxed text-ink-2">
-                <span className="font-mono text-[0.66rem] uppercase tracking-[0.12em] text-clay mr-2">next</span>
-                {spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}
-              </p>
-            )}
-          </button>
-          <div className="px-5 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
+          </div>
+          <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
             <span className={`font-mono text-[0.68rem] ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>
             {ok && <><span className="font-mono text-[0.66rem] text-clay-deep">🔒 no look-ahead</span><span className="font-mono text-[0.66rem] text-clay-deep">🔒 reproducible</span></>}
             {onOpenLens && (
@@ -146,7 +147,8 @@ export function WorkflowNarrative({
         </div>
       )}
 
-      <p className="eyebrow mb-4">the workflow{building ? " · building…" : ` · ${workspaceName}`}</p>
+      <div className="max-w-[680px]">
+      <p className="eyebrow mb-4">how it was built · {workspaceName}{building ? " · building…" : ""} <span className="text-faint normal-case tracking-normal">— or open the Graph lens to see the full lineage</span></p>
 
       {flow.length === 0 && !building && (
         <p className="text-[0.9rem] text-muted">nothing built yet — describe what to build in the conversation.</p>
@@ -175,6 +177,7 @@ export function WorkflowNarrative({
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );
