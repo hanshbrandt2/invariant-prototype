@@ -54,22 +54,33 @@ export function FindingsShelf({ seeded }: { seeded: PublishedFinding[] }) {
 }
 
 function FindingCard({ f, onOpen }: { f: PublishedFinding; onOpen: () => void }) {
+  const hero = f.stats?.[0];
+  const rest = f.stats?.slice(1) ?? [];
   return (
     <button onClick={onOpen} className="group flex flex-col text-left border border-hairline bg-paper p-4 hover:border-ink transition-colors">
-      <div className="flex items-start justify-between gap-2">
-        <span className="font-mono text-micro uppercase tracking-[0.12em] text-clay-deep bg-clay-wash border border-clay/30 px-1.5 py-0.5">{KIND_LABEL[f.kind ?? "strategy"]}</span>
-        {f.sealOk && <span className="shrink-0 font-mono text-micro uppercase tracking-[0.1em] text-[#3B6D11] border border-[#3B6D11]/40 px-1.5 py-0.5">✓ sealed</span>}
+      {/* one quiet mono meta line — kind · verified — neutral, not colored chips (L4) */}
+      <div className="flex items-center justify-between gap-2 font-mono text-micro uppercase tracking-[0.13em] text-faint">
+        <span>{KIND_LABEL[f.kind ?? "strategy"]}</span>
+        {f.sealOk && <span className="text-muted">verified</span>}
       </div>
 
-      <p className="mt-2.5 font-serif text-body leading-[1.42] text-ink min-h-[68px]">{f.headline ?? f.friendlyName}</p>
+      {/* one number leads the card (L1) */}
+      {hero && (
+        <div className="mt-3">
+          <div className="font-mono text-display text-ink tabular-nums leading-none">{hero.value}</div>
+          <div className="mt-1.5 font-mono text-meta uppercase tracking-[0.14em] text-muted">{hero.label}</div>
+        </div>
+      )}
 
-      {f.viz && <div className="mt-1 mb-1 overflow-hidden">{<FindingViz viz={f.viz} />}</div>}
+      <p className="mt-3 font-serif text-h3 leading-snug text-ink min-h-[46px]">{f.headline ?? f.friendlyName}</p>
 
-      {f.stats && f.stats.length > 0 && (
+      {f.viz && <div className="mt-2 mb-1 overflow-hidden">{<FindingViz viz={f.viz} />}</div>}
+
+      {rest.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-          {f.stats.map((s) => (
+          {rest.map((s) => (
             <div key={s.label}>
-              <div className="font-mono text-body text-ink tabular-nums leading-none">{s.value}</div>
+              <div className="font-mono text-body text-ink-2 tabular-nums leading-none">{s.value}</div>
               <div className="mt-0.5 text-meta text-muted">{s.label}</div>
             </div>
           ))}
@@ -77,10 +88,7 @@ function FindingCard({ f, onOpen }: { f: PublishedFinding; onOpen: () => void })
       )}
 
       <div className="mt-auto pt-3 flex items-end justify-between gap-2">
-        <div className="font-mono text-micro text-faint leading-relaxed">
-          <div>🔒 no-lookahead · reproducible</div>
-          <div>{f.workspaceName} · as-of {f.asOf ?? "—"}</div>
-        </div>
+        <span className="font-mono text-meta text-faint">{f.workspaceName} · as-of {f.asOf ?? "—"} · no-lookahead</span>
         <span className="shrink-0 font-mono text-meta uppercase tracking-[0.1em] text-clay group-hover:underline">open ▸</span>
       </div>
     </button>

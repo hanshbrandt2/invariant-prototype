@@ -84,7 +84,7 @@ export default async function DashboardPage({
       {!newUser && recipes.length > 0 && (
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-h2 font-semibold">Recipes</h2>
+            <h2 className="font-serif text-h2 font-semibold">Recipes <span className="font-mono text-meta text-faint">[{recipes.length}]</span></h2>
             <span className="eyebrow">saved workflows you can re-run</span>
           </div>
           <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
@@ -95,7 +95,7 @@ export default async function DashboardPage({
       {!newUser && findings.length > 0 && (
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-h2 font-semibold">Findings</h2>
+            <h2 className="font-serif text-h2 font-semibold">Findings <span className="font-mono text-meta text-faint">[{findings.length}]</span></h2>
             <span className="eyebrow">published results · verified</span>
           </div>
           <FindingsShelf seeded={findings} />

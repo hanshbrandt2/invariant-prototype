@@ -100,8 +100,8 @@ export function PublishPanel({
           {/* the seal strip — the proof that travels with the finding */}
           <div className="mt-6 border border-hairline bg-paper-2/50 px-4 py-3">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 font-mono text-meta">
-              <span className={sealOk ? "text-[#3B6D11]" : "text-clay"}>{sealOk ? "✓ validated" : "! blocked"}</span>
-              {sealOk && pins.map((p) => <span key={p} className="text-clay-deep">🔒 {p}</span>)}
+              <span className={sealOk ? "text-green" : "text-clay"}>{sealOk ? "validated" : "blocked"}</span>
+              {sealOk && pins.map((p) => <span key={p} className="text-muted">{p}</span>)}
             </div>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-meta text-faint">
               <span>lineage {result.lineageHash ?? "—"}</span>

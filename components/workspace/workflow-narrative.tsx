@@ -106,7 +106,7 @@ export function WorkflowNarrative({
       {/* finding — leads with a plain-language headline, the visual, human-labelled
           numbers, a calm trust mark, and the depth (graph / code) one click away */}
       {result && spec && (
-        <div className="border border-clay bg-paper mb-9">
+        <div className="ticks border border-hairline bg-paper mb-9">
           <div className="px-6 pt-5 pb-4 border-b border-hairline">
             <p className="eyebrow text-clay">the finding</p>
             <p className="mt-2 font-serif text-h2 leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
@@ -117,11 +117,11 @@ export function WorkflowNarrative({
               <p className="mt-2 font-mono text-meta text-faint">equity (blue) over drawdown (clay), one calendar · click to inspect</p>
             </button>
             <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
-              {Object.entries(spec.metrics).slice(0, 4).map(([k, v]) => {
+              {Object.entries(spec.metrics).slice(0, 4).map(([k, v], i) => {
                 const lbl = PLAIN_LABEL[k];
                 return (
                   <div key={k}>
-                    <div className="font-mono text-h2 text-ink tabular-nums leading-none">{fmtMetric(k, v)}</div>
+                    <div className={`font-mono ${i === 0 ? "text-display" : "text-h2"} text-ink tabular-nums leading-none`}>{fmtMetric(k, v)}</div>
                     <div className="mt-1 text-meta text-muted">
                       {lbl?.plain ?? METRIC_LABEL[k] ?? k}
                       {lbl?.jargon && <span className="font-mono text-meta text-faint"> ({lbl.jargon})</span>}
@@ -151,8 +151,8 @@ export function WorkflowNarrative({
             </div>
           </div>
           <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
-            <span className={`font-mono text-meta ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>
-            {ok && <><span className="font-mono text-meta text-clay-deep">🔒 no look-ahead</span><span className="font-mono text-meta text-clay-deep">🔒 reproducible</span></>}
+            <span className={`font-mono text-meta ${ok ? "text-green" : "text-clay"}`}>{ok ? "validated" : "blocked"}</span>
+            {ok && <><span className="font-mono text-meta text-muted">no look-ahead</span><span className="font-mono text-meta text-muted">reproducible</span></>}
             {onOpenLens && (
               <span className="ml-auto flex items-center gap-4">
                 <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>

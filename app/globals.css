@@ -103,6 +103,33 @@ body {
   box-shadow: 0 1px 2px rgba(28, 27, 24, 0.05);
 }
 
+/* Corner-tick "instrumented plate" framing (M-L · L2) — four small clay corner
+   marks on a position:relative hero plate. A measured, registered surface, not a
+   soft card. Reserved for the few most important framed plates so it stays a
+   signal, not a texture. */
+.ticks {
+  position: relative;
+}
+.ticks::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  --tk: var(--color-clay);
+  background-image:
+    linear-gradient(var(--tk), var(--tk)), linear-gradient(var(--tk), var(--tk)),
+    linear-gradient(var(--tk), var(--tk)), linear-gradient(var(--tk), var(--tk)),
+    linear-gradient(var(--tk), var(--tk)), linear-gradient(var(--tk), var(--tk)),
+    linear-gradient(var(--tk), var(--tk)), linear-gradient(var(--tk), var(--tk));
+  background-repeat: no-repeat;
+  background-size:
+    10px 1px, 1px 10px, 10px 1px, 1px 10px,
+    10px 1px, 1px 10px, 10px 1px, 1px 10px;
+  background-position:
+    left top, left top, right top, right top,
+    left bottom, left bottom, right bottom, right bottom;
+}
+
 /* Drop cap for the lede */
 .dropcap::first-letter {
   font-family: var(--font-serif);
@@ -184,12 +211,10 @@ body {
 .pin-flash {
   animation: pinFlash 0.7s ease-in-out 2;
 }
-@keyframes sealPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
+/* L5 (motion restraint): the integrity seal no longer idles/breathes — premium is
+   stillness. Kept as a class (no-op) so existing markup stays valid. */
 .seal-pulse {
-  animation: sealPulse 2.4s ease-in-out infinite;
+  opacity: 1;
 }
 
 /* Build choreography: a node snaps in when it lands (scale only — no opacity, so
@@ -200,7 +225,8 @@ body {
   to { transform: scale(1); }
 }
 .node-snap {
-  animation: snapIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  /* L5: calm ease, no springy overshoot — nothing bounces. */
+  animation: snapIn 0.36s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes drawerIn {
   from { transform: translateX(18px); opacity: 0; }
