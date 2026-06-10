@@ -27,6 +27,7 @@ import { CodeView } from "@/components/workspace/code-view";
 import { ContractRail } from "@/components/workspace/contract-rail";
 import { PromotePanel } from "@/components/workspace/promote-panel";
 import { PublishPanel } from "@/components/workspace/publish-panel";
+import { RunStrip } from "@/components/workspace/run-strip";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
@@ -59,6 +60,18 @@ function depthMap(g: LineageSubgraph): Record<string, number> {
   return d;
 }
 
+/** A single execution of the recipe — its own graph, kept separate from the
+ *  exploration so a re-run never interleaves with it on the canvas. */
+interface Run {
+  id: string;
+  label: string;
+  outcome: "running" | "validated" | "halted";
+  graph: LineageSubgraph;
+  labels: Record<string, string>;
+  producerOps: Record<string, string>;
+  resultSpecs: Record<string, ResultSpec>;
+}
+
 export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const { debit } = useCredits();
   const { requireAuth } = useAuth();
@@ -86,6 +99,16 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // publish-a-finding: pin the terminal result as a read-only, citable artifact.
   const [publishOpen, setPublishOpen] = useState(false);
   const [published, setPublished] = useState(false);
+  // runs: each agentic re-run is its OWN execution/graph, switched on the canvas
+  // by the run strip — never interleaved with the exploration. null = exploration.
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [activeRunId, setActiveRunId] = useState<string | null>(null);
+  const activeRun = activeRunId ? runs.find((r) => r.id === activeRunId) ?? null : null;
+  // what the canvas / lens / inspector / seal show: the active run, or the exploration
+  const viewGraph = activeRun ? activeRun.graph : graph;
+  const viewLabels = activeRun ? activeRun.labels : labels;
+  const viewProducerOps = activeRun ? activeRun.producerOps : producerOps;
+  const viewResultSpecs = activeRun ? activeRun.resultSpecs : resultSpecs;
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
   }, []);
@@ -111,6 +134,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   // refs to read current values inside async streams without stale closures
   const graphRef = useRef(graph);
   useEffect(() => { graphRef.current = graph; }, [graph]);
+  // the active view (run or exploration) — so publish/export act on what's shown
+  const viewRef = useRef({ graph: viewGraph, resultSpecs: viewResultSpecs });
+  useEffect(() => { viewRef.current = { graph: viewGraph, resultSpecs: viewResultSpecs }; }, [viewGraph, viewResultSpecs]);
   const idRef = useRef(0);
   const uid = (p: string) => `${p}-${++idRef.current}`;
 
@@ -133,6 +159,26 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     if (step.nodeLabel) setLabels((l) => ({ ...l, [nd.id]: step.nodeLabel! }));
     if (step.op) setProducerOps((o) => ({ ...o, [nd.id]: step.op! }));
     if (step.resultSpec) setResultSpecs((r) => ({ ...r, [nd.id]: step.resultSpec! }));
+  }, []);
+
+  // materialise a step into a SPECIFIC run's own graph (not the exploration) —
+  // so an agentic re-run builds a clean, separate spine you switch to.
+  const materializeRun = useCallback((runId: string, step: BuildStep) => {
+    const nd = step.node;
+    if (!nd) return;
+    setRuns((rs) =>
+      rs.map((r) =>
+        r.id !== runId
+          ? r
+          : {
+              ...r,
+              graph: r.graph.nodes.some((n) => n.id === nd.id) ? r.graph : { nodes: [...r.graph.nodes, nd], edges: [...r.graph.edges, ...(step.edges ?? [])] },
+              labels: step.nodeLabel ? { ...r.labels, [nd.id]: step.nodeLabel } : r.labels,
+              producerOps: step.op ? { ...r.producerOps, [nd.id]: step.op } : r.producerOps,
+              resultSpecs: step.resultSpec ? { ...r.resultSpecs, [nd.id]: step.resultSpec } : r.resultSpecs,
+            }
+      )
+    );
   }, []);
 
   const stream = useCallback(
@@ -258,17 +304,23 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       setPromoting(false);
       const recipe = bundle.recipe;
       if (!recipe) return;
+      // a re-run is its OWN run — build it into a fresh, separate graph and switch
+      // the canvas to it; the exploration spine sits untouched behind the run strip.
+      const runId = uid("run");
+      setRuns((rs) => [{ id: runId, label: "2025-Q1", outcome: "running", graph: { nodes: [], edges: [] }, labels: {}, producerOps: {}, resultSpecs: {} }, ...rs]);
+      setActiveRunId(runId);
+      setDrawer(null);
       setBuilding(true);
       setCanvas({ phase: "live" });
-      addTurn({ id: uid("ag"), role: "system", text: `⚙ Agentic run · ${recipe.name} — re-running on new data (2025-Q1), within ${recipe.pins.length} pinned laws.` });
+      addTurn({ id: uid("ag"), role: "system", text: `⚙ Agentic run · ${recipe.name} — re-running on new data (2025-Q1) as its own run, within ${recipe.pins.length} pinned laws.` });
       for await (const ev of runAgentic(recipe, scenario)) {
         if (ev.type === "thinking") {
           addTurn({ id: uid("ag"), role: "assistant", text: ev.text });
         } else if (ev.type === "step_start") {
-          materialize(ev.step);
+          materializeRun(runId, ev.step);
           setInFlightId(ev.step.node?.id ?? null);
         } else if (ev.type === "step_done") {
-          materialize(ev.step);
+          materializeRun(runId, ev.step);
           setInFlightId(null);
           debit(ev.step.credits);
           addTurn({ id: uid("ag"), role: "assistant", text: `✓ ${ev.step.label}`, actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined });
@@ -276,24 +328,26 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           // happy path: every artifact validated → a fresh point-in-time result.
           setBuilding(false);
           setInFlightId(null);
+          setRuns((rs) => rs.map((r) => (r.id === runId ? { ...r, outcome: "validated" } : r)));
           setDrawer({ type: "node", id: ev.producedId });
           setOpenPin(null);
           addTurn({
             id: uid("ag"),
             role: "system",
-            text: `✓ Run complete — Backtest · 2025-Q1 validated against all ${recipe.pins.length} pinned laws. Logged to runs — the finding's open on the canvas.`,
+            text: `✓ Run complete — the 2025-Q1 run validated against all ${recipe.pins.length} pinned laws (Sharpe 1.38). It's its own clean run on the canvas — flip back to Exploration · 2024 anytime via the run strip.`,
             actions: [{ type: "push_node", ref: ev.producedId }],
           });
           return;
         } else if (ev.type === "halt") {
-          materialize(ev.step);
+          materializeRun(runId, ev.step);
           setInFlightId(null);
           setBuilding(false);
+          setRuns((rs) => rs.map((r) => (r.id === runId ? { ...r, outcome: "halted" } : r)));
           const pinLabel = pins.find((p) => p.id === ev.pinId)?.label ?? ev.pinId;
           addTurn({
             id: uid("ag"),
             role: "system",
-            text: `⛔ HALTED at “${ev.step.label}” — violates pinned invariant ‘${pinLabel}’. ${ev.reason} The run stopped instead of shipping a wrong number.`,
+            text: `⛔ HALTED at “${ev.step.label}” — violates pinned invariant ‘${pinLabel}’. ${ev.reason} The run stopped instead of shipping a wrong number (it's logged as a halted run).`,
             actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined,
           });
           setFlashedPin(ev.pinId);
@@ -301,7 +355,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
         }
       }
     },
-    [bundle.recipe, addTurn, materialize, debit, pins]
+    [bundle.recipe, addTurn, materializeRun, debit, pins]
   );
 
   // ── the slide-over inspector: opening any node (from chat or the graph) slides
@@ -314,6 +368,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const compare = useCallback((nodeId: string) => { setDrawer({ type: "compare", nodeId }); setOpenPin(null); }, []);
   const closeDrawer = useCallback(() => setDrawer(null), []);
   const onOpenPin = useCallback((id: string | null) => { setOpenPin(id); if (id) setDrawer(null); }, []);
+  // flip the canvas between the exploration and a run — close detail surfaces first
+  const onSelectRun = useCallback((id: string | null) => { setActiveRunId(id); setDrawer(null); setOpenPin(null); }, []);
 
   // the validator for a node referenced in chat (the badge's chat zoom).
   const validatorFor = useCallback(
@@ -424,9 +480,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
 
   // publish the terminal result as a frozen, sealed, shareable finding.
   const onPublishConfirm = useCallback(() => {
-    const r = graphRef.current.nodes.find((n) => n.kind === "result");
+    const r = viewRef.current.graph.nodes.find((n) => n.kind === "result");
     if (!r) return;
-    const spec = resultSpecs[r.id];
+    const spec = viewRef.current.resultSpecs[r.id];
     setPublished(true);
     // record it in the findings registry (localStorage) so it has a home + lists
     // on the dashboard Findings shelf — backend-shaped for later.
@@ -448,19 +504,19 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       role: "system",
       text: `✓ Published “${spec?.friendlyName ?? r.name}” — pinned read-only at lineage ${r.lineageHash ?? ""}, as-of ${(r.asOfKnowledgeTime ?? "").slice(0, 10)}. Sealed: no-lookahead · reproducible. It's on your dashboard under Findings.`,
     });
-  }, [resultSpecs, addTurn, bundle.workspaceId, bundle.workspaceName]);
+  }, [addTurn, bundle.workspaceId, bundle.workspaceName]);
 
   // export getters — computed lazily on click so they always reflect the latest
   // graph + conversation. The script is the terminal node's full reproducible code.
   const getScript = useCallback(
-    () => buildPipeline(graph, producerOps, bundle.workspaceName),
-    [graph, producerOps, bundle.workspaceName]
+    () => buildPipeline(viewGraph, viewProducerOps, bundle.workspaceName),
+    [viewGraph, viewProducerOps, bundle.workspaceName]
   );
 
   // the whole runnable repo, for the .zip export (clone → pip install → run)
   const getProject = useCallback(
-    () => buildProject(graph, producerOps, bundle.workspaceName).map((f) => ({ path: f.path, content: f.code })),
-    [graph, producerOps, bundle.workspaceName]
+    () => buildProject(viewGraph, viewProducerOps, bundle.workspaceName).map((f) => ({ path: f.path, content: f.code })),
+    [viewGraph, viewProducerOps, bundle.workspaceName]
   );
 
   const getConversation = useCallback(() => {
@@ -510,10 +566,12 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;
   // the integrity seal's verdict — the terminal result's harness verdict, honest.
   // A stale graph can't be reproducible-by-construction, so the seal drops too.
-  const resultNode = graph.nodes.find((n) => n.kind === "result");
-  const sealOk = stale.size > 0 ? false : resultNode ? validatorOk(deriveValidator(resultNode, graph)) : true;
+  const resultNode = viewGraph.nodes.find((n) => n.kind === "result");
+  // staleness applies to the exploration only (runs are immutable executions).
+  const staleActive = !activeRun && stale.size > 0;
+  const sealOk = staleActive ? false : resultNode ? validatorOk(deriveValidator(resultNode, viewGraph)) : true;
   // why publish is gated, if it is — staleness first (actionable), else the harness.
-  const publishBlockedReason = stale.size > 0
+  const publishBlockedReason = staleActive
     ? `${stale.size} downstream ${stale.size === 1 ? "artifact is" : "artifacts are"} stale — rebuild first`
     : !sealOk ? "the harness blocks this result (an invariant is violated)" : undefined;
 
@@ -540,6 +598,9 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           lens={lens}
           onLens={setLens}
         />
+        {runs.length > 0 && (
+          <RunStrip runs={runs.map((r) => ({ id: r.id, label: r.label, outcome: r.outcome }))} activeRunId={activeRunId} onSelect={onSelectRun} />
+        )}
         <ContractRail
           pins={pins}
           consequences={bundle.consequences}
@@ -551,7 +612,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
-        {stale.size > 0 && (
+        {staleActive && (
           <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 border-b border-clay/40 bg-clay-wash">
             <span className="text-[0.82rem] text-clay-deep">
               ⚠ {changed && <><span className="italic">{changed.label}</span> changed — </>}
@@ -567,22 +628,22 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           </div>
         )}
         {lens === "code" ? (
-          <CodeView graph={graph} producerOps={producerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} onSelectNode={inspectNode} />
+          <CodeView graph={viewGraph} producerOps={viewProducerOps} selectedNodeId={selectedNodeId} workspaceName={bundle.workspaceName} onSelectNode={inspectNode} />
         ) : (
           <Canvas
             canvas={canvas}
             lens={lens}
-            staleIds={stale}
+            staleIds={activeRun ? undefined : stale}
             workspaceName={bundle.workspaceName}
             onFlashPin={setFlashedPin}
             onOpenCode={() => setLens("code")}
-            graph={graph}
-            labels={labels}
-            producerOps={producerOps}
-            resultSpecs={resultSpecs}
+            graph={viewGraph}
+            labels={viewLabels}
+            producerOps={viewProducerOps}
+            resultSpecs={viewResultSpecs}
             datasets={bundle.datasets}
             concepts={bundle.concepts}
-            variants={variants}
+            variants={activeRun ? {} : variants}
             building={building}
             inFlightId={inFlightId}
             selectedNodeId={selectedNodeId}
@@ -591,18 +652,18 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             drawerTab={bundle.initialDrawerTab}
             onInspectNode={inspectNode}
             onInspectEdge={inspectEdge}
-            onCompare={compare}
+            onCompare={activeRun ? () => {} : compare}
             onCloseDrawer={closeDrawer}
-            onPromote={promote}
-            onFork={openFork}
+            onPromote={activeRun ? () => {} : promote}
+            onFork={activeRun ? () => {} : openFork}
           />
         )}
       </div>
       {publishOpen && resultNode && (
         <PublishPanel
           result={resultNode}
-          spec={resultSpecs[resultNode.id]}
-          validator={deriveValidator(resultNode, graph)}
+          spec={viewResultSpecs[resultNode.id]}
+          validator={deriveValidator(resultNode, viewGraph)}
           sealOk={sealOk}
           blockedReason={publishBlockedReason}
           workspaceId={bundle.workspaceId}
