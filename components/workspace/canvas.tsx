@@ -43,6 +43,7 @@ export function Canvas({
   onFlashPin,
   onOpenCode,
   onOpenLens,
+  onNextStep,
 }: {
   canvas: CanvasState;
   lens: "result" | "graph" | "concepts";
@@ -70,6 +71,7 @@ export function Canvas({
   onFlashPin?: (pinId: string) => void;
   onOpenCode?: () => void;
   onOpenLens?: (l: Lens) => void;
+  onNextStep?: (prompt: string) => void;
 }) {
   const datasetList: HostedDataset[] = Array.from(new Map(Object.values(datasets).map((d) => [d.id, d])).values());
 
@@ -90,6 +92,7 @@ export function Canvas({
         workspaceName={workspaceName}
         onOpenNode={onInspectNode}
         onOpenLens={onOpenLens}
+        onNextStep={onNextStep}
       />
     ) : lens === "concepts" ? (
       (() => {

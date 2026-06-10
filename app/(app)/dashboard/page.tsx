@@ -38,7 +38,9 @@ export default async function DashboardPage({
   const dateKey = new Date().toISOString().slice(0, 10);
   const starter = getStarterPrompt(dateKey);
   const examples = pool.filter((p) => p.text !== starter.text).slice(0, 3);
-  const seeds = pool.slice(0, 3);
+  // "Start here" shows DIFFERENT prompts than the hero chips (no duplicated list).
+  const shown = new Set([starter.text, ...examples.map((e) => e.text)]);
+  const seeds = pool.filter((p) => !shown.has(p.text)).slice(0, 3);
 
   const findings = listFindings();
   const newUser = state === "new" || workspaces.length === 0;
@@ -83,7 +85,7 @@ export default async function DashboardPage({
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="font-serif text-h2 font-semibold">Recipes</h2>
-            <span className="eyebrow">validated workflows · manual → agentic</span>
+            <span className="eyebrow">saved workflows you can re-run</span>
           </div>
           <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
         </section>
@@ -94,7 +96,7 @@ export default async function DashboardPage({
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
             <h2 className="font-serif text-h2 font-semibold">Findings</h2>
-            <span className="eyebrow">published · read-only · sealed</span>
+            <span className="eyebrow">published results · verified</span>
           </div>
           <FindingsShelf seeded={findings} />
         </section>

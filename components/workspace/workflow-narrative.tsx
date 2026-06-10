@@ -79,6 +79,7 @@ export function WorkflowNarrative({
   workspaceName,
   onOpenNode,
   onOpenLens,
+  onNextStep,
 }: {
   graph: LineageSubgraph;
   labels: Record<string, string>;
@@ -91,6 +92,7 @@ export function WorkflowNarrative({
   workspaceName: string;
   onOpenNode: (id: string) => void;
   onOpenLens?: (l: Lens) => void;
+  onNextStep?: (prompt: string) => void;
 }) {
   const d = depths(graph);
   const flow = graph.nodes.filter((n) => n.kind !== "policy").sort((a, b) => (d[a.id] ?? 0) - (d[b.id] ?? 0));
@@ -127,12 +129,25 @@ export function WorkflowNarrative({
                   </div>
                 );
               })}
-              {spec.nextProposal && (
-                <div className="mt-1 pt-3 border-t border-hairline">
-                  <p className="eyebrow text-clay mb-1">next move</p>
-                  <p className="text-ui leading-relaxed text-ink-2">{spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}</p>
-                </div>
-              )}
+              {spec.nextProposal && (() => {
+                const np = spec.nextProposal;
+                return (
+                  <div className="mt-1 pt-3 border-t border-hairline">
+                    <p className="eyebrow text-clay mb-1.5">next move</p>
+                    {np.kind === "none" || !onNextStep ? (
+                      <p className="text-ui leading-relaxed text-ink-2">{np.kind === "none" ? np.reason : np.summary}</p>
+                    ) : (
+                      <button
+                        onClick={() => onNextStep(np.summary)}
+                        className="group w-full text-left bg-clay text-paper px-3.5 py-2.5 hover:bg-clay-deep transition-colors"
+                      >
+                        <span className="block text-ui leading-snug">{np.summary}</span>
+                        <span className="mt-1 block font-mono text-meta uppercase tracking-[0.12em] text-paper/70 group-hover:text-paper">run this next →</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
           <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">

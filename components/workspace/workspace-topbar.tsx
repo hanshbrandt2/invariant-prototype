@@ -60,13 +60,22 @@ export function WorkspaceTopBar({
           <span className="font-mono text-body text-ink truncate">{workspaceName}</span>
         </div>
 
-        {/* the four lenses: one analysis told four ways (a switcher, not stacked) */}
+        {/* the answer leads; graph / code / concepts are "go deeper" rungs, not peers */}
         {live && lens && onLens && (
-          <div className="inline-flex shrink-0 border border-hairline-2 overflow-hidden font-mono text-meta uppercase tracking-[0.1em]">
-            {(["result", "graph", "code", "concepts"] as const).map((l) => (
+          <div className="inline-flex shrink-0 items-stretch border border-hairline-2 overflow-hidden font-mono text-meta uppercase tracking-[0.1em]">
+            <button
+              onClick={() => onLens("result")}
+              title="the finding, in plain language"
+              className={`px-3 py-1 transition-colors ${lens === "result" ? "bg-ink text-paper" : "text-ink hover:bg-paper"}`}
+            >
+              finding
+            </button>
+            <span className="w-px self-stretch bg-hairline-2" aria-hidden />
+            {(["graph", "code", "concepts"] as const).map((l) => (
               <button
                 key={l}
                 onClick={() => onLens(l)}
+                title="go deeper"
                 className={`px-3 py-1 transition-colors ${lens === l ? "bg-ink text-paper" : "text-muted hover:text-ink"}`}
               >
                 {l}

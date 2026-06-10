@@ -84,10 +84,13 @@ export function InspectorDrawer({
 }) {
   const [stack, setStack] = useState<InspectTarget[]>([target]);
   const [tab, setTab] = useState<FaceTab>(initialTab);
+  // calm by default: only Overview shows; Spec/Contract/Checks/Code/Lineage live
+  // behind one "details ▾" control (auto-open when deep-linked to a specific tab).
+  const [detailsOpen, setDetailsOpen] = useState(initialTab !== "overview");
   const cur = stack[stack.length - 1];
 
-  const push = useCallback((t: InspectTarget) => { setStack((s) => [...s, t]); setTab("overview"); }, []);
-  const back = useCallback(() => { setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)); setTab("overview"); }, []);
+  const push = useCallback((t: InspectTarget) => { setStack((s) => [...s, t]); setTab("overview"); setDetailsOpen(false); }, []);
+  const back = useCallback(() => { setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)); setTab("overview"); setDetailsOpen(false); }, []);
   const openNode = useCallback((id: string) => push({ type: "node", id }), [push]);
 
   useEffect(() => {
@@ -144,18 +147,27 @@ export function InspectorDrawer({
           policyLabels={labels}
           validator={validator}
           checks={isDs ? undefined : checks}
-          onOpenChecks={() => setTab("checks")}
+          onOpenChecks={() => { setDetailsOpen(true); setTab("checks"); }}
         >
           {isDs ? (
             Face(props)
           ) : (
             <>
               <div className="flex items-center gap-1.5 border-b border-hairline px-6 overflow-x-auto">
-                {TABS.map((t) => (
-                  <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-3 text-ui border-b-2 -mb-px transition-colors ${tab === t.id ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"}`}>
-                    {t.label}
+                <button onClick={() => setTab("overview")} className={`shrink-0 px-3 py-3 text-ui border-b-2 -mb-px transition-colors ${tab === "overview" ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"}`}>
+                  Overview
+                </button>
+                {detailsOpen ? (
+                  TABS.filter((t) => t.id !== "overview").map((t) => (
+                    <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-3 text-ui border-b-2 -mb-px transition-colors ${tab === t.id ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"}`}>
+                      {t.label}
+                    </button>
+                  ))
+                ) : (
+                  <button onClick={() => setDetailsOpen(true)} title="spec · contract · checks · code · lineage" className="shrink-0 px-3 py-3 text-ui border-b-2 -mb-px border-transparent text-muted hover:text-ink">
+                    details ▾
                   </button>
-                ))}
+                )}
               </div>
               {tab === "overview" && (
                 <>

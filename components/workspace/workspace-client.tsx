@@ -670,6 +670,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             onCloseDrawer={closeDrawer}
             onPromote={activeRun ? () => {} : promote}
             onFork={activeRun ? () => {} : openFork}
+            onNextStep={activeRun ? undefined : (prompt) => { setChatOpen(true); submit(prompt); }}
           />
         )}
       </div>
