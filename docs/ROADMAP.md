@@ -112,19 +112,20 @@ Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too 
 
 > **viz-engine stance:** do *not* take a dependency yet — `@invariant/viz` exports nothing (Phase-0 placeholder) and its DuckDB-WASM/Mosaic value (M4 over millions of rows) is moot on small pre-reduced fixtures. We **port the theme + grammar** behind a `ChartSpec` seam now, and swap to the compiled engine at its Phase 1 behind the unchanged seam. The `ChartSpec` (a deliberate subset of the eventual `ViewSpec`) is the contract between the repos: every chart Invariant needs that the engine can't yet express becomes a prioritized item for viz-engine's gallery — **the app drives the library's roadmap.**
 
-### M-I · The token spine — one enforced scale (foundation)
+### M-I · The token spine — one enforced scale (foundation) — DONE ✓
 - **I1 — Type scale tokens.** Add `--text-*` to `globals.css` (display 2.25 · h1 1.75 · h2 1.25 · h3 1.0625 · body 0.875 · ui 0.8125 · meta-mono 0.6875 · micro 0.5625rem) with paired leading/tracking; set `body { font-size: 0.8125rem; line-height: 1.4 }` (13px chrome, hex-grade).
 - **I2 — Migrate the 52 sizes.** Map every arbitrary `text-[Xrem]` onto the nearest token (0.82–0.86→`ui`, 0.88–0.98→`body`, 0.6–0.7→`meta`); drop dashboard h1 `2.5rem`→h1, the three section h2 `1.5rem`→h2, inspector hero `1.7rem`→h1. Reserve display type for `app/page.tsx` (marketing landing) **only**.
 - **I3 — One chart/color theme.** Port `viz-engine/apps/harness/src/theme/editorial.ts` → `lib/theme/editorial.ts` verbatim (tokens + categorical/diverging/sequential ramps + `regimeColors`). Delete the per-file `TONE` maps + hardcoded hex in `finding-viz`/`preview-chart`/`histogram`.
 - **I4 — Guardrail.** `package.json` lint: `! rg 'text-\[[0-9.]+rem\]' components app` (micro-chip allowlist) so the scale can't drift back to 52.
 - **DoD:** UI defaults to 13px; **zero** arbitrary font sizes (lint green); every chart reads color/font from one theme.
 
-### M-J · Honest, beautiful charts — `ChartSpec` + `<Figure>`
+### M-J · Honest, beautiful charts — `ChartSpec` + `<Figure>` — J1–J3 DONE ✓ · J4 deferred
 - **J1 — Kill the fabrication.** Delete `curve.ts` (`Math.sin` equity); add an authored backtest equity/drawdown series to fixtures; remove `preserveAspectRatio="none"` (`compare-view`); fix the mislabeled waterfall (cumulative baseline, `finding-viz`).
 - **J2 — The seam.** Add `ChartSpec` to `lib/types` (`mark: line|bar|area|scatter|heatmap`, encodings x/y/color, title-as-finding, `dataRef`) as a deliberate **subset of viz-engine's `ViewSpec`**; one `<Figure spec>` backed by Recharts; expose via `lib/data` (`getFigureSpec`). Components read a spec, never raw `{t,v}[]`.
 - **J3 — Rebuild to the editorial look.** Map 1:1 to proven gallery usages — result equity→usage09 (equity+drawdown, one calendar); dataset line→usage01; histogram→usage05; finding distribution→usage32; waterfall→usage13; compare overlay→usage02 (normalized + direct end-labels). Real axes, hairline grid, mono ticks, direct labels, title-as-finding.
 - **J4 — Marks Invariant lacks.** Add a correlation **heatmap** (diverging scale) + **regime ribbon** (`regimeColors`) — no DuckDB needed.
 - **DoD:** no synthesized/distorted chart data anywhere; all charts render a `ChartSpec` via one `<Figure>`; renderer swappable behind the seam. *(Optional, fenced: one `ssr:false` vgplot+DuckDB-WASM hero chart for a genuine large-data series — opt-in, single route.)*
+- **Status (J1–J3 done):** `curve.ts` deleted (the `Math.sin` equity is gone from all 3 surfaces); authored equity snapshot on the result spec → drawdown derived; `compare-view` distortion removed; waterfall made cumulative. `ChartSpec` + `<Figure>` (equity-drawdown / line / area / bar) + `lib/figures.ts` shipped; result equity + variant compare routed through it. **Remaining:** route the still-direct `PreviewChart`/`Histogram` callers through `<Figure>` for full unification, and **J4** (correlation heatmap + regime ribbon — additive new marks, need a consumer). Verified: tsc + build clean; Result-lens figure renders with the drawdown matching the −8.3% KPI.
 
 ### M-K · Answer-first everywhere — the disclosure ladder (headline clarity fix)
 - **K1 — Canvas leads with the answer.** Default a populated workspace to the `Result` lens with a "you are here" anchor (*"<friendlyName> — Sharpe 1.38. This is what this workspace found. How it was built ▸"*). Graph/Code/Concepts become "go deeper" rungs, not equal tabs; `Result` is visually primary.
