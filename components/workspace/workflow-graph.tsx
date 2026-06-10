@@ -226,14 +226,25 @@ export function WorkflowGraph({
       let back = false;
       let mid: [number, number];
       if (cl === pl) {
-        // vertical chain within a lane — a straight hop, centre-to-centre,
-        // between the facing edges of the two stacked cards
-        const cxv = left(e.parentId) + CARD_W / 2;
-        const down = cy > py;
-        const y0 = down ? top(e.parentId) + cardH(e.parentId) : top(e.parentId);
-        const y1 = down ? top(e.childId) : top(e.childId) + cardH(e.childId);
-        d = `M ${cxv} ${y0} L ${cxv} ${y1}`;
-        mid = [cxv, (y0 + y1) / 2];
+        // a card sitting vertically between the two endpoints in the same lane?
+        const lo = Math.min(py, cy), hi = Math.max(py, cy);
+        const blocked = flow.some((n) => n.id !== e.parentId && n.id !== e.childId && laneOf(n.kind) === pl && cyOf(n.id) > lo && cyOf(n.id) < hi);
+        if (!blocked) {
+          // clear run — a straight hop, centre-to-centre, between the facing edges
+          const cxv = left(e.parentId) + CARD_W / 2;
+          const down = cy > py;
+          const y0 = down ? top(e.parentId) + cardH(e.parentId) : top(e.parentId);
+          const y1 = down ? top(e.childId) : top(e.childId) + cardH(e.childId);
+          d = `M ${cxv} ${y0} L ${cxv} ${y1}`;
+          mid = [cxv, (y0 + y1) / 2];
+        } else {
+          // bow OUT into the left gutter so the edge never cuts through the card(s)
+          // stacked between parent and child in the lane
+          const lx = left(e.parentId);
+          const chX = lx - 14;
+          d = roundedOrtho([[lx, py], [chX, py], [chX, cy], [lx, cy]]);
+          mid = [chX, (py + cy) / 2];
+        }
       } else if (cl > pl) {
         const px = right(e.parentId), ccx = left(e.childId);
         if (cl - pl >= 2) {
