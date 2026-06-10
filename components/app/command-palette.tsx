@@ -82,22 +82,22 @@ export function CommandPalette() {
       <button aria-label="dismiss" onClick={hide} className="absolute inset-0 bg-ink/20 backdrop-blur-[2px] cursor-default" />
       <div className="relative w-full max-w-[560px] rounded-2xl bg-white shadow-float border border-hairline overflow-hidden">
         <div className="flex items-center gap-3 px-4 py-3 border-b border-hairline">
-          <span className="font-mono text-[0.7rem] text-faint">⌘K</span>
+          <span className="font-mono text-meta text-faint">⌘K</span>
           <input
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search workspaces, artifacts, datasets…"
-            className="flex-1 bg-transparent outline-none text-[0.95rem] text-ink placeholder:text-muted"
+            className="flex-1 bg-transparent outline-none text-body text-ink placeholder:text-muted"
           />
         </div>
         <div className="max-h-[52vh] overflow-y-auto">
           {q && hits.length === 0 && (
-            <p className="px-4 py-6 text-[0.85rem] text-muted text-center">No matches for “{q}”.</p>
+            <p className="px-4 py-6 text-ui text-muted text-center">No matches for “{q}”.</p>
           )}
           {!q && (
-            <p className="px-4 py-6 font-mono text-[0.74rem] text-faint text-center">type to search · ↑↓ to move · ↵ to open</p>
+            <p className="px-4 py-6 font-mono text-meta text-faint text-center">type to search · ↑↓ to move · ↵ to open</p>
           )}
           {hits.map((h, i) => (
             <button
@@ -106,12 +106,12 @@ export function CommandPalette() {
               onMouseEnter={() => setActive(i)}
               className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${i === active ? "bg-paper-2/70" : "hover:bg-paper-2/40"}`}
             >
-              <span className="font-mono text-[0.54rem] uppercase tracking-[0.12em] text-muted w-[68px] shrink-0">{TYPE_TAG[h.type]}</span>
+              <span className="font-mono text-micro uppercase tracking-[0.12em] text-muted w-[68px] shrink-0">{TYPE_TAG[h.type]}</span>
               <span className="min-w-0 flex-1">
-                <span className="block text-[0.9rem] text-ink truncate">{h.title}</span>
-                <span className="block font-mono text-[0.68rem] text-faint truncate">{h.subtitle}</span>
+                <span className="block text-body text-ink truncate">{h.title}</span>
+                <span className="block font-mono text-meta text-faint truncate">{h.subtitle}</span>
               </span>
-              {i === active && <span className="font-mono text-[0.7rem] text-clay shrink-0">↵</span>}
+              {i === active && <span className="font-mono text-meta text-clay shrink-0">↵</span>}
             </button>
           ))}
         </div>

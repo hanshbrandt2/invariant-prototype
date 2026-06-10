@@ -69,7 +69,7 @@ export function ContractRail({
           <span className="eyebrow shrink-0">⚖ contract</span>
           <IntegritySeal inForce={inForce} sealOk={sealOk} />
           <span className="flex-1" />
-          <span className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">show ▸</span>
+          <span className="font-mono text-meta uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">show ▸</span>
         </button>
       </section>
     );
@@ -82,7 +82,7 @@ export function ContractRail({
       <div className="flex items-center gap-2 px-3 py-2">
         <button onClick={() => { setExpanded(false); onOpen(null); }} className="group shrink-0 flex items-center gap-1.5" title="hide the contract">
           <span className="eyebrow group-hover:text-ink transition-colors">contract</span>
-          <span className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">▴ hide</span>
+          <span className="font-mono text-meta uppercase tracking-[0.12em] text-faint group-hover:text-ink transition-colors">▴ hide</span>
         </button>
         <div className="flex items-center gap-2 overflow-x-auto flex-1 min-w-0">
           {pins.map((p) => (
@@ -109,19 +109,19 @@ export function ContractRail({
         <button
           onClick={() => setShowConsequences((v) => !v)}
           aria-expanded={showConsequences}
-          className="flex items-center gap-2 font-mono text-[0.62rem] text-muted hover:text-ink transition-colors"
+          className="flex items-center gap-2 font-mono text-meta text-muted hover:text-ink transition-colors"
         >
           <span className="text-faint">{showConsequences ? "▾" : "▸"}</span>
           <span className="eyebrow">consequences</span>
           <span className="tabular-nums">{inForce} laws · <span className="text-clay">{nBlocked} block</span> · <span className="text-green">{nRequired} require</span></span>
         </button>
-        <p className="font-mono text-[0.6rem] text-faint shrink-0 hidden sm:block">No metric reaches this canvas without a lineage_hash.</p>
+        <p className="font-mono text-meta text-faint shrink-0 hidden sm:block">No metric reaches this canvas without a lineage_hash.</p>
       </div>
       {showConsequences && (
         <div className="flex flex-wrap gap-x-5 gap-y-1 px-3 pb-2 border-t border-hairline">
           {shownConsequences.map((c, i) => (
-            <span key={i} className="flex items-center gap-1.5 text-[0.72rem]">
-              <span className={`font-mono text-[0.72rem] leading-none ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
+            <span key={i} className="flex items-center gap-1.5 text-meta">
+              <span className={`font-mono text-meta leading-none ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
               <span className="text-ink-2">{c.text}</span>
             </span>
           ))}
@@ -133,7 +133,7 @@ export function ContractRail({
 
 /* ── one pin chip ──────────────────────────────────────────────────────────── */
 function PinChip({ pin, open, onOpen, chipRef }: { pin: Pin; open: boolean; onOpen: () => void; chipRef: (el: HTMLButtonElement | null) => void }) {
-  const base = "shrink-0 inline-flex items-center gap-1.5 px-2 py-1 font-mono text-[0.62rem] uppercase tracking-[0.08em] transition-colors";
+  const base = "shrink-0 inline-flex items-center gap-1.5 px-2 py-1 font-mono text-meta uppercase tracking-[0.08em] transition-colors";
   const cls =
     pin.state === "structural"
       ? "bg-ink text-paper border border-ink"
@@ -145,11 +145,11 @@ function PinChip({ pin, open, onOpen, chipRef }: { pin: Pin; open: boolean; onOp
   return (
     <button ref={chipRef} onClick={onOpen} className={`${base} ${cls} ${open ? "ring-1 ring-clay ring-offset-1 ring-offset-paper-2" : ""}`} aria-expanded={open} title={pin.label}>
       {pin.state === "structural" && <span aria-hidden className="text-[0.7em]">🔒</span>}
-      <span className="normal-case tracking-normal text-[0.7rem]">{pin.label}</span>
+      <span className="normal-case tracking-normal text-meta">{pin.label}</span>
       {pin.gates.map((g) => (
-        <span key={g} className={`text-[0.52rem] leading-none px-1 py-0.5 ${pin.state === "structural" ? "bg-paper/20 text-paper" : "border border-hairline-2"}`}>{g}</span>
+        <span key={g} className={`text-micro leading-none px-1 py-0.5 ${pin.state === "structural" ? "bg-paper/20 text-paper" : "border border-hairline-2"}`}>{g}</span>
       ))}
-      {pin.state === "designed" && <span className="text-[0.52rem] tracking-[0.12em]">designed</span>}
+      {pin.state === "designed" && <span className="text-micro tracking-[0.12em]">designed</span>}
     </button>
   );
 }
@@ -157,7 +157,7 @@ function PinChip({ pin, open, onOpen, chipRef }: { pin: Pin; open: boolean; onOp
 /* ── the integrity seal ────────────────────────────────────────────────────── */
 function IntegritySeal({ inForce, sealOk }: { inForce: number; sealOk: boolean }) {
   return (
-    <div className="shrink-0 flex items-center gap-2 font-mono text-[0.62rem] text-muted">
+    <div className="shrink-0 flex items-center gap-2 font-mono text-meta text-muted">
       <span className={`h-1.5 w-1.5 rounded-full ${sealOk ? "bg-green seal-pulse" : "bg-clay"}`} />
       <span className="tabular-nums">{inForce} invariants in force</span>
       <span className="text-faint">·</span>
@@ -179,25 +179,25 @@ function PinDrawer({ pin, vintages, consequences, onToggle, onClose }: { pin: Pi
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="eyebrow">{pin.kind === "designed" ? "designed — not built" : pin.kind}</span>
-            {pin.adr && <span className="font-mono text-[0.62rem] text-faint">{pin.adr}</span>}
+            {pin.adr && <span className="font-mono text-meta text-faint">{pin.adr}</span>}
           </div>
           {/* what it holds */}
-          <p className="font-serif text-[1.12rem] leading-[1.5] text-ink">{pin.holds}</p>
+          <p className="font-serif text-h3 leading-[1.5] text-ink">{pin.holds}</p>
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {pin.state === "structural" ? (
-            <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-ink border border-ink px-2 py-1">🔒 locked</span>
+            <span className="font-mono text-meta uppercase tracking-[0.12em] text-ink border border-ink px-2 py-1">🔒 locked</span>
           ) : pin.state === "designed" ? (
-            <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-faint border border-dashed border-hairline-2 px-2 py-1">can&apos;t be enforced</span>
+            <span className="font-mono text-meta uppercase tracking-[0.12em] text-faint border border-dashed border-hairline-2 px-2 py-1">can&apos;t be enforced</span>
           ) : togglable ? (
             <button
               onClick={() => onToggle(pin.id)}
-              className={`font-mono text-[0.62rem] uppercase tracking-[0.12em] px-2.5 py-1 border transition-colors ${inForce ? "bg-clay text-paper border-clay" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
+              className={`font-mono text-meta uppercase tracking-[0.12em] px-2.5 py-1 border transition-colors ${inForce ? "bg-clay text-paper border-clay" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
             >
               {inForce ? "in force ✓" : "pin it"}
             </button>
           ) : null}
-          <button onClick={onClose} className="grid h-7 w-7 place-items-center text-muted hover:text-clay text-[1.05rem] leading-none" aria-label="close">×</button>
+          <button onClick={onClose} className="grid h-7 w-7 place-items-center text-muted hover:text-clay text-h3 leading-none" aria-label="close">×</button>
         </div>
       </div>
 
@@ -205,19 +205,19 @@ function PinDrawer({ pin, vintages, consequences, onToggle, onClose }: { pin: Pi
         {/* how it's held */}
         <div>
           <p className="eyebrow mb-1.5">how it&apos;s held</p>
-          <p className="text-[0.86rem] leading-[1.55] text-ink-2">{pin.enforce}</p>
+          <p className="text-ui leading-[1.55] text-ink-2">{pin.enforce}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {pin.gates.map((g) => (
-              <span key={g} className="font-mono text-[0.6rem] uppercase tracking-[0.1em] border border-hairline-2 px-1.5 py-0.5 text-muted">{g}</span>
+              <span key={g} className="font-mono text-meta uppercase tracking-[0.1em] border border-hairline-2 px-1.5 py-0.5 text-muted">{g}</span>
             ))}
           </div>
         </div>
         {/* scope */}
         <div>
           <p className="eyebrow mb-1.5">scope</p>
-          <p className="text-[0.86rem] leading-[1.55] text-ink-2">{pin.scope}</p>
+          <p className="text-ui leading-[1.55] text-ink-2">{pin.scope}</p>
           <p className="eyebrow mt-3 mb-1.5">mechanism</p>
-          <code className="block font-mono text-[0.74rem] text-ink bg-paper-2 border border-hairline px-2.5 py-1.5 break-words">{pin.mechanism}</code>
+          <code className="block font-mono text-meta text-ink bg-paper-2 border border-hairline px-2.5 py-1.5 break-words">{pin.mechanism}</code>
         </div>
       </div>
 
@@ -227,7 +227,7 @@ function PinDrawer({ pin, vintages, consequences, onToggle, onClose }: { pin: Pi
           <p className="eyebrow mb-1.5">what it does to a build</p>
           <div className="space-y-1">
             {effects.map((c, i) => (
-              <div key={i} className="flex items-start gap-2 text-[0.84rem]">
+              <div key={i} className="flex items-start gap-2 text-ui">
                 <span className={`font-mono leading-5 ${c.kind === "blocked" ? "text-clay" : "text-green"}`}>{c.kind === "blocked" ? "✕" : "✓"}</span>
                 <span className="text-ink-2">{c.text}</span>
               </div>
@@ -242,7 +242,7 @@ function PinDrawer({ pin, vintages, consequences, onToggle, onClose }: { pin: Pi
       {/* what this can't prove — the honest limit */}
       <div className="mt-4 border-l-2 border-clay pl-3.5 py-1 max-w-[80ch]">
         <p className="eyebrow text-clay">what this can&apos;t prove</p>
-        <p className="mt-1.5 text-[0.86rem] leading-[1.55] text-ink-2">{pin.cantProve}</p>
+        <p className="mt-1.5 text-ui leading-[1.55] text-ink-2">{pin.cantProve}</p>
       </div>
     </div>
   );
@@ -261,13 +261,13 @@ function VintageSlider({ vintages }: { vintages: Vintage[] }) {
     <div className="mt-4 border border-hairline bg-paper-2/40 px-4 py-3 max-w-[80ch]">
       <div className="flex items-baseline justify-between mb-2">
         <p className="eyebrow">vintage slider · as-of knowledge time</p>
-        <span className="font-mono text-[0.66rem] text-faint">pinned {vintages[pinnedIdx]?.asOf}</span>
+        <span className="font-mono text-meta text-faint">pinned {vintages[pinnedIdx]?.asOf}</span>
       </div>
       <div className="flex items-center gap-4">
         <div className="shrink-0">
-          <div className="font-mono text-[0.62rem] text-muted">{v.asOf}</div>
-          <div className="font-mono text-[1.4rem] tabular-nums text-ink leading-tight">{v.value.toFixed(2)}</div>
-          <div className={`font-mono text-[0.6rem] ${v.fencedOut ? "text-clay" : v.moved ? "text-clay-deep" : "text-green"}`}>
+          <div className="font-mono text-meta text-muted">{v.asOf}</div>
+          <div className="font-mono text-h2 tabular-nums text-ink leading-tight">{v.value.toFixed(2)}</div>
+          <div className={`font-mono text-meta ${v.fencedOut ? "text-clay" : v.moved ? "text-clay-deep" : "text-green"}`}>
             {v.fencedOut ? "fenced out — vintage leakage" : v.moved ? "moved vs first print" : "same as first print"}
           </div>
         </div>
@@ -288,7 +288,7 @@ function VintageSlider({ vintages }: { vintages: Vintage[] }) {
                 key={vt.asOf}
                 onClick={() => setIdx(i)}
                 title={vt.note}
-                className={`font-mono text-[0.56rem] ${i === idx ? "text-clay" : vt.fencedOut ? "text-faint/70 line-through" : "text-faint hover:text-ink"}`}
+                className={`font-mono text-micro ${i === idx ? "text-clay" : vt.fencedOut ? "text-faint/70 line-through" : "text-faint hover:text-ink"}`}
               >
                 {vt.asOf.slice(2, 7)}
               </button>
@@ -296,7 +296,7 @@ function VintageSlider({ vintages }: { vintages: Vintage[] }) {
           </div>
         </div>
       </div>
-      {v.note && <p className="mt-2 text-[0.78rem] text-muted">{v.note}</p>}
+      {v.note && <p className="mt-2 text-ui text-muted">{v.note}</p>}
     </div>
   );
 }

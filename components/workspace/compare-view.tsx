@@ -79,12 +79,12 @@ export function CompareView({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="eyebrow text-clay">compare · {nodeLabel} — {group.param} sweep</p>
-          <p className="mt-1 font-mono text-[0.7rem] text-faint">
+          <p className="mt-1 font-mono text-meta text-faint">
             {group.members.length} variant{group.members.length === 1 ? "" : "s"}{op ? ` · ${op}` : ""} · on spine: {group.param}={group.chosen}
           </p>
         </div>
         {onFork && (
-          <button onClick={onFork} className="shrink-0 font-mono text-[0.64rem] uppercase tracking-[0.1em] border border-clay text-clay px-2.5 py-1 hover:bg-clay hover:text-paper transition-colors">
+          <button onClick={onFork} className="shrink-0 font-mono text-meta uppercase tracking-[0.1em] border border-clay text-clay px-2.5 py-1 hover:bg-clay hover:text-paper transition-colors">
             ⑂ fork more
           </button>
         )}
@@ -93,13 +93,13 @@ export function CompareView({
       {hasMetrics && (
         <div className="mt-4 border border-hairline bg-paper p-3">
           <OverlayChart series={overlay.map((m) => ({ value: m.value, points: equityCurve(m.metrics!), best: m.value === best?.value }))} />
-          <p className="mt-1 font-mono text-[0.62rem] text-faint">cumulative return · top {overlay.length} overlaid · {group.param}={best?.value} bold</p>
+          <p className="mt-1 font-mono text-meta text-faint">cumulative return · top {overlay.length} overlaid · {group.param}={best?.value} bold</p>
         </div>
       )}
 
       {hasMetrics ? (
         <div className="mt-4 rounded-lg border border-hairline bg-white overflow-hidden">
-          <table className="w-full table-fixed font-mono text-[0.74rem]">
+          <table className="w-full table-fixed font-mono text-meta">
             <thead>
               <tr className="border-b border-hairline text-faint">
                 <th className="text-left font-normal px-3 py-2 w-[26%]">{group.param}</th>
@@ -128,7 +128,7 @@ export function CompareView({
                       {onSpine ? (
                         <span className="text-[#3B6D11]" title="on spine">●</span>
                       ) : (
-                        <button onClick={() => onPromote(m.value)} title="promote to spine" className="text-muted hover:text-clay text-[0.95rem] leading-none">↑</button>
+                        <button onClick={() => onPromote(m.value)} title="promote to spine" className="text-muted hover:text-clay text-body leading-none">↑</button>
                       )}
                     </td>
                   </tr>
@@ -142,13 +142,13 @@ export function CompareView({
           {group.members.map((m) => {
             const onSpine = m.value === group.chosen;
             return (
-              <div key={m.value} className="flex items-center justify-between px-3 py-2 font-mono text-[0.8rem]">
+              <div key={m.value} className="flex items-center justify-between px-3 py-2 font-mono text-ui">
                 <span className={onSpine ? "text-ink" : "text-muted"}>
                   {group.param} = {m.value}
-                  {onSpine && <span className="text-[#3B6D11] ml-2 text-[0.66rem]">on spine</span>}
+                  {onSpine && <span className="text-[#3B6D11] ml-2 text-meta">on spine</span>}
                 </span>
                 {!onSpine && (
-                  <button onClick={() => onPromote(m.value)} className="font-mono text-[0.6rem] uppercase tracking-[0.1em] border border-ink px-2 py-0.5 hover:bg-ink hover:text-paper transition-colors">
+                  <button onClick={() => onPromote(m.value)} className="font-mono text-meta uppercase tracking-[0.1em] border border-ink px-2 py-0.5 hover:bg-ink hover:text-paper transition-colors">
                     promote → spine
                   </button>
                 )}

@@ -52,7 +52,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-3.5 py-3 text-[0.88rem] border-b-2 -mb-px transition-colors ${
+            className={`px-3.5 py-3 text-body border-b-2 -mb-px transition-colors ${
               tab === t ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"
             }`}
           >
@@ -67,7 +67,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
           {kpis.map(([k, v]) => (
             <div key={k} className="px-4 py-4">
               <div className="eyebrow">{k}</div>
-              <div className="mt-1.5 font-mono text-[1.05rem] text-ink tabular-nums">{v}</div>
+              <div className="mt-1.5 font-mono text-h3 text-ink tabular-nums">{v}</div>
             </div>
           ))}
         </div>
@@ -81,7 +81,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
             <div className="border border-hairline bg-paper p-4">
               <PreviewChart data={d.preview} height={220} />
             </div>
-            <p className="mt-4 text-[0.9rem] leading-relaxed text-ink-2">{d.blurb}</p>
+            <p className="mt-4 text-body leading-relaxed text-ink-2">{d.blurb}</p>
           </div>
         )}
 
@@ -98,7 +98,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
               <span className="eyebrow">{d.schema}</span>
             </div>
             <div className="rounded-lg border border-hairline bg-white overflow-x-auto">
-              <table className="w-full font-mono text-[0.76rem] border-collapse">
+              <table className="w-full font-mono text-ui border-collapse">
                 <thead>
                   <tr className="border-b border-hairline text-faint">
                     {d.schemaFields.map((f) => (
@@ -125,16 +125,16 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 font-mono text-[0.68rem] text-faint">a deterministic sample, keyed by the schema — not the full table.</p>
+            <p className="mt-2 font-mono text-meta text-faint">a deterministic sample, keyed by the schema — not the full table.</p>
           </div>
         )}
 
         {tab === "Schema" && (
           <div className="mt-6">
             <div className="rounded-lg border border-hairline bg-white overflow-hidden">
-              <table className="w-full text-[0.8rem] border-collapse">
+              <table className="w-full text-ui border-collapse">
                 <thead>
-                  <tr className="border-b border-hairline text-faint font-mono text-[0.62rem] uppercase tracking-[0.1em]">
+                  <tr className="border-b border-hairline text-faint font-mono text-meta uppercase tracking-[0.1em]">
                     <th className="text-left font-normal px-4 py-2">column</th>
                     <th className="text-left font-normal px-4 py-2">type</th>
                     <th className="text-left font-normal px-4 py-2">role</th>
@@ -150,7 +150,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
                         <td className="px-4 py-2 text-ink">{f.name}</td>
                         <td className="px-4 py-2 text-clay">{f.type}</td>
                         <td className="px-4 py-2">
-                          {chip && <span className={`text-[0.58rem] uppercase tracking-[0.1em] border rounded-full px-1.5 py-0.5 ${chip.cls}`}>{chip.label}</span>}
+                          {chip && <span className={`text-meta uppercase tracking-[0.1em] border rounded-full px-1.5 py-0.5 ${chip.cls}`}>{chip.label}</span>}
                         </td>
                         <td className={`px-4 py-2 ${f.nullable ? "text-muted" : "text-faint"}`}>{f.nullable ? "yes" : "no"}</td>
                         <td className="px-4 py-2 text-faint">{f.note ?? ""}</td>
@@ -160,7 +160,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-2 font-mono text-[0.68rem] text-faint">
+            <p className="mt-2 font-mono text-meta text-faint">
               {timeField && <>indexed on <span className="text-[#3B6D11]">{timeField}</span></>}
               {keyField && <> · keyed by <span className="text-clay">{keyField}</span></>}
               {" · "}{d.schemaFields.length} columns
@@ -175,7 +175,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
               <span className="eyebrow text-faint">pre-computed snapshot · as of {d.coverage.end}</span>
             </div>
             <div className="rounded-lg border border-hairline bg-white overflow-x-auto">
-              <table className="w-full font-mono text-[0.72rem] border-collapse">
+              <table className="w-full font-mono text-meta border-collapse">
                 <thead>
                   <tr className="border-b border-hairline text-faint">
                     <th className="text-left font-normal px-3 py-2 sticky left-0 bg-white">column</th>
@@ -213,7 +213,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
                       <button
                         key={h.column}
                         onClick={() => setHistCol(h.column)}
-                        className={`font-mono text-[0.66rem] rounded-full border px-2 py-0.5 transition-colors ${histCol === h.column ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink"}`}
+                        className={`font-mono text-meta rounded-full border px-2 py-0.5 transition-colors ${histCol === h.column ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink"}`}
                       >
                         {h.column}
                       </button>
@@ -223,7 +223,7 @@ export function DatasetOverview({ dataset: d }: { dataset: HostedDataset }) {
                 {hist && (
                   <div className="rounded-lg border border-hairline bg-white p-3">
                     <Histogram hist={hist} />
-                    <p className="mt-1 font-mono text-[0.66rem] text-faint">
+                    <p className="mt-1 font-mono text-meta text-faint">
                       {histCol} · {stats.find((s) => s.name === histCol)?.type} · {stats.find((s) => s.name === histCol)?.nullPct ?? 0}% null · {hist.bins.length} bins
                     </p>
                   </div>

@@ -28,9 +28,9 @@ export function AppShell({
     <AuthProvider>
       <CreditsProvider>
         {inWorkspace ? (
-          <div id="main-content" className="h-screen bg-paper-2">{children}</div>
+          <div id="main-content" className="h-screen bg-paper-2 text-ui">{children}</div>
         ) : (
-          <div className="flex min-h-screen bg-paper">
+          <div className="flex min-h-screen bg-paper text-ui">
             <Sidebar recents={recents} />
             <div className="flex-1 min-w-0 flex flex-col">
               <Topbar />

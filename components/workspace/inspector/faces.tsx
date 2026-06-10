@@ -13,7 +13,7 @@ function Lede({ p, children }: { p: FaceProps; children?: React.ReactNode }) {
   const c = p.concepts[p.node.kind];
   return (
     <div className="max-w-[66ch]">
-      <p className="text-[1.02rem] leading-[1.7] text-ink-2">
+      <p className="text-h3 leading-[1.7] text-ink-2">
         <span className="italic text-ink">{p.label}</span> is a {KIND_NOUN[p.node.kind] ?? p.node.kind}
         {p.op && (
           <>
@@ -42,8 +42,8 @@ function Inputs({ p, title = "built from" }: { p: FaceProps; title?: string }) {
               onClick={() => p.onOpenNode(id)}
               className="group flex items-center gap-2 border border-hairline-2 px-2.5 py-1.5 hover:border-ink transition-colors"
             >
-              <span className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-muted">{n?.kind}</span>
-              <span className="text-[0.82rem] text-ink-2 group-hover:text-ink">{p.labels[id] ?? n?.name ?? id}</span>
+              <span className="font-mono text-meta uppercase tracking-[0.12em] text-muted">{n?.kind}</span>
+              <span className="text-ui text-ink-2 group-hover:text-ink">{p.labels[id] ?? n?.name ?? id}</span>
             </button>
           );
         })}
@@ -93,8 +93,8 @@ function FeatureFace(p: FaceProps) {
       <Data p={p} />
       {expr && (
         <Section title="how it's computed">
-          <div className="rounded-lg border border-ink bg-ink text-paper p-4 font-mono text-[0.82rem]">{expr}</div>
-          {explain && <p className="mt-3 text-[0.92rem] leading-[1.7] text-ink-2 max-w-[60ch]">{explain}</p>}
+          <div className="rounded-lg border border-ink bg-ink text-paper p-4 font-mono text-ui">{expr}</div>
+          {explain && <p className="mt-3 text-body leading-[1.7] text-ink-2 max-w-[60ch]">{explain}</p>}
         </Section>
       )}
       <Inputs p={p} />
@@ -119,7 +119,7 @@ function TargetFace(p: FaceProps) {
       <Data p={p} />
       <div className="mt-6 border border-[#3B6D11]/40 bg-paper px-5 py-4">
         <p className="eyebrow text-[#3B6D11]">no lookahead</p>
-        <p className="mt-2 text-[0.92rem] leading-relaxed text-ink-2">
+        <p className="mt-2 text-body leading-relaxed text-ink-2">
           The target is shifted strictly into the future (<span className="font-mono text-clay">{p.op ?? "lead"}</span>). At each bar it
           holds a return the model could only have known <span className="italic">after</span> acting — so training on it cannot peek ahead.
         </p>
@@ -150,12 +150,12 @@ function ModelFace(p: FaceProps) {
       <Section title="fitted coefficients">
         <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">
           {coeffRows.map(([name, val]) => (
-            <div key={name} className="flex items-center justify-between px-4 py-2 font-mono text-[0.8rem]">
+            <div key={name} className="flex items-center justify-between px-4 py-2 font-mono text-ui">
               <span className="text-ink-2">{name}</span>
               <span className="tabular-nums text-ink">{val}</span>
             </div>
           ))}
-          <div className="flex items-center justify-between px-4 py-2 font-mono text-[0.8rem] bg-paper-2/50">
+          <div className="flex items-center justify-between px-4 py-2 font-mono text-ui bg-paper-2/50">
             <span className="text-faint">regularisation</span>
             <span className="text-clay">{reg}</span>
           </div>
@@ -194,17 +194,17 @@ function PolicyFace(p: FaceProps) {
   const governs = p.graph.nodes.filter((n) => n.policyRefs?.includes(p.node.id));
   return (
     <div className="p-6">
-      <p className="max-w-[66ch] text-[1.02rem] leading-[1.7] text-ink-2">
+      <p className="max-w-[66ch] text-h3 leading-[1.7] text-ink-2">
         <span className="italic text-ink">{p.label}</span> is a policy — {p.concepts.policy?.what}
       </p>
       <Section title="intended invariant">
-        <p className="font-serif text-[1.05rem] leading-[1.6] text-ink max-w-[64ch]">{info.invariant}</p>
+        <p className="font-serif text-h3 leading-[1.6] text-ink max-w-[64ch]">{info.invariant}</p>
       </Section>
       <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 border border-hairline divide-x divide-hairline">
         {[["class", info.cls], ["scope", info.scope], ["review", info.review]].map(([k, v]) => (
           <div key={k} className="px-4 py-3">
             <div className="eyebrow">{k}</div>
-            <div className={`mt-1 font-mono text-[0.82rem] ${k === "review" ? "text-[#3B6D11]" : "text-ink"}`}>{v}</div>
+            <div className={`mt-1 font-mono text-ui ${k === "review" ? "text-[#3B6D11]" : "text-ink"}`}>{v}</div>
           </div>
         ))}
       </div>
@@ -212,7 +212,7 @@ function PolicyFace(p: FaceProps) {
         <Section title="governs">
           <div className="flex flex-wrap gap-2">
             {governs.map((n) => (
-              <button key={n.id} onClick={() => p.onOpenNode(n.id)} className="font-mono text-[0.76rem] border border-clay text-clay rounded-full px-2.5 py-1 hover:bg-clay hover:text-paper transition-colors">
+              <button key={n.id} onClick={() => p.onOpenNode(n.id)} className="font-mono text-ui border border-clay text-clay rounded-full px-2.5 py-1 hover:bg-clay hover:text-paper transition-colors">
                 {p.labels[n.id] ?? n.name}
               </button>
             ))}
@@ -229,7 +229,7 @@ function StrategyFace(p: FaceProps) {
       <Lede p={p} />
       <div className="mt-6 border border-hairline bg-paper px-5 py-4">
         <p className="eyebrow">the rule</p>
-        <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-2">Go long when the signal is high, short when it is low, flat in between — sized by the attached position-sizing policy.</p>
+        <p className="mt-2 text-body leading-relaxed text-ink-2">Go long when the signal is high, short when it is low, flat in between — sized by the attached position-sizing policy.</p>
       </div>
       <Inputs p={p} title="signals" />
     </div>
@@ -243,11 +243,11 @@ function UniverseFace(p: FaceProps) {
       <div className="mt-6 grid grid-cols-2 border border-hairline divide-x divide-hairline">
         <div className="px-4 py-3">
           <div className="eyebrow">construction</div>
-          <div className="mt-1 font-mono text-[0.82rem] text-[#3B6D11]">{p.node.pitConstruction ?? "point_in_time"}</div>
+          <div className="mt-1 font-mono text-ui text-[#3B6D11]">{p.node.pitConstruction ?? "point_in_time"}</div>
         </div>
         <div className="px-4 py-3">
           <div className="eyebrow">members</div>
-          <div className="mt-1 font-mono text-[0.82rem] text-ink">eligible at each bar</div>
+          <div className="mt-1 font-mono text-ui text-ink">eligible at each bar</div>
         </div>
       </div>
       <Inputs p={p} />
@@ -270,7 +270,7 @@ function OperatorFace(p: FaceProps) {
     <div className="p-6">
       <Lede p={p} />
       <Section title="signature">
-        <div className="border border-ink bg-ink text-paper p-4 font-mono text-[0.82rem]">
+        <div className="border border-ink bg-ink text-paper p-4 font-mono text-ui">
           {p.node.name}(input) → output
         </div>
       </Section>

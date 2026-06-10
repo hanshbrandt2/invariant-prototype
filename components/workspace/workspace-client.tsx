@@ -627,14 +627,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
         />
         {staleActive && (
           <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 border-b border-clay/40 bg-clay-wash">
-            <span className="text-[0.82rem] text-clay-deep">
+            <span className="text-ui text-clay-deep">
               ⚠ {changed && <><span className="italic">{changed.label}</span> changed — </>}
               {stale.size} downstream {stale.size === 1 ? "artifact is" : "artifacts are"} stale · the finding no longer reflects its inputs (not reproducible until rebuilt)
             </span>
             <button
               onClick={() => void rebuildStale()}
               disabled={building}
-              className="shrink-0 font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1 hover:bg-clay hover:text-paper transition-colors disabled:opacity-50"
+              className="shrink-0 font-mono text-meta uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1 hover:bg-clay hover:text-paper transition-colors disabled:opacity-50"
             >
               {building ? "rebuilding…" : `rebuild ${stale.size} →`}
             </button>

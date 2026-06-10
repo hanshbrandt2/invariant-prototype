@@ -35,32 +35,32 @@ function RecipeCard({ r, pinLabels, runs }: { r: Recipe; pinLabels: Record<strin
       </div>
       <div className="px-4 py-3 flex-1 flex flex-col">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[0.84rem] text-ink truncate">{r.name}</span>
+          <span className="font-mono text-ui text-ink truncate">{r.name}</span>
           {r.agentic ? (
-            <span className="shrink-0 font-mono text-[0.54rem] uppercase tracking-[0.1em] bg-clay text-paper px-1.5 py-0.5">⚙ agentic</span>
+            <span className="shrink-0 font-mono text-micro uppercase tracking-[0.1em] bg-clay text-paper px-1.5 py-0.5">⚙ agentic</span>
           ) : r.state === "validated" ? (
-            <span className="shrink-0 font-mono text-[0.54rem] uppercase tracking-[0.1em] border border-hairline-2 text-muted px-1.5 py-0.5">manual</span>
+            <span className="shrink-0 font-mono text-micro uppercase tracking-[0.1em] border border-hairline-2 text-muted px-1.5 py-0.5">manual</span>
           ) : (
-            <span className="shrink-0 font-mono text-[0.54rem] uppercase tracking-[0.1em] border border-dashed border-hairline-2 text-faint px-1.5 py-0.5">draft</span>
+            <span className="shrink-0 font-mono text-micro uppercase tracking-[0.1em] border border-dashed border-hairline-2 text-faint px-1.5 py-0.5">draft</span>
           )}
         </div>
-        <p className="mt-1 text-[0.78rem] leading-snug text-muted line-clamp-2">{r.summary}</p>
+        <p className="mt-1 text-ui leading-snug text-muted line-clamp-2">{r.summary}</p>
         <div className="mt-2 flex flex-wrap gap-1">
           {r.pins.slice(0, 4).map((id) => (
-            <span key={id} className="font-mono text-[0.52rem] text-clay-deep bg-clay-wash border border-clay/40 px-1 leading-[1.5]">{pinLabels[id] ?? id}</span>
+            <span key={id} className="font-mono text-micro text-clay-deep bg-clay-wash border border-clay/40 px-1 leading-[1.5]">{pinLabels[id] ?? id}</span>
           ))}
-          {r.pins.length > 4 && <span className="font-mono text-[0.52rem] text-faint self-center">+{r.pins.length - 4}</span>}
+          {r.pins.length > 4 && <span className="font-mono text-micro text-faint self-center">+{r.pins.length - 4}</span>}
         </div>
         {runs.length > 0 && (
-          <p className="mt-2 font-mono text-[0.56rem] text-faint">
+          <p className="mt-2 font-mono text-micro text-faint">
             {runs.length} run{runs.length > 1 ? "s" : ""}
             {halted > 0 && <span className="text-clay"> · {halted} halted ⛔</span>}
             <span className="text-muted"> · last {runs[0].at.slice(0, 10)}</span>
           </p>
         )}
         <div className="mt-auto pt-3 flex items-center justify-between">
-          <span className="font-mono text-[0.6rem] text-faint">{status}</span>
-          <Link href={href} className="font-mono text-[0.62rem] uppercase tracking-[0.1em] text-clay hover:underline">{cta}</Link>
+          <span className="font-mono text-meta text-faint">{status}</span>
+          <Link href={href} className="font-mono text-meta uppercase tracking-[0.1em] text-clay hover:underline">{cta}</Link>
         </div>
       </div>
     </div>

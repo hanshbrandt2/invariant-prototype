@@ -43,8 +43,8 @@ export function ForkDialog({
       <div className="relative w-full max-w-[420px] border border-ink bg-paper">
         <div className="px-5 py-4 border-b border-hairline">
           <p className="eyebrow text-clay">⑂ fork · vary {param}</p>
-          <h2 className="mt-1 font-serif text-[1.3rem] font-semibold leading-tight">{nodeLabel}</h2>
-          <p className="mt-1 text-[0.82rem] text-muted">
+          <h2 className="mt-1 font-serif text-h2 font-semibold leading-tight">{nodeLabel}</h2>
+          <p className="mt-1 text-ui text-muted">
             pick {param} values to build — each spawns a sibling and re-runs downstream.
           </p>
         </div>
@@ -60,7 +60,7 @@ export function ForkDialog({
                   key={v}
                   disabled={isBuilt}
                   onClick={() => toggle(v)}
-                  className={`font-mono text-[0.8rem] px-3 py-1.5 border rounded-full transition-colors ${
+                  className={`font-mono text-ui px-3 py-1.5 border rounded-full transition-colors ${
                     isBuilt
                       ? "border-hairline-2 text-faint cursor-default"
                       : on
@@ -74,23 +74,23 @@ export function ForkDialog({
               );
             })}
           </div>
-          <p className="mt-3 font-mono text-[0.68rem] text-faint">
+          <p className="mt-3 font-mono text-meta text-faint">
             bounded &amp; valid by construction — only this operator&rsquo;s knob.
           </p>
         </div>
 
         <div className="px-5 py-3 border-t border-hairline flex items-center justify-between">
-          <span className="font-mono text-[0.72rem] text-muted">
+          <span className="font-mono text-meta text-muted">
             {newCount === 0 ? "select values to build" : `build ${newCount} new · ~${credits} credits`}
           </span>
           <div className="flex items-center gap-2">
-            <button onClick={onClose} className="font-mono text-[0.7rem] uppercase tracking-[0.1em] text-muted hover:text-ink px-2 py-1">
+            <button onClick={onClose} className="font-mono text-meta uppercase tracking-[0.1em] text-muted hover:text-ink px-2 py-1">
               cancel
             </button>
             <button
               disabled={newCount === 0}
               onClick={() => onRun([...picked])}
-              className="font-mono text-[0.7rem] uppercase tracking-[0.12em] bg-ink text-paper px-3.5 py-1.5 hover:bg-clay transition-colors disabled:opacity-40 disabled:hover:bg-ink"
+              className="font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper px-3.5 py-1.5 hover:bg-clay transition-colors disabled:opacity-40 disabled:hover:bg-ink"
             >
               run →
             </button>

@@ -41,10 +41,10 @@ export function WorkspaceViews({
   return (
     <section id="workspaces" className="mt-14 scroll-mt-20">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-serif text-[1.5rem] font-semibold">Your workspaces</h2>
+        <h2 className="font-serif text-h2 font-semibold">Your workspaces</h2>
         <Link
           href="/workspace/new"
-          className="font-mono text-[0.7rem] uppercase tracking-[0.12em] border border-ink px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors"
+          className="font-mono text-meta uppercase tracking-[0.12em] border border-ink px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors"
         >
           + New workspace
         </Link>
@@ -56,7 +56,7 @@ export function WorkspaceViews({
           <button
             key={v.id}
             onClick={() => setView(v.id)}
-            className={`px-3 py-2 text-[0.82rem] border-b-2 -mb-px transition-colors ${
+            className={`px-3 py-2 text-ui border-b-2 -mb-px transition-colors ${
               view === v.id ? "border-clay text-ink" : "border-transparent text-muted hover:text-ink"
             }`}
           >
@@ -66,7 +66,7 @@ export function WorkspaceViews({
       </div>
 
       {set.length === 0 && (
-        <p className="mt-6 text-[0.9rem] text-muted">
+        <p className="mt-6 text-body text-muted">
           {view === "starred" ? "no starred workspaces yet — star one to pin it here." : "nothing here yet."}
         </p>
       )}

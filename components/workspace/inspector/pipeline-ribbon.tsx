@@ -9,7 +9,7 @@ function Chip({ label, onClick }: { label: string; onClick?: () => void }) {
     <button
       onClick={onClick}
       disabled={!onClick}
-      className="font-mono text-[0.7rem] text-ink-2 bg-paper-2 rounded-md px-2 py-1 truncate max-w-[9rem] enabled:hover:bg-paper-3 enabled:hover:text-ink transition-colors disabled:cursor-default"
+      className="font-mono text-meta text-ink-2 bg-paper-2 rounded-md px-2 py-1 truncate max-w-[9rem] enabled:hover:bg-paper-3 enabled:hover:text-ink transition-colors disabled:cursor-default"
       title={label}
     >
       {label}
@@ -50,19 +50,19 @@ export function PipelineRibbon({
           {ins.length ? (
             ins.map((i) => <Chip key={i.id} label={nameOf(i.id)} onClick={onOpenNode ? () => onOpenNode(i.id) : undefined} />)
           ) : (
-            <span className="font-mono text-[0.7rem] text-faint">raw input</span>
+            <span className="font-mono text-meta text-faint">raw input</span>
           )}
         </div>
         <span className="font-mono text-faint shrink-0">→</span>
         {/* operator */}
-        <span className="font-mono text-[0.72rem] text-clay border border-clay/40 rounded-md px-2 py-1 shrink-0">
+        <span className="font-mono text-meta text-clay border border-clay/40 rounded-md px-2 py-1 shrink-0">
           {operator ?? node.kind}
         </span>
         <span className="font-mono text-faint shrink-0">→</span>
         {/* this output */}
         <span className="flex items-center gap-1.5 shrink-0">
-          <span className="font-mono text-[0.72rem] text-ink bg-white border border-ink/15 rounded-md px-2 py-1">{node.name}</span>
-          <span className="font-mono text-[0.54rem] uppercase tracking-[0.1em] border border-[#3B6D11] text-[#3B6D11] rounded-full px-1.5 py-0.5">time</span>
+          <span className="font-mono text-meta text-ink bg-white border border-ink/15 rounded-md px-2 py-1">{node.name}</span>
+          <span className="font-mono text-micro uppercase tracking-[0.1em] border border-[#3B6D11] text-[#3B6D11] rounded-full px-1.5 py-0.5">time</span>
         </span>
         {/* consumers */}
         {outs.length > 0 && (

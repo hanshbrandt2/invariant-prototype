@@ -16,7 +16,7 @@ function FileIcon({ name, lang }: { name: string; lang: ProjectFile["lang"] }) {
     : lang === "yaml" ? ["{}", "#9a6a2f"]
     : name.endsWith(".md") ? ["md", "#7a8a9a"]
     : ["≡", "#B5AFA2"];
-  return <span className="shrink-0 w-5 text-center font-mono text-[0.5rem] leading-none" style={{ color }}>{glyph}</span>;
+  return <span className="shrink-0 w-5 text-center font-mono text-micro leading-none" style={{ color }}>{glyph}</span>;
 }
 
 /**
@@ -95,7 +95,7 @@ export function CodeView({
     return (
       <button
         onClick={() => open(f)}
-        className={`flex w-full items-center gap-1.5 py-[3px] pr-2 text-left font-mono text-[0.7rem] border-l-2 transition-colors ${indent ? "pl-5" : "pl-2.5"} ${active ? "bg-clay-wash border-clay text-clay-deep" : "border-transparent text-ink-2 hover:bg-paper"}`}
+        className={`flex w-full items-center gap-1.5 py-[3px] pr-2 text-left font-mono text-meta border-l-2 transition-colors ${indent ? "pl-5" : "pl-2.5"} ${active ? "bg-clay-wash border-clay text-clay-deep" : "border-transparent text-ink-2 hover:bg-paper"}`}
         title={f.path}
       >
         <FileIcon name={f.name} lang={f.lang} />
@@ -110,12 +110,12 @@ export function CodeView({
       {/* file tree */}
       <div className="w-[216px] shrink-0 overflow-y-auto border-r border-hairline bg-paper-2/60 flex flex-col">
         <div className="shrink-0 px-2.5 pt-2.5 pb-2 border-b border-hairline">
-          <p className="px-0.5 pb-1.5 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-muted">{workspaceName}</p>
+          <p className="px-0.5 pb-1.5 font-mono text-meta uppercase tracking-[0.14em] text-muted">{workspaceName}</p>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="search files…"
-            className="w-full bg-white border border-hairline px-2 py-1 font-mono text-[0.66rem] text-ink-2 outline-none focus:border-hairline-2 placeholder:text-faint"
+            className="w-full bg-white border border-hairline px-2 py-1 font-mono text-meta text-ink-2 outline-none focus:border-hairline-2 placeholder:text-faint"
           />
         </div>
         <div className="flex-1 overflow-y-auto py-1.5">
@@ -123,8 +123,8 @@ export function CodeView({
             const isOpen = !collapsed.has(folder);
             return (
               <div key={folder}>
-                <button onClick={() => toggleFolder(folder)} className="flex w-full items-center gap-1 px-2 py-[3px] text-left font-mono text-[0.66rem] text-ink-2 hover:bg-paper transition-colors">
-                  <span className="inline-block w-3 text-faint text-[0.55rem]">{isOpen ? "▾" : "▸"}</span>
+                <button onClick={() => toggleFolder(folder)} className="flex w-full items-center gap-1 px-2 py-[3px] text-left font-mono text-meta text-ink-2 hover:bg-paper transition-colors">
+                  <span className="inline-block w-3 text-faint text-micro">{isOpen ? "▾" : "▸"}</span>
                   <span>{folder}</span>
                 </button>
                 {isOpen && byFolder[folder].map((f) => <FileRow key={f.path} f={f} indent />)}
@@ -136,7 +136,7 @@ export function CodeView({
               {rootFiles.map((f) => <FileRow key={f.path} f={f} indent={false} />)}
             </div>
           )}
-          {shown.length === 0 && <p className="px-3 py-2 font-mono text-[0.64rem] text-faint">no files match “{query}”.</p>}
+          {shown.length === 0 && <p className="px-3 py-2 font-mono text-meta text-faint">no files match “{query}”.</p>}
         </div>
       </div>
 
@@ -152,19 +152,19 @@ export function CodeView({
                 <div
                   key={p}
                   onClick={() => setPath(p)}
-                  className={`group flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 border-r border-hairline cursor-pointer font-mono text-[0.7rem] whitespace-nowrap ${ac ? "bg-[#FBF9F4] text-ink shadow-[inset_0_-2px_0_var(--color-clay)]" : "text-muted hover:text-ink"}`}
+                  className={`group flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 border-r border-hairline cursor-pointer font-mono text-meta whitespace-nowrap ${ac ? "bg-[#FBF9F4] text-ink shadow-[inset_0_-2px_0_var(--color-clay)]" : "text-muted hover:text-ink"}`}
                   title={tf.path}
                 >
                   <FileIcon name={tf.name} lang={tf.lang} />
                   <span>{tf.name}</span>
-                  <button onClick={(e) => closeTab(e, p)} className={`ml-0.5 text-[0.85rem] leading-none text-faint hover:text-clay ${ac ? "" : "opacity-0 group-hover:opacity-100"}`} aria-label={`close ${tf.name}`}>×</button>
+                  <button onClick={(e) => closeTab(e, p)} className={`ml-0.5 text-ui leading-none text-faint hover:text-clay ${ac ? "" : "opacity-0 group-hover:opacity-100"}`} aria-label={`close ${tf.name}`}>×</button>
                 </div>
               );
             })}
           </div>
           <div className="flex items-center gap-3 px-3 shrink-0 border-l border-hairline">
-            {validator && <span className={`font-mono text-[0.58rem] uppercase tracking-[0.1em] ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>}
-            <button onClick={download} title="download the whole runnable repo as a .zip" className="font-mono text-[0.6rem] uppercase tracking-[0.06em] text-ink-2 hover:text-ink border border-hairline-2 hover:border-ink rounded px-2 py-1 transition-colors">⬇ project.zip</button>
+            {validator && <span className={`font-mono text-meta uppercase tracking-[0.1em] ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>}
+            <button onClick={download} title="download the whole runnable repo as a .zip" className="font-mono text-meta uppercase tracking-[0.06em] text-ink-2 hover:text-ink border border-hairline-2 hover:border-ink rounded px-2 py-1 transition-colors">⬇ project.zip</button>
           </div>
         </div>
 
@@ -172,7 +172,7 @@ export function CodeView({
           {file && <CodeBlock code={file.code} highlightName={highlight} flush />}
         </div>
 
-        <div className="shrink-0 flex items-center gap-3 px-4 py-1.5 border-t border-hairline bg-paper-2/60 font-mono text-[0.58rem] text-muted">
+        <div className="shrink-0 flex items-center gap-3 px-4 py-1.5 border-t border-hairline bg-paper-2/60 font-mono text-meta text-muted">
           {pinChips.length > 0 ? pinChips.map((p, i) => <span key={i} className="text-clay-deep">🔒 {p}</span>) : <span className="text-faint">{file?.path}</span>}
           <span className="text-faint">·</span>
           <span>python 3.11</span>

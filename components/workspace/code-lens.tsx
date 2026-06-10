@@ -32,10 +32,10 @@ export function CodeLens({ code, name, highlightName }: { code: string; name: st
       <div className="flex items-center justify-between gap-3 mb-3">
         <p className="eyebrow">reproducible{highlightName ? ` · ${highlightName}` : ""}</p>
         <div className="flex items-center gap-1.5">
-          <button onClick={copy} className="font-mono text-[0.66rem] uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted hover:border-ink hover:text-ink transition-colors">
+          <button onClick={copy} className="font-mono text-meta uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted hover:border-ink hover:text-ink transition-colors">
             {copied ? "copied ✓" : "copy"}
           </button>
-          <button onClick={download} className="font-mono text-[0.66rem] uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted hover:border-ink hover:text-ink transition-colors">
+          <button onClick={download} className="font-mono text-meta uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted hover:border-ink hover:text-ink transition-colors">
             download .py
           </button>
         </div>
@@ -132,10 +132,10 @@ export function CodeBlock({ code, highlightName, flush }: { code: string; highli
   };
   return (
     <div className={flush ? "bg-[#FBF9F4] min-h-full" : "rounded-lg border border-hairline bg-[#FBF9F4] overflow-hidden"}>
-      <pre className="py-2.5 text-[0.72rem] leading-[1.6] font-mono">
+      <pre className="py-2.5 text-meta leading-[1.6] font-mono">
         {lines.map((line, i) => (
           <div key={i} className={`flex items-start ${isHi(line) ? "bg-clay-wash" : ""}`}>
-            <span className="select-none shrink-0 w-10 pr-3 text-right text-[0.66rem] text-[#B5AFA2] tabular-nums">{line.trim() ? i + 1 : ""}</span>
+            <span className="select-none shrink-0 w-10 pr-3 text-right text-meta text-[#B5AFA2] tabular-nums">{line.trim() ? i + 1 : ""}</span>
             <code className="flex-1 pr-5 whitespace-pre-wrap break-words">
               {tokens[i].map((t, j) => (
                 <span key={j} style={{ color: COLOR[t.cls], fontStyle: t.cls === "comment" ? "italic" : undefined }}>{t.text}</span>

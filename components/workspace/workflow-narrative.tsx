@@ -106,22 +106,22 @@ export function WorkflowNarrative({
         <div className="border border-clay bg-paper mb-9">
           <div className="px-6 pt-5 pb-4 border-b border-hairline">
             <p className="eyebrow text-clay">the finding</p>
-            <p className="mt-2 font-serif text-[1.5rem] leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
+            <p className="mt-2 font-serif text-h2 leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
           </div>
           <div className="grid md:grid-cols-12">
             <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
               <PreviewChart data={equityCurve(spec.metrics)} height={236} />
-              <p className="mt-2 font-mono text-[0.62rem] text-faint">cumulative return % · {spec.evalWindow.start} → {spec.evalWindow.end} · click to inspect</p>
+              <p className="mt-2 font-mono text-meta text-faint">cumulative return % · {spec.evalWindow.start} → {spec.evalWindow.end} · click to inspect</p>
             </button>
             <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
               {Object.entries(spec.metrics).slice(0, 4).map(([k, v]) => {
                 const lbl = PLAIN_LABEL[k];
                 return (
                   <div key={k}>
-                    <div className="font-mono text-[1.45rem] text-ink tabular-nums leading-none">{fmtMetric(k, v)}</div>
-                    <div className="mt-1 text-[0.74rem] text-muted">
+                    <div className="font-mono text-h2 text-ink tabular-nums leading-none">{fmtMetric(k, v)}</div>
+                    <div className="mt-1 text-meta text-muted">
                       {lbl?.plain ?? METRIC_LABEL[k] ?? k}
-                      {lbl?.jargon && <span className="font-mono text-[0.6rem] text-faint"> ({lbl.jargon})</span>}
+                      {lbl?.jargon && <span className="font-mono text-meta text-faint"> ({lbl.jargon})</span>}
                     </div>
                   </div>
                 );
@@ -129,18 +129,18 @@ export function WorkflowNarrative({
               {spec.nextProposal && (
                 <div className="mt-1 pt-3 border-t border-hairline">
                   <p className="eyebrow text-clay mb-1">next move</p>
-                  <p className="text-[0.86rem] leading-relaxed text-ink-2">{spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}</p>
+                  <p className="text-ui leading-relaxed text-ink-2">{spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}</p>
                 </div>
               )}
             </div>
           </div>
           <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
-            <span className={`font-mono text-[0.68rem] ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>
-            {ok && <><span className="font-mono text-[0.66rem] text-clay-deep">🔒 no look-ahead</span><span className="font-mono text-[0.66rem] text-clay-deep">🔒 reproducible</span></>}
+            <span className={`font-mono text-meta ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>
+            {ok && <><span className="font-mono text-meta text-clay-deep">🔒 no look-ahead</span><span className="font-mono text-meta text-clay-deep">🔒 reproducible</span></>}
             {onOpenLens && (
               <span className="ml-auto flex items-center gap-4">
-                <button onClick={() => onOpenLens("graph")} className="font-mono text-[0.66rem] text-muted hover:text-ink transition-colors">how it was built ▸</button>
-                <button onClick={() => onOpenLens("code")} className="font-mono text-[0.66rem] text-muted hover:text-ink transition-colors">the code ▸</button>
+                <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>
+                <button onClick={() => onOpenLens("code")} className="font-mono text-meta text-muted hover:text-ink transition-colors">the code ▸</button>
               </span>
             )}
           </div>
@@ -151,7 +151,7 @@ export function WorkflowNarrative({
       <p className="eyebrow mb-4">how it was built · {workspaceName}{building ? " · building…" : ""} <span className="text-faint normal-case tracking-normal">— or open the Graph lens to see the full lineage</span></p>
 
       {flow.length === 0 && !building && (
-        <p className="text-[0.9rem] text-muted">nothing built yet — describe what to build in the conversation.</p>
+        <p className="text-body text-muted">nothing built yet — describe what to build in the conversation.</p>
       )}
 
       <div className="flex flex-col items-stretch">
@@ -172,8 +172,8 @@ export function WorkflowNarrative({
         {building && (
           <div className="border border-dashed border-clay/60 bg-paper px-5 py-4 animate-pulse">
             <div className="flex items-center justify-between">
-              <span className="text-[0.9rem] text-ink">{buildingLabel ?? "building…"}</span>
-              {buildingOp && <span className="font-mono text-[0.7rem] text-clay">{buildingOp}</span>}
+              <span className="text-body text-ink">{buildingLabel ?? "building…"}</span>
+              {buildingOp && <span className="font-mono text-meta text-clay">{buildingOp}</span>}
             </div>
           </div>
         )}
@@ -187,7 +187,7 @@ function Connector() {
   return (
     <div className="flex flex-col items-center py-1 text-faint">
       <span className="h-4 w-px bg-hairline-2" />
-      <span className="text-[0.7rem] leading-none">▼</span>
+      <span className="text-meta leading-none">▼</span>
     </div>
   );
 }
@@ -225,20 +225,20 @@ function NodeCard({
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className={`font-mono text-[0.6rem] uppercase tracking-[0.16em] ${isResult ? "text-clay" : "text-muted"}`}>
+        <span className={`font-mono text-meta uppercase tracking-[0.16em] ${isResult ? "text-clay" : "text-muted"}`}>
           {KIND_TAG[node.kind] ?? node.kind}
         </span>
-        {op && <span className="font-mono text-[0.68rem] text-faint">{op}</span>}
+        {op && <span className="font-mono text-meta text-faint">{op}</span>}
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-[1rem] text-ink">{label}</span>
-        <span className="font-mono text-[0.7rem] text-faint truncate">{node.name}</span>
+        <span className="text-h3 text-ink">{label}</span>
+        <span className="font-mono text-meta text-faint truncate">{node.name}</span>
       </div>
 
       {isDataset && dataset && (
         <div className="mt-3 border border-hairline bg-paper-2/40 p-2">
           <PreviewChart data={dataset.preview} height={84} />
-          <div className="mt-1.5 flex items-center justify-between font-mono text-[0.64rem] text-faint">
+          <div className="mt-1.5 flex items-center justify-between font-mono text-meta text-faint">
             <span>{(dataset.rows / 1e6).toFixed(1)}M rows · {dataset.cols} cols</span>
             <span>{dataset.missingPct}% missing</span>
           </div>
@@ -248,7 +248,7 @@ function NodeCard({
       {isResult && spec && (
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
           {RESULT_METRIC_KEYS.filter((k) => k in spec.metrics).map((k) => (
-            <span key={k} className="font-mono text-[0.78rem] text-ink-2">
+            <span key={k} className="font-mono text-ui text-ink-2">
               <span className="text-faint">{METRIC_LABEL[k] ?? k} </span>
               {fmtMetric(k, spec.metrics[k])}
             </span>

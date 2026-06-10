@@ -47,11 +47,11 @@ export function EdgeInspector({
         <EndpointCard node={parent} label={parentLabel} onOpen={() => parent && onOpenNode(parent.id)} role="from" />
         <div className="flex flex-col items-center py-2">
           <span className="h-5 w-px bg-clay/50" />
-          <span className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-clay px-2 py-0.5 border border-clay/40 rounded-full">
+          <span className="font-mono text-meta uppercase tracking-[0.14em] text-clay px-2 py-0.5 border border-clay/40 rounded-full">
             {op ?? meta.label}
           </span>
           <span className="h-5 w-px bg-clay/50" />
-          <span className="text-[0.7rem] leading-none text-clay">▼</span>
+          <span className="text-meta leading-none text-clay">▼</span>
         </div>
         <EndpointCard node={child} label={childLabel} onOpen={() => child && onOpenNode(child.id)} role="to" />
       </div>
@@ -60,7 +60,7 @@ export function EdgeInspector({
       {composition && (
         <div className="mt-7">
           <p className="eyebrow mb-2">how it composes · pipeline.py</p>
-          <pre className="border border-hairline bg-paper-2/50 px-4 py-3 overflow-x-auto font-mono text-[0.8rem] leading-relaxed text-ink">
+          <pre className="border border-hairline bg-paper-2/50 px-4 py-3 overflow-x-auto font-mono text-ui leading-relaxed text-ink">
             <span className="text-faint">{parent?.name ?? "—"}</span>
             <span className="text-faint"> → </span>
             <span className="text-ink">{child?.name ?? "—"}</span>
@@ -72,7 +72,7 @@ export function EdgeInspector({
 
       <div className="mt-6 border border-hairline bg-paper px-5 py-4">
         <p className="eyebrow mb-2">what this dependency means</p>
-        <p className="text-[0.95rem] leading-[1.7] text-ink-2">{meta.explain(parentLabel, childLabel)}</p>
+        <p className="text-body leading-[1.7] text-ink-2">{meta.explain(parentLabel, childLabel)}</p>
       </div>
     </div>
   );
@@ -82,12 +82,12 @@ function EndpointCard({ node, label, onOpen, role }: { node?: Node; label: strin
   return (
     <button onClick={onOpen} className="group w-full text-left border border-hairline bg-paper px-5 py-4 hover:border-ink transition-colors">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[0.58rem] uppercase tracking-[0.16em] text-muted">{node ? KIND_TAG[node.kind] ?? node.kind : "—"}</span>
-        <span className="font-mono text-[0.6rem] uppercase tracking-[0.12em] text-faint">{role}</span>
+        <span className="font-mono text-meta uppercase tracking-[0.16em] text-muted">{node ? KIND_TAG[node.kind] ?? node.kind : "—"}</span>
+        <span className="font-mono text-meta uppercase tracking-[0.12em] text-faint">{role}</span>
       </div>
       <div className="mt-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-[1rem] text-ink group-hover:text-clay transition-colors">{label}</span>
-        {node && <span className="font-mono text-[0.7rem] text-faint truncate">{node.name}</span>}
+        <span className="text-h3 text-ink group-hover:text-clay transition-colors">{label}</span>
+        {node && <span className="font-mono text-meta text-faint truncate">{node.name}</span>}
       </div>
     </button>
   );

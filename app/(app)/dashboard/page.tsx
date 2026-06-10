@@ -52,13 +52,13 @@ export default async function DashboardPage({
           {!newUser && (
             <Link
               href="/workspace/new"
-              className="font-mono text-[0.7rem] uppercase tracking-[0.12em] text-muted hover:text-clay transition-colors"
+              className="font-mono text-meta uppercase tracking-[0.12em] text-muted hover:text-clay transition-colors"
             >
               + New workspace
             </Link>
           )}
         </div>
-        <h1 className="mt-3 font-serif text-[2rem] md:text-[2.5rem] font-semibold tracking-[-0.01em] leading-tight">
+        <h1 className="mt-3 font-serif text-h1 font-semibold tracking-[-0.01em] leading-tight">
           What are you researching?
         </h1>
         <div className={`mt-7 grid grid-cols-1 ${newUser ? "lg:grid-cols-1 max-w-[720px]" : "lg:grid-cols-12"} gap-7`}>
@@ -82,7 +82,7 @@ export default async function DashboardPage({
       {!newUser && recipes.length > 0 && (
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-[1.5rem] font-semibold">Recipes</h2>
+            <h2 className="font-serif text-h2 font-semibold">Recipes</h2>
             <span className="eyebrow">validated workflows · manual → agentic</span>
           </div>
           <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
@@ -93,7 +93,7 @@ export default async function DashboardPage({
       {!newUser && findings.length > 0 && (
         <section className="mt-12">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-[1.5rem] font-semibold">Findings</h2>
+            <h2 className="font-serif text-h2 font-semibold">Findings</h2>
             <span className="eyebrow">published · read-only · sealed</span>
           </div>
           <FindingsShelf seeded={findings} />
@@ -101,7 +101,7 @@ export default async function DashboardPage({
       )}
 
       {newUser && (
-        <p className="mt-10 text-[0.9rem] text-muted">
+        <p className="mt-10 text-body text-muted">
           no workspaces yet — pick a dataset above or describe an idea, and your
           first research thread builds itself.
         </p>
@@ -110,7 +110,7 @@ export default async function DashboardPage({
       {/* ── start here strip ──────────────────────────────────────── */}
       <section id="community" className="mt-14 scroll-mt-20">
         <div className="flex items-baseline justify-between mb-3">
-          <h2 className="font-serif text-[1.5rem] font-semibold">Start here</h2>
+          <h2 className="font-serif text-h2 font-semibold">Start here</h2>
           <span className="eyebrow">curated · achievable by design</span>
         </div>
         <StarterStrip seeds={seeds} />

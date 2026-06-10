@@ -1,8 +1,20 @@
 "use client";
 
 import type { FindingViz } from "@/lib/types";
+import { editorial } from "@/lib/theme/editorial";
 
-const TONE: Record<string, string> = { clay: "#BE4D2B", slate: "#3a5a78", teal: "#2f6d62", amber: "#9a6a2f", olive: "#5f7330", muted: "#8A8478", green: "#3B6D11" };
+// Finding-viz tones, sourced from the one editorial theme (no per-file hex).
+// (M-L trims this 7-tone set toward ~3; for now it reads from the shared palette.)
+const c = editorial.color;
+const TONE: Record<string, string> = {
+  clay: c.clay,
+  slate: c.data,
+  teal: editorial.categorical[3],
+  amber: editorial.categorical[4],
+  olive: editorial.categorical[3],
+  muted: c.muted,
+  green: c.green,
+};
 
 /** The task-apt picture a finding leads with — weights/risk bars, an attribution
  *  waterfall, or an EDA distribution. Categorical/distribution viz, never a line
@@ -13,11 +25,11 @@ export function FindingViz({ viz }: { viz: FindingViz }) {
       <div className="py-0.5">
         {viz.bars.map((b) => (
           <div key={b.label} className="flex items-center gap-2 my-[3px]">
-            <span className="font-mono text-[0.6rem] text-ink-2 w-[72px] text-right shrink-0 truncate">{b.label}</span>
+            <span className="font-mono text-meta text-ink-2 w-[72px] text-right shrink-0 truncate">{b.label}</span>
             <div className="flex-1 h-[8px] bg-paper-2 relative">
               <span className="absolute left-0 top-0 bottom-0" style={{ width: `${b.pct}%`, background: TONE[b.tone ?? "slate"] }} />
             </div>
-            <span className="font-mono text-[0.6rem] text-muted w-[28px]">{b.pct}%</span>
+            <span className="font-mono text-meta text-muted w-[28px]">{b.pct}%</span>
           </div>
         ))}
       </div>

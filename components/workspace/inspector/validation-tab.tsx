@@ -138,15 +138,15 @@ export function ValidationTab({
       <section>
         <div className="flex items-baseline justify-between mb-2">
           <p className="eyebrow">checks</p>
-          <span className="font-mono text-[0.68rem] text-faint">{passed} / {checks.length} pass</span>
+          <span className="font-mono text-meta text-faint">{passed} / {checks.length} pass</span>
         </div>
         <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">
           {checks.map((c) => (
             <div key={c.label} className="flex items-start gap-3 px-4 py-2.5">
-              <span className={`font-mono text-[0.9rem] leading-5 shrink-0 ${DOT[c.status].c}`}>{DOT[c.status].ch}</span>
+              <span className={`font-mono text-body leading-5 shrink-0 ${DOT[c.status].c}`}>{DOT[c.status].ch}</span>
               <div className="min-w-0">
-                <div className="text-[0.85rem] text-ink">{c.label}</div>
-                <div className="font-mono text-[0.7rem] text-muted break-all">{c.detail}</div>
+                <div className="text-ui text-ink">{c.label}</div>
+                <div className="font-mono text-meta text-muted break-all">{c.detail}</div>
               </div>
             </div>
           ))}
@@ -158,13 +158,13 @@ export function ValidationTab({
         <div className="grid grid-cols-2 rounded-lg border border-hairline bg-white divide-x divide-hairline overflow-hidden">
           <div className="px-4 py-3.5">
             <div className="eyebrow">upstream</div>
-            <div className="mt-1 font-mono text-[1.05rem] text-ink tabular-nums">{up}</div>
-            <div className="font-mono text-[0.66rem] text-faint">ancestors it depends on</div>
+            <div className="mt-1 font-mono text-h3 text-ink tabular-nums">{up}</div>
+            <div className="font-mono text-meta text-faint">ancestors it depends on</div>
           </div>
           <div className="px-4 py-3.5">
             <div className="eyebrow">downstream</div>
-            <div className="mt-1 font-mono text-[1.05rem] text-ink tabular-nums">{down}</div>
-            <div className="font-mono text-[0.66rem] text-faint">artifacts that depend on it</div>
+            <div className="mt-1 font-mono text-h3 text-ink tabular-nums">{down}</div>
+            <div className="font-mono text-meta text-faint">artifacts that depend on it</div>
           </div>
         </div>
       </section>

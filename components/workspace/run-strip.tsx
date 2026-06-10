@@ -15,7 +15,7 @@ function Pill({ active, label, outcome, onClick }: { active: boolean; label: str
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 flex items-center gap-1.5 font-mono text-[0.66rem] px-2.5 py-1 border transition-colors ${active ? "border-clay bg-clay-wash text-clay-deep" : "border-hairline-2 text-muted hover:text-ink hover:border-ink"}`}
+      className={`shrink-0 flex items-center gap-1.5 font-mono text-meta px-2.5 py-1 border transition-colors ${active ? "border-clay bg-clay-wash text-clay-deep" : "border-hairline-2 text-muted hover:text-ink hover:border-ink"}`}
     >
       <span>{label}</span>
       {outcome && (
@@ -35,7 +35,7 @@ export function RunStrip({ runs, activeRunId, onSelect }: { runs: RunMeta[]; act
       {runs.map((r) => (
         <Pill key={r.id} active={activeRunId === r.id} label={r.label} outcome={r.outcome} onClick={() => onSelect(r.id)} />
       ))}
-      <span className="shrink-0 ml-auto font-mono text-[0.56rem] text-faint">one run on the canvas · flip freely · the exploration stays untouched</span>
+      <span className="shrink-0 ml-auto font-mono text-micro text-faint">one run on the canvas · flip freely · the exploration stays untouched</span>
     </div>
   );
 }

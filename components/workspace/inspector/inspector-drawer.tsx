@@ -25,9 +25,9 @@ function LineageMini({ node, graph, labels, onOpenNode }: { node: Node; graph: L
     const n = nodeById(graph, id);
     return (
       <button onClick={() => onOpenNode(id)} className="group flex w-full items-center gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left">
-        <span className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-muted w-16 shrink-0">{n?.kind}</span>
-        <span className="flex-1 min-w-0 text-[0.86rem] text-ink-2 group-hover:text-ink truncate">{labels[id] ?? n?.name ?? id}</span>
-        <span className="font-mono text-[0.8rem] text-faint group-hover:text-clay">→</span>
+        <span className="font-mono text-meta uppercase tracking-[0.12em] text-muted w-16 shrink-0">{n?.kind}</span>
+        <span className="flex-1 min-w-0 text-ui text-ink-2 group-hover:text-ink truncate">{labels[id] ?? n?.name ?? id}</span>
+        <span className="font-mono text-ui text-faint group-hover:text-clay">→</span>
       </button>
     );
   };
@@ -35,11 +35,11 @@ function LineageMini({ node, graph, labels, onOpenNode }: { node: Node; graph: L
     <div className="p-5 space-y-6">
       <div>
         <p className="eyebrow mb-2">built from</p>
-        {ins.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{ins.map((i) => <Row key={i.id} id={i.id} />)}</div> : <p className="text-[0.85rem] text-muted">— raw input, no parents.</p>}
+        {ins.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{ins.map((i) => <Row key={i.id} id={i.id} />)}</div> : <p className="text-ui text-muted">— raw input, no parents.</p>}
       </div>
       <div>
         <p className="eyebrow mb-2">feeds into</p>
-        {outs.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{outs.map((id) => <Row key={id} id={id} />)}</div> : <p className="text-[0.85rem] text-muted">— terminal, nothing downstream yet.</p>}
+        {outs.length ? <div className="rounded-lg border border-hairline bg-white divide-y divide-hairline overflow-hidden">{outs.map((id) => <Row key={id} id={id} />)}</div> : <p className="text-ui text-muted">— terminal, nothing downstream yet.</p>}
       </div>
     </div>
   );
@@ -152,7 +152,7 @@ export function InspectorDrawer({
             <>
               <div className="flex items-center gap-1.5 border-b border-hairline px-6 overflow-x-auto">
                 {TABS.map((t) => (
-                  <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-3 text-[0.86rem] border-b-2 -mb-px transition-colors ${tab === t.id ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"}`}>
+                  <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-3 text-ui border-b-2 -mb-px transition-colors ${tab === t.id ? "border-clay text-ink font-medium" : "border-transparent text-muted hover:text-ink"}`}>
                     {t.label}
                   </button>
                 ))}
@@ -174,7 +174,7 @@ export function InspectorDrawer({
                 <div>
                   {onOpenCode && (
                     <div className="px-6 pt-4 -mb-2">
-                      <button onClick={onOpenCode} className="font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-ink px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors">
+                      <button onClick={onOpenCode} className="font-mono text-meta uppercase tracking-[0.1em] border border-ink px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors">
                         open in code view →
                       </button>
                     </div>
@@ -230,12 +230,12 @@ export function InspectorDrawer({
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-hairline bg-white/95 backdrop-blur-sm rounded-t-lg">
           <div className="flex items-center gap-2.5 min-w-0">
             {stack.length > 1 && (
-              <button onClick={back} className="font-mono text-[0.74rem] text-muted hover:text-clay">← back</button>
+              <button onClick={back} className="font-mono text-meta text-muted hover:text-clay">← back</button>
             )}
             {/* node faces carry their own big title below; only edge/compare need it here */}
-            {cur.type !== "node" && <span className="text-[0.86rem] text-ink-2 truncate">{title}</span>}
+            {cur.type !== "node" && <span className="text-ui text-ink-2 truncate">{title}</span>}
           </div>
-          <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-paper-2 hover:text-clay text-[1.05rem] leading-none" aria-label="close">×</button>
+          <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-paper-2 hover:text-clay text-h3 leading-none" aria-label="close">×</button>
         </div>
         {body}
     </aside>

@@ -48,7 +48,7 @@ export function TrustBadge({
   const failPin = validator.violatedPin;
 
   if (zoom === "node") {
-    const cls = `inline-grid place-items-center h-3.5 w-3.5 rounded-full font-mono text-[0.6rem] leading-none ${
+    const cls = `inline-grid place-items-center h-3.5 w-3.5 rounded-full font-mono text-meta leading-none ${
       ok ? "bg-green/10 text-green" : "bg-clay/10 text-clay"
     } ${className ?? ""}`;
     const title = ok ? "validated — P1·P2·P3 pass, lineage pinned" : `blocked: ${failPin ?? "validation"}`;
@@ -57,7 +57,7 @@ export function TrustBadge({
   }
 
   if (zoom === "chat") {
-    const cls = `inline-flex items-center gap-1.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] ${
+    const cls = `inline-flex items-center gap-1.5 font-mono text-meta uppercase tracking-[0.1em] ${
       ok ? "text-green" : "text-clay"
     } ${onClick ? "hover:underline" : ""} ${className ?? ""}`;
     const inner = (
@@ -77,7 +77,7 @@ export function TrustBadge({
       <div className="border border-hairline">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-hairline bg-paper-2/40">
           <span className="eyebrow">adaptedness — no look-ahead</span>
-          <span className={`font-mono text-[0.62rem] uppercase tracking-[0.12em] ${adaptednessHolds(validator) ? "text-green" : "text-clay"}`}>
+          <span className={`font-mono text-meta uppercase tracking-[0.12em] ${adaptednessHolds(validator) ? "text-green" : "text-clay"}`}>
             {adaptednessHolds(validator) ? "holds" : "violated"}
           </span>
         </div>
@@ -86,10 +86,10 @@ export function TrustBadge({
             const pass = validator[g.key] === "pass";
             const inner = (
               <>
-                <span className={`font-mono text-[0.85rem] leading-5 shrink-0 ${pass ? "text-green" : "text-clay"}`}>{pass ? "✓" : "!"}</span>
+                <span className={`font-mono text-ui leading-5 shrink-0 ${pass ? "text-green" : "text-clay"}`}>{pass ? "✓" : "!"}</span>
                 <span className="min-w-0">
-                  <span className="block text-[0.85rem] text-ink">{g.label}</span>
-                  <span className="block font-mono text-[0.7rem] text-muted">{g.detail}</span>
+                  <span className="block text-ui text-ink">{g.label}</span>
+                  <span className="block font-mono text-meta text-muted">{g.detail}</span>
                 </span>
               </>
             );
@@ -107,19 +107,19 @@ export function TrustBadge({
 
       <div className="flex items-center justify-between border border-hairline px-4 py-3">
         <div className="flex items-center gap-3">
-          <span className={`font-mono text-[0.85rem] leading-5 ${repro ? "text-green" : "text-clay"}`}>{repro ? "✓" : "!"}</span>
+          <span className={`font-mono text-ui leading-5 ${repro ? "text-green" : "text-clay"}`}>{repro ? "✓" : "!"}</span>
           <span>
-            <span className="block text-[0.85rem] text-ink">reproducible</span>
-            <span className="block font-mono text-[0.7rem] text-muted">lineage_hash + producer_code_hash pinned</span>
+            <span className="block text-ui text-ink">reproducible</span>
+            <span className="block font-mono text-meta text-muted">lineage_hash + producer_code_hash pinned</span>
           </span>
         </div>
-        {validator.lineageHash && <span className="font-mono text-[0.7rem] text-faint">{validator.lineageHash}</span>}
+        {validator.lineageHash && <span className="font-mono text-meta text-faint">{validator.lineageHash}</span>}
       </div>
 
       <div className="border-l-2 border-clay pl-3.5 py-1">
         <p className="eyebrow text-clay">what this can&apos;t prove</p>
-        <p className="mt-1.5 text-[0.84rem] leading-[1.55] text-ink-2 max-w-[62ch]">{VALIDATOR_CAVEAT.adaptedness}</p>
-        <p className="mt-2 text-[0.84rem] leading-[1.55] text-ink-2 max-w-[62ch]">{VALIDATOR_CAVEAT.reproducible}</p>
+        <p className="mt-1.5 text-ui leading-[1.55] text-ink-2 max-w-[62ch]">{VALIDATOR_CAVEAT.adaptedness}</p>
+        <p className="mt-2 text-ui leading-[1.55] text-ink-2 max-w-[62ch]">{VALIDATOR_CAVEAT.reproducible}</p>
       </div>
     </div>
   );

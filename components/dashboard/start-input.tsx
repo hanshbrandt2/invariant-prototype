@@ -42,20 +42,20 @@ export function StartInput({
             if (e.target.value === initial) e.target.select();
           }}
           rows={2}
-          className="w-full resize-none bg-transparent px-5 py-4 text-[1.05rem] font-serif text-ink placeholder:text-faint outline-none"
+          className="w-full resize-none bg-transparent px-5 py-4 text-h3 font-serif text-ink placeholder:text-faint outline-none"
           placeholder="What are you researching?"
         />
         <div className="flex items-center justify-between border-t border-hairline px-4 py-2.5">
           <button
             type="button"
             onClick={() => setValue("")}
-            className="font-mono text-[0.68rem] uppercase tracking-[0.12em] text-faint hover:text-clay transition-colors"
+            className="font-mono text-meta uppercase tracking-[0.12em] text-faint hover:text-clay transition-colors"
           >
             clear
           </button>
           <button
             type="submit"
-            className="font-mono text-[0.72rem] uppercase tracking-[0.13em] bg-ink text-paper px-4 py-2 hover:bg-clay transition-colors"
+            className="font-mono text-meta uppercase tracking-[0.13em] bg-ink text-paper px-4 py-2 hover:bg-clay transition-colors"
           >
             Start analysis →
           </button>
@@ -68,7 +68,7 @@ export function StartInput({
             key={ex.text}
             onClick={() => start(ex.text)}
             title={`${ex.op} · ${ex.dataset}`}
-            className="text-left text-[0.8rem] text-ink-2 border border-hairline-2 rounded-full px-3 py-1.5 hover:border-ink hover:text-ink transition-colors"
+            className="text-left text-ui text-ink-2 border border-hairline-2 rounded-full px-3 py-1.5 hover:border-ink hover:text-ink transition-colors"
           >
             {ex.text}
           </button>

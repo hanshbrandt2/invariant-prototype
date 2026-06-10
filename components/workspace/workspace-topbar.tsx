@@ -55,14 +55,14 @@ export function WorkspaceTopBar({
           </button>
         )}
         <div className="flex items-baseline gap-2 min-w-0">
-          <Link href="/dashboard" className="text-[0.78rem] text-faint hover:text-clay transition-colors">Dashboard</Link>
+          <Link href="/dashboard" className="text-ui text-faint hover:text-clay transition-colors">Dashboard</Link>
           <span className="text-faint">/</span>
-          <span className="font-mono text-[0.92rem] text-ink truncate">{workspaceName}</span>
+          <span className="font-mono text-body text-ink truncate">{workspaceName}</span>
         </div>
 
         {/* the four lenses: one analysis told four ways (a switcher, not stacked) */}
         {live && lens && onLens && (
-          <div className="inline-flex shrink-0 border border-hairline-2 overflow-hidden font-mono text-[0.64rem] uppercase tracking-[0.1em]">
+          <div className="inline-flex shrink-0 border border-hairline-2 overflow-hidden font-mono text-meta uppercase tracking-[0.1em]">
             {(["result", "graph", "code", "concepts"] as const).map((l) => (
               <button
                 key={l}
@@ -81,7 +81,7 @@ export function WorkspaceTopBar({
           <button
             onClick={onPromote}
             title="crystallise this validated workflow as a recipe — then make it agentic"
-            className="font-mono text-[0.66rem] uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper transition-colors"
+            className="font-mono text-meta uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper transition-colors"
           >
             promote ⚙
           </button>
@@ -90,7 +90,7 @@ export function WorkspaceTopBar({
           <button
             onClick={onPublish}
             title="pin this finding as a read-only, citable artifact — sealed & shareable"
-            className={`font-mono text-[0.66rem] uppercase tracking-[0.1em] border px-3 py-1.5 transition-colors ${published ? "border-[#3B6D11] text-[#3B6D11] hover:bg-[#3B6D11] hover:text-paper" : "border-ink text-ink hover:bg-ink hover:text-paper"}`}
+            className={`font-mono text-meta uppercase tracking-[0.1em] border px-3 py-1.5 transition-colors ${published ? "border-[#3B6D11] text-[#3B6D11] hover:bg-[#3B6D11] hover:text-paper" : "border-ink text-ink hover:bg-ink hover:text-paper"}`}
           >
             {published ? "published ✓" : "publish ⤴"}
           </button>
@@ -98,7 +98,7 @@ export function WorkspaceTopBar({
         {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} getProject={getProject} />}
         <div className="flex items-center gap-2 rounded-lg border border-hairline bg-paper px-3 py-1.5 " title="credit balance — ticks down as you build">
           <span className="eyebrow">credits</span>
-          <span className={`font-mono text-[0.85rem] tabular-nums transition-colors ${balance < 10 ? "text-clay" : "text-ink"}`}>{balance.toFixed(1)}</span>
+          <span className={`font-mono text-ui tabular-nums transition-colors ${balance < 10 ? "text-clay" : "text-ink"}`}>{balance.toFixed(1)}</span>
         </div>
       </div>
     </header>

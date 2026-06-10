@@ -115,7 +115,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
         {([["rows", fmtCount(d.shape.rows)], ["columns", String(d.shape.cols)], ["freq", d.shape.freq], ["coverage", `${d.shape.coverage.start.slice(0, 7)} → ${d.shape.coverage.end.slice(0, 7)}`]] as [string, string][]).map(([k, v]) => (
           <div key={k} className="px-4 py-3">
             <div className="eyebrow">{k}</div>
-            <div className="mt-1 font-mono text-[0.92rem] text-ink tabular-nums">{v}</div>
+            <div className="mt-1 font-mono text-body text-ink tabular-nums">{v}</div>
           </div>
         ))}
       </div>
@@ -125,7 +125,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
         <span className="eyebrow">output</span>
         <div className="flex gap-1.5">
           {VIEWS.map((v) => (
-            <button key={v} onClick={() => setTab(v)} className={`font-mono text-[0.66rem] rounded-full border px-2.5 py-0.5 transition-colors ${tab === v ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink"}`}>
+            <button key={v} onClick={() => setTab(v)} className={`font-mono text-meta rounded-full border px-2.5 py-0.5 transition-colors ${tab === v ? "border-ink bg-ink text-paper" : "border-hairline-2 text-muted hover:border-ink"}`}>
               {v.toLowerCase()}
             </button>
           ))}
@@ -134,7 +134,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
 
       {tab === "Sample" && (
         <div className="mt-2 rounded-lg border border-hairline bg-white overflow-x-auto">
-          <table className="w-full font-mono text-[0.76rem] border-collapse">
+          <table className="w-full font-mono text-ui border-collapse">
             <thead>
               <tr className="border-b border-hairline text-faint">
                 {d.schema.map((f) => (
@@ -159,9 +159,9 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
 
       {tab === "Schema" && (
         <div className="mt-2 rounded-lg border border-hairline bg-white overflow-hidden">
-          <table className="w-full text-[0.8rem] border-collapse">
+          <table className="w-full text-ui border-collapse">
             <thead>
-              <tr className="border-b border-hairline text-faint font-mono text-[0.62rem] uppercase tracking-[0.1em]">
+              <tr className="border-b border-hairline text-faint font-mono text-meta uppercase tracking-[0.1em]">
                 <th className="text-left font-normal px-4 py-2">column</th>
                 <th className="text-left font-normal px-4 py-2">type</th>
                 <th className="text-left font-normal px-4 py-2">role</th>
@@ -174,7 +174,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
                   <td className="px-4 py-2 text-ink">{f.name}</td>
                   <td className="px-4 py-2 text-clay">{f.type}</td>
                   <td className="px-4 py-2">
-                    {f.role && <span className={`text-[0.58rem] uppercase tracking-[0.1em] border rounded-full px-1.5 py-0.5 ${f.role === "time" ? "border-green text-green" : "border-hairline-2 text-muted"}`}>{f.role}</span>}
+                    {f.role && <span className={`text-meta uppercase tracking-[0.1em] border rounded-full px-1.5 py-0.5 ${f.role === "time" ? "border-green text-green" : "border-hairline-2 text-muted"}`}>{f.role}</span>}
                   </td>
                   <td className="px-4 py-2 text-faint">{f.note ?? ""}</td>
                 </tr>
@@ -186,7 +186,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
 
       {tab === "Stats" && (
         <div className="mt-2 rounded-lg border border-hairline bg-white overflow-x-auto">
-          <table className="w-full font-mono text-[0.74rem] border-collapse">
+          <table className="w-full font-mono text-meta border-collapse">
             <thead>
               <tr className="border-b border-hairline text-faint">
                 <th className="text-left font-normal px-3 py-2">column</th>
@@ -211,7 +211,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
         </div>
       )}
 
-      <p className="mt-2 font-mono text-[0.68rem] text-faint">
+      <p className="mt-2 font-mono text-meta text-faint">
         {valueFields.length} value column{valueFields.length === 1 ? "" : "s"} · representative point-in-time sample, not the full series.
         {d.note && <span className="text-green"> {d.note}</span>}
       </p>

@@ -13,14 +13,14 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-30 h-16 border-b border-hairline bg-paper/90 backdrop-blur-sm">
       <div className="h-full px-5 md:px-8 flex items-center justify-between">
-        <nav className="flex items-center gap-2 text-[0.82rem]">
+        <nav className="flex items-center gap-2 text-ui">
           <Link href="/dashboard" className="text-muted hover:text-clay transition-colors">
             Dashboard
           </Link>
           {inWorkspace && (
             <>
               <span className="text-faint">/</span>
-              <span className="font-mono text-[0.8rem] text-ink">{segs[1]}</span>
+              <span className="font-mono text-ui text-ink">{segs[1]}</span>
             </>
           )}
         </nav>

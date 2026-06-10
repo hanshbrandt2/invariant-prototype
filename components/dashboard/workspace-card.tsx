@@ -14,10 +14,10 @@ export function WorkspaceCard({ ws }: { ws: Workspace }) {
       </div>
       <div className="px-4 py-3.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono text-[0.86rem] text-ink truncate">{ws.name}</span>
-          <span className="font-mono text-[0.66rem] text-faint shrink-0">{ws.updatedAt}</span>
+          <span className="font-mono text-ui text-ink truncate">{ws.name}</span>
+          <span className="font-mono text-meta text-faint shrink-0">{ws.updatedAt}</span>
         </div>
-        <p className="mt-1.5 text-[0.82rem] leading-snug text-muted line-clamp-2">{ws.summary}</p>
+        <p className="mt-1.5 text-ui leading-snug text-muted line-clamp-2">{ws.summary}</p>
       </div>
     </Link>
   );

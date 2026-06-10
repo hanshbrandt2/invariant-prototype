@@ -9,8 +9,8 @@ import { DATA_SOURCE } from "@/lib/data";
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3 border-b border-hairline last:border-0">
-      <span className="text-[0.86rem] text-ink-2">{label}</span>
-      <span className="font-mono text-[0.82rem] text-ink text-right">{children}</span>
+      <span className="text-ui text-ink-2">{label}</span>
+      <span className="font-mono text-ui text-ink text-right">{children}</span>
     </div>
   );
 }
@@ -36,11 +36,11 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto max-w-[680px] px-6 md:px-10 py-10">
       <div className="flex items-baseline gap-2 mb-1">
-        <Link href="/dashboard" className="text-[0.78rem] text-faint hover:text-clay transition-colors">Dashboard</Link>
+        <Link href="/dashboard" className="text-ui text-faint hover:text-clay transition-colors">Dashboard</Link>
         <span className="text-faint">/</span>
-        <span className="text-[0.82rem] text-ink">Settings</span>
+        <span className="text-ui text-ink">Settings</span>
       </div>
-      <h1 className="font-serif text-[2rem] font-semibold tracking-[-0.01em] mb-8">Settings</h1>
+      <h1 className="font-serif text-h1 font-semibold tracking-[-0.01em] mb-8">Settings</h1>
 
       <div className="space-y-7">
         <Card title="account">
@@ -50,7 +50,7 @@ export default function SettingsPage() {
             <button
               onClick={logout}
               disabled={!authed}
-              className="font-mono text-[0.72rem] uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted enabled:hover:border-clay enabled:hover:text-clay disabled:opacity-40 transition-colors"
+              className="font-mono text-meta uppercase tracking-[0.1em] rounded-md border border-hairline-2 px-2.5 py-1 text-muted enabled:hover:border-clay enabled:hover:text-clay disabled:opacity-40 transition-colors"
             >
               Sign out
             </button>
@@ -70,10 +70,10 @@ export default function SettingsPage() {
           <Row label="Mode">
             <span className={DATA_SOURCE === "api" ? "text-[#3B6D11]" : "text-clay"}>{DATA_SOURCE}</span>
           </Row>
-          <div className="px-4 py-3 text-[0.8rem] leading-relaxed text-muted">
-            The app reads every node, dataset, and result through one seam (<span className="font-mono text-[0.74rem] text-ink-2">lib/data</span>).
-            It’s on <span className="font-mono text-[0.74rem] text-clay">fixtures</span> now; setting
-            <span className="font-mono text-[0.74rem] text-ink-2"> NEXT_PUBLIC_DATA_SOURCE=api</span> points the same calls at a real backend — no component changes.
+          <div className="px-4 py-3 text-ui leading-relaxed text-muted">
+            The app reads every node, dataset, and result through one seam (<span className="font-mono text-meta text-ink-2">lib/data</span>).
+            It’s on <span className="font-mono text-meta text-clay">fixtures</span> now; setting
+            <span className="font-mono text-meta text-ink-2"> NEXT_PUBLIC_DATA_SOURCE=api</span> points the same calls at a real backend — no component changes.
           </div>
         </Card>
 

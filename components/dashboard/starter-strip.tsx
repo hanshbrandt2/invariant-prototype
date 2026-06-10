@@ -11,9 +11,9 @@ export function StarterStrip({ seeds }: { seeds: StarterPrompt[] }) {
           href={`/workspace/new?build=${encodeURIComponent(s.text)}`}
           className="group p-5 hover:bg-paper-2 transition-colors"
         >
-          <p className="font-serif text-[1.02rem] leading-snug text-ink">{s.text}</p>
-          <p className="mt-3 font-mono text-[0.68rem] text-faint">{s.op}</p>
-          <p className="mt-1 font-mono text-[0.68rem] text-muted group-hover:text-clay transition-colors">
+          <p className="font-serif text-h3 leading-snug text-ink">{s.text}</p>
+          <p className="mt-3 font-mono text-meta text-faint">{s.op}</p>
+          <p className="mt-1 font-mono text-meta text-muted group-hover:text-clay transition-colors">
             start here →
           </p>
         </Link>

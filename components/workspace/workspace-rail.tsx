@@ -37,7 +37,7 @@ export function WorkspaceRail() {
       <Link
         href="/dashboard"
         title={email ?? "account"}
-        className="mt-auto grid h-[34px] w-[34px] place-items-center rounded-full bg-clay font-mono text-[0.85rem] text-paper"
+        className="mt-auto grid h-[34px] w-[34px] place-items-center rounded-full bg-clay font-mono text-ui text-paper"
       >
         {initial}
       </Link>

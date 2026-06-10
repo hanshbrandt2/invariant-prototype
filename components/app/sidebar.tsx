@@ -33,7 +33,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
     <aside className="hidden md:flex flex-col w-[228px] shrink-0 border-r border-hairline bg-paper h-screen sticky top-0">
       <Link href="/" className="flex items-baseline gap-2.5 px-5 h-16 border-b border-hairline">
         <span className="inline-block h-2.5 w-2.5 bg-clay translate-y-[-1px]" />
-        <span className="font-serif text-[1.3rem] font-semibold tracking-[-0.01em]">Invariant</span>
+        <span className="font-serif text-h2 font-semibold tracking-[-0.01em]">Invariant</span>
       </Link>
 
       {/* account — "My Invariant" */}
@@ -42,7 +42,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {items.map((it) => {
           const active = pathname === it.href.split("#")[0].split("?")[0] && it.label === "Home";
-          const cls = `group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] transition-colors w-full ${
+          const cls = `group flex items-center gap-3 px-3 py-2 rounded-lg text-ui transition-colors w-full ${
             active ? "bg-paper-2 text-ink" : "text-ink-2 hover:bg-paper-2"
           }`;
           const inner = (
@@ -51,8 +51,8 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
                 {it.icon}
               </svg>
               <span>{it.label}</span>
-              {it.label === "Search" && <span className="ml-auto font-mono text-[0.6rem] text-faint border border-hairline-2 rounded px-1">⌘K</span>}
-              {it.soon && <span className="ml-auto font-mono text-[0.6rem] text-faint">soon</span>}
+              {it.label === "Search" && <span className="ml-auto font-mono text-meta text-faint border border-hairline-2 rounded px-1">⌘K</span>}
+              {it.soon && <span className="ml-auto font-mono text-meta text-faint">soon</span>}
             </>
           );
           // Search opens the command palette in place rather than navigating
@@ -74,7 +74,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
         <div className="pt-3">
           <Link
             href="/dashboard#workspaces"
-            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
             <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               {I.work}
@@ -86,7 +86,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
               <Link
                 key={v.view}
                 href={`/dashboard?view=${v.view}#workspaces`}
-                className="px-3 py-1 rounded-md text-[0.8rem] text-muted hover:text-ink hover:bg-paper-2 transition-colors"
+                className="px-3 py-1 rounded-md text-ui text-muted hover:text-ink hover:bg-paper-2 transition-colors"
               >
                 {v.label}
               </Link>
@@ -102,7 +102,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
               <Link
                 key={w.id}
                 href={`/workspace/${w.id}`}
-                className="block px-3 py-1.5 rounded-md font-mono text-[0.76rem] text-ink-2 hover:bg-paper-2 hover:text-ink transition-colors truncate"
+                className="block px-3 py-1.5 rounded-md font-mono text-ui text-ink-2 hover:bg-paper-2 hover:text-ink transition-colors truncate"
               >
                 {w.name}
               </Link>
@@ -113,7 +113,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
         <div className="pt-3">
           <Link
             href="/learn"
-            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
             <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 5.5 10 3l7 2.5L10 8 3 5.5Z" /><path d="M6 8v4c0 1 2 2 4 2s4-1 4-2V8" />
@@ -122,7 +122,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
           </Link>
           <Link
             href="/community"
-            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-[0.86rem] text-ink-2 hover:bg-paper-2 transition-colors"
+            className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
             <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               {I.community}

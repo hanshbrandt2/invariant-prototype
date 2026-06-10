@@ -56,10 +56,10 @@ export function ExportMenu({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-lg border border-hairline bg-paper px-3 py-1.5   transition-colors text-[0.82rem] text-muted hover:text-ink"
+        className="flex items-center gap-1.5 rounded-lg border border-hairline bg-paper px-3 py-1.5   transition-colors text-ui text-muted hover:text-ink"
       >
         Export
-        <span className={`text-[0.6rem] transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
+        <span className={`text-meta transition-transform ${open ? "rotate-180" : ""}`}>▾</span>
       </button>
 
       {open && (
@@ -69,10 +69,10 @@ export function ExportMenu({
               onClick={() => { downloadBlob(`${slug}.zip`, zipSync(getProject())); setOpen(false); }}
               className="flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left"
             >
-              <span className="font-mono text-[0.7rem] text-clay mt-0.5">.zip</span>
+              <span className="font-mono text-meta text-clay mt-0.5">.zip</span>
               <span className="min-w-0">
-                <span className="block text-[0.85rem] text-ink">Project — full repo</span>
-                <span className="block font-mono text-[0.66rem] text-faint">every module + requirements — clone, pip install, run</span>
+                <span className="block text-ui text-ink">Project — full repo</span>
+                <span className="block font-mono text-meta text-faint">every module + requirements — clone, pip install, run</span>
               </span>
             </button>
           )}
@@ -80,30 +80,30 @@ export function ExportMenu({
             onClick={() => { download(`${slug}.py`, getScript(), "text/x-python"); setOpen(false); }}
             className={`flex w-full items-start gap-3 px-4 py-2.5 hover:bg-paper-2/60 transition-colors text-left ${getProject ? "border-t border-hairline" : ""}`}
           >
-            <span className="font-mono text-[0.7rem] text-clay mt-0.5">.py</span>
+            <span className="font-mono text-meta text-clay mt-0.5">.py</span>
             <span className="min-w-0">
-              <span className="block text-[0.85rem] text-ink">Pipeline only</span>
-              <span className="block font-mono text-[0.66rem] text-faint">pipeline.py, the whole DAG end-to-end</span>
+              <span className="block text-ui text-ink">Pipeline only</span>
+              <span className="block font-mono text-meta text-faint">pipeline.py, the whole DAG end-to-end</span>
             </span>
           </button>
           <button
             onClick={() => { download(`${slug}.md`, getConversation(), "text/markdown"); setOpen(false); }}
             className="flex w-full items-start gap-3 px-4 py-2.5 border-t border-hairline hover:bg-paper-2/60 transition-colors text-left"
           >
-            <span className="font-mono text-[0.7rem] text-clay mt-0.5">.md</span>
+            <span className="font-mono text-meta text-clay mt-0.5">.md</span>
             <span className="min-w-0">
-              <span className="block text-[0.85rem] text-ink">Conversation</span>
-              <span className="block font-mono text-[0.66rem] text-faint">the transcript, as markdown</span>
+              <span className="block text-ui text-ink">Conversation</span>
+              <span className="block font-mono text-meta text-faint">the transcript, as markdown</span>
             </span>
           </button>
           <button
             onClick={() => setGhNote((g) => !g)}
             className="flex w-full items-start gap-3 px-4 py-2.5 border-t border-hairline hover:bg-paper-2/60 transition-colors text-left"
           >
-            <span className="font-mono text-[0.7rem] text-faint mt-0.5">↗</span>
+            <span className="font-mono text-meta text-faint mt-0.5">↗</span>
             <span className="min-w-0">
-              <span className="block text-[0.85rem] text-ink-2">Push to GitHub</span>
-              <span className="block font-mono text-[0.66rem] text-faint">{ghNote ? "needs a connected repo — not wired in this prototype" : "commit the project to a repo"}</span>
+              <span className="block text-ui text-ink-2">Push to GitHub</span>
+              <span className="block font-mono text-meta text-faint">{ghNote ? "needs a connected repo — not wired in this prototype" : "commit the project to a repo"}</span>
             </span>
           </button>
         </div>

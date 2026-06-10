@@ -344,7 +344,7 @@ export function WorkflowGraph({
     <div className="relative flex h-full w-full flex-col">
       {/* header — fixed above the scroll area */}
       <div className="shrink-0 flex items-start justify-between gap-6 px-5 pt-4 pb-3 md:px-7">
-        <p className="text-[0.74rem] text-faint">
+        <p className="text-meta text-faint">
           {active ? "Dashed = upstream causes · tinted = downstream effects. Click to inspect." : "The ink line is the main path, data → finding · branches sit lighter. Hover to trace, click to inspect."}
         </p>
         <div className="flex items-center gap-4 shrink-0">
@@ -352,14 +352,14 @@ export function WorkflowGraph({
             onClick={() => setExplain((e) => !e)}
             aria-pressed={explain}
             title="explain each kind in context"
-            className={`font-mono text-[0.58rem] uppercase tracking-[0.12em] px-2 py-1 border transition-colors ${explain ? "bg-ink text-paper border-ink" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
+            className={`font-mono text-meta uppercase tracking-[0.12em] px-2 py-1 border transition-colors ${explain ? "bg-ink text-paper border-ink" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
           >
             explain
           </button>
           {L.presentKinds.length > 0 && (
             <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-1.5">
               {L.presentKinds.map((k) => (
-                <span key={k} className="flex items-center gap-1.5 font-mono text-[0.6rem] text-faint">
+                <span key={k} className="flex items-center gap-1.5 font-mono text-meta text-faint">
                   <svg width="20" height="6" className="shrink-0">
                     <line x1="0" y1="3" x2="20" y2="3" stroke="var(--color-muted)" strokeWidth={EDGE_STYLE[k].heavy ? 1.8 : 1.1} strokeDasharray={EDGE_STYLE[k].dash} />
                   </svg>
@@ -384,8 +384,8 @@ export function WorkflowGraph({
                 <div key={stage} className="absolute top-0 bottom-0" style={{ left: L.laneX(i) - 13, width: LANE_W }}>
                   <div className="absolute top-0 bottom-0 left-0 border-l" style={{ borderColor: "var(--color-hairline)", borderLeftStyle: designed ? "dashed" : "solid" }} />
                   <div className="absolute top-0 left-0 flex items-center gap-1.5" style={{ paddingLeft: 13 }}>
-                    <span className={`font-mono text-[0.56rem] uppercase tracking-[0.16em] ${designed ? "text-faint/70" : "text-faint"}`}>{STAGE_TAG[stage]}</span>
-                    {designed && <span className="font-mono text-[0.5rem] uppercase tracking-[0.14em] text-faint/70 border border-dashed border-hairline-2 px-1 leading-[1.5]">designed</span>}
+                    <span className={`font-mono text-micro uppercase tracking-[0.16em] ${designed ? "text-faint/70" : "text-faint"}`}>{STAGE_TAG[stage]}</span>
+                    {designed && <span className="font-mono text-micro uppercase tracking-[0.14em] text-faint/70 border border-dashed border-hairline-2 px-1 leading-[1.5]">designed</span>}
                   </div>
                 </div>
               );
@@ -471,15 +471,15 @@ export function WorkflowGraph({
                   <button onClick={() => onInspectNode(n.id)} className="flex-1 w-full text-left px-2.5 py-1.5 hover:bg-paper-2/50 transition-colors">
                     {/* line 1 — the name (the lane header already names the kind) + trust */}
                     <div className="flex items-center justify-between gap-1.5">
-                      <span className={`text-[0.74rem] leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{cleanName(labels[n.id] ?? n.name)}</span>
+                      <span className={`text-meta leading-tight truncate ${onSpine ? "text-ink" : "text-ink-2"}`}>{cleanName(labels[n.id] ?? n.name)}</span>
                       <span className="flex items-center gap-1 shrink-0">
-                        {isStale && <span title="out of date — rebuild to restore reproducibility" className="font-mono text-[0.5rem] uppercase tracking-[0.06em] leading-none text-clay">stale</span>}
-                        {policies.length > 0 && <span title={policies.join(" · ")} className="text-[0.62rem] leading-none text-clay">⚖</span>}
+                        {isStale && <span title="out of date — rebuild to restore reproducibility" className="font-mono text-micro uppercase tracking-[0.06em] leading-none text-clay">stale</span>}
+                        {policies.length > 0 && <span title={policies.join(" · ")} className="text-meta leading-none text-clay">⚖</span>}
                         {!isStale && v && <TrustBadge validator={v} zoom="node" />}
                       </span>
                     </div>
                     {/* line 2 — operator · grain · downstream (always visible) */}
-                    <div className="mt-0.5 flex items-center justify-between gap-1.5 font-mono text-[0.55rem] text-faint">
+                    <div className="mt-0.5 flex items-center justify-between gap-1.5 font-mono text-micro text-faint">
                       <span className="truncate">{isBuilding ? "building…" : producerOps[n.id] ?? n.name}</span>
                       <span className="flex items-center gap-1.5 shrink-0">
                         {L.grain[n.id] && <span>{L.grain[n.id]}</span>}
@@ -489,7 +489,7 @@ export function WorkflowGraph({
                   </button>
                   {/* action row — ALWAYS visible (fork / compare) */}
                   {vg ? (
-                    <div className="shrink-0 flex border-t border-hairline bg-paper-2/40 font-mono text-[0.54rem]">
+                    <div className="shrink-0 flex border-t border-hairline bg-paper-2/40 font-mono text-micro">
                       <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="px-2 py-0.5 text-clay border-r border-hairline hover:bg-clay hover:text-paper transition-colors" title={`fork ${vg.param}`}>⑂</button>
                       <button onClick={(e) => { e.stopPropagation(); onCompare(n.id); }} className="flex-1 flex items-center justify-between px-2 py-0.5 text-clay hover:bg-clay hover:text-paper transition-colors group/c">
                         <span>×{vg.members.length} {vg.param}</span>
@@ -497,7 +497,7 @@ export function WorkflowGraph({
                       </button>
                     </div>
                   ) : knob ? (
-                    <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="shrink-0 text-left border-t border-hairline px-2 py-0.5 bg-paper-2/40 font-mono text-[0.54rem] text-muted hover:bg-clay hover:text-paper transition-colors">
+                    <button onClick={(e) => { e.stopPropagation(); onFork(n.id); }} className="shrink-0 text-left border-t border-hairline px-2 py-0.5 bg-paper-2/40 font-mono text-micro text-muted hover:bg-clay hover:text-paper transition-colors">
                       ⑂ fork · {knob.param}
                     </button>
                   ) : null}
@@ -508,7 +508,7 @@ export function WorkflowGraph({
             {/* edge hover — the transform this edge carries (op · param), at its midpoint */}
             {hoverEdge != null && L.paths[hoverEdge]?.label && (
               <div
-                className="absolute z-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap border border-clay/50 bg-clay-wash px-2 py-0.5 font-mono text-[0.58rem] text-clay-deep"
+                className="absolute z-20 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap border border-clay/50 bg-clay-wash px-2 py-0.5 font-mono text-meta text-clay-deep"
                 style={{ left: L.paths[hoverEdge].mid[0], top: L.paths[hoverEdge].mid[1] }}
               >
                 {L.paths[hoverEdge].label}
@@ -518,7 +518,7 @@ export function WorkflowGraph({
             {/* contextual concept caption — the "explain" overlay, on the hovered node */}
             {explain && hover && L.byId[hover] && concepts[L.byId[hover].kind]?.what && (
               <div
-                className="node-snap absolute z-20 border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-[0.72rem] leading-snug text-ink-2"
+                className="node-snap absolute z-20 border border-clay/40 bg-clay-wash px-2.5 py-1.5 text-meta leading-snug text-ink-2"
                 style={{ left: L.left(hover), top: L.top(hover) + L.cardH(hover) + 6, width: 248 }}
               >
                 <span className="eyebrow text-clay block mb-0.5">{L.byId[hover].kind}</span>
@@ -531,9 +531,9 @@ export function WorkflowGraph({
       </div>
 
       {/* zoom controls — fixed to the viewport corner (outside the scroller) */}
-      <div className="absolute bottom-3 right-3 z-30 flex items-stretch border border-hairline bg-paper font-mono text-[0.66rem] text-muted">
+      <div className="absolute bottom-3 right-3 z-30 flex items-stretch border border-hairline bg-paper font-mono text-meta text-muted">
         <button onClick={() => setZoom((z) => clamp(z * 0.85))} title="zoom out" className="px-2.5 py-1 hover:bg-paper-2 hover:text-ink transition-colors">−</button>
-        <button onClick={fit} title="fit to view" className="px-2.5 py-1 border-x border-hairline uppercase tracking-[0.1em] text-[0.58rem] hover:bg-paper-2 hover:text-ink transition-colors">fit</button>
+        <button onClick={fit} title="fit to view" className="px-2.5 py-1 border-x border-hairline uppercase tracking-[0.1em] text-meta hover:bg-paper-2 hover:text-ink transition-colors">fit</button>
         <button onClick={() => setZoom((z) => clamp(z * 1.18))} title="zoom in" className="px-2.5 py-1 hover:bg-paper-2 hover:text-ink transition-colors">+</button>
         <span className="grid place-items-center px-2 border-l border-hairline tabular-nums text-faint">{Math.round(zoom * 100)}%</span>
       </div>

@@ -15,7 +15,7 @@ export function FallbackFace({ node, producerOp }: { node: Node; producerOp?: st
   ];
   return (
     <div className="p-6">
-      <p className="text-[0.95rem] leading-relaxed text-ink-2 max-w-[60ch]">
+      <p className="text-body leading-relaxed text-ink-2 max-w-[60ch]">
         {producerOp ? (
           <>
             A <span className="text-ink">{node.kind}</span> produced by{" "}
@@ -30,7 +30,7 @@ export function FallbackFace({ node, producerOp }: { node: Node; producerOp?: st
         {rows
           .filter(([, v]) => v)
           .map(([k, v]) => (
-            <div key={k} className="flex gap-4 px-4 py-2.5 font-mono text-[0.78rem]">
+            <div key={k} className="flex gap-4 px-4 py-2.5 font-mono text-ui">
               <span className="text-faint w-32 shrink-0">{k}</span>
               <span className="text-ink-2 break-all">{v}</span>
             </div>

@@ -44,7 +44,7 @@ export function PromotePanel({
   const [budget, setBudget] = useState(25);
 
   const toggleScope = (id: ScopeId) => setScope((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  const Section = "font-mono text-[0.62rem] uppercase tracking-[0.14em]";
+  const Section = "font-mono text-meta uppercase tracking-[0.14em]";
   const cfg = (): AgenticConfig => ({ scope, trigger, triggerNote: trigger === "weekly" ? "Mon 06:00" : undefined, budget, enabledAt: "" });
   const pinLabel = (id?: string) => pins.find((p) => p.id === id)?.label ?? id ?? "—";
   const validated = runs.filter((r) => r.outcome === "validated").length;
@@ -57,28 +57,28 @@ export function PromotePanel({
         <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-hairline">
           <div>
             <p className="eyebrow text-clay">promote workflow</p>
-            <h2 className="mt-1 font-serif text-[1.3rem] leading-tight text-ink">{recipe.name}</h2>
-            <p className="mt-0.5 font-mono text-[0.66rem] text-muted">{recipe.lineage.nodes.length} artifacts · <span className="text-green">validated ✓</span></p>
+            <h2 className="mt-1 font-serif text-h2 leading-tight text-ink">{recipe.name}</h2>
+            <p className="mt-0.5 font-mono text-meta text-muted">{recipe.lineage.nodes.length} artifacts · <span className="text-green">validated ✓</span></p>
           </div>
-          <button onClick={onClose} className="grid h-7 w-7 place-items-center text-muted hover:text-clay text-[1.1rem] leading-none" aria-label="close">×</button>
+          <button onClick={onClose} className="grid h-7 w-7 place-items-center text-muted hover:text-clay text-h3 leading-none" aria-label="close">×</button>
         </div>
 
         {/* ① save as recipe */}
         <div className="px-6 py-5 border-b border-hairline">
           <div className="flex items-baseline gap-2 mb-3">
-            <span className="font-serif text-[1.05rem] text-ink">①</span>
+            <span className="font-serif text-h3 text-ink">①</span>
             <span className={`${Section} text-ink`}>save as recipe</span>
-            <span className="text-[0.78rem] text-muted">— a reusable, parameterised template of this workflow</span>
+            <span className="text-ui text-muted">— a reusable, parameterised template of this workflow</span>
           </div>
           <label className="block">
             <span className={`${Section} text-muted`}>name</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full bg-white border border-hairline px-3 py-1.5 text-[0.9rem] text-ink outline-none focus:border-hairline-2" />
+            <input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full bg-white border border-hairline px-3 py-1.5 text-body text-ink outline-none focus:border-hairline-2" />
           </label>
           <div className="mt-3">
             <span className={`${Section} text-muted`}>knobs the agent may vary</span>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {recipe.knobs.map((k) => (
-                <span key={k.param} className="font-mono text-[0.66rem] border border-hairline-2 bg-white px-2 py-0.5 text-ink-2">
+                <span key={k.param} className="font-mono text-meta border border-hairline-2 bg-white px-2 py-0.5 text-ink-2">
                   {k.param} <span className="text-faint">▸ {k.current}</span>
                 </span>
               ))}
@@ -88,7 +88,7 @@ export function PromotePanel({
             <span className={`${Section} text-muted`}>pins it must obey — these travel with the recipe</span>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {pins.map((p) => (
-                <span key={p.id} className="font-mono text-[0.62rem] bg-clay-wash text-clay-deep border border-clay px-2 py-0.5">
+                <span key={p.id} className="font-mono text-meta bg-clay-wash text-clay-deep border border-clay px-2 py-0.5">
                   {p.state === "structural" ? "🔒 " : ""}{p.label}
                 </span>
               ))}
@@ -98,20 +98,20 @@ export function PromotePanel({
             <button
               onClick={() => { onSaveRecipe(name); setSaved(true); }}
               disabled={saved}
-              className="font-mono text-[0.66rem] uppercase tracking-[0.12em] bg-ink text-paper px-3.5 py-1.5 hover:bg-clay transition-colors disabled:bg-green disabled:text-paper"
+              className="font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper px-3.5 py-1.5 hover:bg-clay transition-colors disabled:bg-green disabled:text-paper"
             >
               {saved ? "recipe saved ✓" : "save recipe"}
             </button>
-            {saved && <span className="font-mono text-[0.66rem] text-muted">saved to your recipes · reproducible by construction</span>}
+            {saved && <span className="font-mono text-meta text-muted">saved to your recipes · reproducible by construction</span>}
           </div>
         </div>
 
         {/* ② make it agentic */}
         <div className={`px-6 py-5 ${saved ? "" : "opacity-45 pointer-events-none"}`}>
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="font-serif text-[1.05rem] text-ink">②</span>
+            <span className="font-serif text-h3 text-ink">②</span>
             <span className={`${Section} text-ink`}>make it agentic</span>
-            <span className="text-[0.78rem] text-muted">{saved ? "— let the agent run it on its own" : "— save the recipe first"}</span>
+            <span className="text-ui text-muted">{saved ? "— let the agent run it on its own" : "— save the recipe first"}</span>
           </div>
 
           <div className="mt-3 grid gap-4 md:grid-cols-2">
@@ -119,8 +119,8 @@ export function PromotePanel({
               <span className={`${Section} text-muted`}>may vary</span>
               <div className="mt-1.5 space-y-1.5">
                 {SCOPES.map((s) => (
-                  <button key={s.id} onClick={() => toggleScope(s.id)} className="flex items-center gap-2 text-[0.82rem] text-ink-2">
-                    <span className={`grid h-4 w-4 place-items-center border ${scope.includes(s.id) ? "bg-ink border-ink text-paper" : "border-hairline-2"} font-mono text-[0.6rem]`}>{scope.includes(s.id) ? "✓" : ""}</span>
+                  <button key={s.id} onClick={() => toggleScope(s.id)} className="flex items-center gap-2 text-ui text-ink-2">
+                    <span className={`grid h-4 w-4 place-items-center border ${scope.includes(s.id) ? "bg-ink border-ink text-paper" : "border-hairline-2"} font-mono text-meta`}>{scope.includes(s.id) ? "✓" : ""}</span>
                     {s.label}
                   </button>
                 ))}
@@ -130,7 +130,7 @@ export function PromotePanel({
               <span className={`${Section} text-muted`}>runs</span>
               <div className="mt-1.5 space-y-1.5">
                 {TRIGGERS.map((t) => (
-                  <button key={t.id} onClick={() => setTrigger(t.id)} className="flex items-center gap-2 text-[0.82rem] text-ink-2">
+                  <button key={t.id} onClick={() => setTrigger(t.id)} className="flex items-center gap-2 text-ui text-ink-2">
                     <span className={`grid h-4 w-4 place-items-center rounded-full border ${trigger === t.id ? "border-clay" : "border-hairline-2"}`}>
                       {trigger === t.id && <span className="h-2 w-2 rounded-full bg-clay" />}
                     </span>
@@ -143,12 +143,12 @@ export function PromotePanel({
 
           <label className="mt-4 flex items-center gap-2">
             <span className={`${Section} text-muted`}>budget</span>
-            <input type="number" value={budget} min={1} onChange={(e) => setBudget(Number(e.target.value))} className="w-16 bg-white border border-hairline px-2 py-1 font-mono text-[0.8rem] text-ink outline-none" />
-            <span className="font-mono text-[0.72rem] text-faint">credits / run</span>
+            <input type="number" value={budget} min={1} onChange={(e) => setBudget(Number(e.target.value))} className="w-16 bg-white border border-hairline px-2 py-1 font-mono text-ui text-ink outline-none" />
+            <span className="font-mono text-meta text-faint">credits / run</span>
           </label>
 
           <div className="mt-4 border-l-2 border-clay pl-3 py-1">
-            <p className="text-[0.84rem] leading-snug text-ink-2">
+            <p className="text-ui leading-snug text-ink-2">
               <span className="text-clay">⚠ guardrail:</span> any artifact the agent makes that fails one of the {pins.length} pinned laws <span className="text-ink">halts the run</span> — it can&apos;t quietly ship a wrong number.
             </p>
           </div>
@@ -156,17 +156,17 @@ export function PromotePanel({
           <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
             <button
               onClick={() => onEnableAgentic(cfg(), "clean")}
-              className="font-mono text-[0.66rem] uppercase tracking-[0.12em] bg-clay text-paper px-3.5 py-1.5 hover:bg-clay-deep transition-colors"
+              className="font-mono text-meta uppercase tracking-[0.12em] bg-clay text-paper px-3.5 py-1.5 hover:bg-clay-deep transition-colors"
             >
               enable ⚙ &amp; preview a run →
             </button>
             <button
               onClick={() => onEnableAgentic(cfg(), "halt")}
-              className="font-mono text-[0.64rem] text-muted hover:text-clay underline decoration-dotted underline-offset-2 transition-colors"
+              className="font-mono text-meta text-muted hover:text-clay underline decoration-dotted underline-offset-2 transition-colors"
             >
               or preview a run that breaks a law →
             </button>
-            <span className="w-full font-mono text-[0.62rem] text-faint">prototype — both preview runs are simulated</span>
+            <span className="w-full font-mono text-meta text-faint">prototype — both preview runs are simulated</span>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export function PromotePanel({
           <div className="px-6 py-5 border-t border-hairline">
             <div className="flex items-baseline justify-between mb-2.5">
               <span className={`${Section} text-ink`}>recent runs</span>
-              <span className="font-mono text-[0.62rem] text-muted">
+              <span className="font-mono text-meta text-muted">
                 <span className="text-green">{validated} ✓</span>
                 {halted > 0 && <span className="text-clay"> · {halted} halted</span>}
               </span>
@@ -184,16 +184,16 @@ export function PromotePanel({
             <div className="border border-hairline bg-white divide-y divide-hairline">
               {runs.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 px-3 py-2">
-                  <span className={`shrink-0 font-mono text-[0.72rem] ${r.outcome === "validated" ? "text-green" : "text-clay"}`}>{r.outcome === "validated" ? "✓" : "⛔"}</span>
+                  <span className={`shrink-0 font-mono text-meta ${r.outcome === "validated" ? "text-green" : "text-clay"}`}>{r.outcome === "validated" ? "✓" : "⛔"}</span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-[0.66rem] text-ink-2 truncate">{r.at.slice(0, 10)} · {r.scope}</p>
-                    <p className="font-mono text-[0.6rem] text-faint truncate">
+                    <p className="font-mono text-meta text-ink-2 truncate">{r.at.slice(0, 10)} · {r.scope}</p>
+                    <p className="font-mono text-meta text-faint truncate">
                       {r.outcome === "validated"
                         ? `${r.lineageHash ?? ""}${r.metrics?.sharpe != null ? ` · Sharpe ${r.metrics.sharpe.toFixed(2)}` : ""}`
                         : `halted on ‘${pinLabel(r.violatedPin)}’ — no number shipped`}
                     </p>
                   </div>
-                  <span className="shrink-0 font-mono text-[0.56rem] uppercase tracking-[0.08em] text-faint">{r.trigger.replace(/_/g, " ")}</span>
+                  <span className="shrink-0 font-mono text-micro uppercase tracking-[0.08em] text-faint">{r.trigger.replace(/_/g, " ")}</span>
                 </div>
               ))}
             </div>

@@ -72,9 +72,9 @@ export function UploadData() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-xl border border-dashed border-hairline-2 px-3.5 py-2 text-[0.82rem] text-muted hover:border-ink hover:text-ink transition-colors"
+        className="flex items-center gap-2 rounded-xl border border-dashed border-hairline-2 px-3.5 py-2 text-ui text-muted hover:border-ink hover:text-ink transition-colors"
       >
-        <span className="font-mono text-[0.78rem] text-clay">↑</span>
+        <span className="font-mono text-ui text-clay">↑</span>
         Bring your own data
       </button>
 
@@ -84,10 +84,10 @@ export function UploadData() {
           <div className="relative w-full max-w-[600px] rounded-2xl bg-white shadow-float border border-hairline overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-hairline">
               <div>
-                <h2 className="font-serif text-[1.3rem] font-semibold leading-none">Bring your own data</h2>
-                <p className="mt-1.5 font-mono text-[0.66rem] text-faint">preview · parsed in your browser, not uploaded or stored</p>
+                <h2 className="font-serif text-h2 font-semibold leading-none">Bring your own data</h2>
+                <p className="mt-1.5 font-mono text-meta text-faint">preview · parsed in your browser, not uploaded or stored</p>
               </div>
-              <button onClick={close} aria-label="close" className="grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-paper-2 hover:text-clay text-[1.05rem] leading-none">×</button>
+              <button onClick={close} aria-label="close" className="grid h-7 w-7 place-items-center rounded-lg text-muted hover:bg-paper-2 hover:text-clay text-h3 leading-none">×</button>
             </div>
 
             <div className="p-6">
@@ -97,9 +97,9 @@ export function UploadData() {
                     onClick={() => fileRef.current?.click()}
                     className="w-full rounded-xl border-2 border-dashed border-hairline-2 hover:border-clay transition-colors py-10 px-6 text-center"
                   >
-                    <div className="font-mono text-[1.4rem] text-clay">↑</div>
-                    <div className="mt-2 text-[0.92rem] text-ink">{busy ? "Profiling…" : "Choose a CSV file"}</div>
-                    <div className="mt-1 font-mono text-[0.7rem] text-faint">header row + columns · we infer the schema</div>
+                    <div className="font-mono text-h2 text-clay">↑</div>
+                    <div className="mt-2 text-body text-ink">{busy ? "Profiling…" : "Choose a CSV file"}</div>
+                    <div className="mt-1 font-mono text-meta text-faint">header row + columns · we infer the schema</div>
                   </button>
                   <input
                     ref={fileRef}
@@ -108,18 +108,18 @@ export function UploadData() {
                     className="hidden"
                     onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(f); }}
                   />
-                  {error && <p className="mt-3 text-[0.84rem] text-clay">{error}</p>}
+                  {error && <p className="mt-3 text-ui text-clay">{error}</p>}
                 </div>
               ) : (
                 <div>
                   <div className="flex items-baseline justify-between mb-3">
-                    <span className="font-mono text-[0.82rem] text-ink truncate">{profile.fileName}</span>
-                    <span className="font-mono text-[0.7rem] text-faint">{profile.fields.length} cols · {profile.rows.toLocaleString()} rows</span>
+                    <span className="font-mono text-ui text-ink truncate">{profile.fileName}</span>
+                    <span className="font-mono text-meta text-faint">{profile.fields.length} cols · {profile.rows.toLocaleString()} rows</span>
                   </div>
 
                   <p className="eyebrow mb-1.5">detected schema</p>
                   <div className="rounded-lg border border-hairline bg-white overflow-hidden mb-4">
-                    <table className="w-full text-[0.78rem] font-mono">
+                    <table className="w-full text-ui font-mono">
                       <tbody>
                         {profile.fields.map((f) => (
                           <tr key={f.name} className="border-b border-hairline/50 last:border-0">
@@ -133,7 +133,7 @@ export function UploadData() {
 
                   <p className="eyebrow mb-1.5">sample · {profile.sample.length} of {profile.rows.toLocaleString()} rows</p>
                   <div className="rounded-lg border border-hairline bg-white overflow-x-auto">
-                    <table className="w-full text-[0.72rem] font-mono border-collapse">
+                    <table className="w-full text-meta font-mono border-collapse">
                       <thead>
                         <tr className="border-b border-hairline text-faint">
                           {profile.fields.map((f) => (
@@ -154,15 +154,15 @@ export function UploadData() {
                   </div>
 
                   <div className="mt-5 flex items-center justify-between gap-3">
-                    <button onClick={reset} className="font-mono text-[0.74rem] text-muted hover:text-ink">← choose another</button>
+                    <button onClick={reset} className="font-mono text-meta text-muted hover:text-ink">← choose another</button>
                     <button
                       onClick={() => { close(); router.push("/workspace/new"); }}
-                      className="font-mono text-[0.74rem] uppercase tracking-[0.12em] bg-ink text-paper px-4 py-2 rounded-lg hover:bg-clay transition-colors"
+                      className="font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper px-4 py-2 rounded-lg hover:bg-clay transition-colors"
                     >
                       start analysis →
                     </button>
                   </div>
-                  <p className="mt-3 font-mono text-[0.66rem] text-faint leading-relaxed">
+                  <p className="mt-3 font-mono text-meta text-faint leading-relaxed">
                     in the prototype the profile stays in this dialog. with the backend, this registers as a hosted dataset you can build on.
                   </p>
                 </div>
