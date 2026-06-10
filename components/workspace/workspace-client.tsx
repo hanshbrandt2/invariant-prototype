@@ -17,7 +17,7 @@ import type {
 import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
-import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk } from "@/lib/data";
+import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk, publishFinding } from "@/lib/data";
 import { buildProject } from "@/lib/code-project";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
@@ -426,13 +426,29 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const onPublishConfirm = useCallback(() => {
     const r = graphRef.current.nodes.find((n) => n.kind === "result");
     if (!r) return;
+    const spec = resultSpecs[r.id];
     setPublished(true);
+    // record it in the findings registry (localStorage) so it has a home + lists
+    // on the dashboard Findings shelf — backend-shaped for later.
+    publishFinding({
+      id: `finding:${r.id}`,
+      resultId: r.id,
+      workspaceId: bundle.workspaceId,
+      workspaceName: bundle.workspaceName,
+      friendlyName: spec?.friendlyName ?? r.name,
+      metrics: spec?.metrics ?? {},
+      lineageHash: r.lineageHash,
+      asOf: r.asOfKnowledgeTime?.slice(0, 10),
+      publishedBy: r.owner,
+      publishedAt: new Date().toISOString().slice(0, 10),
+      sealOk: true,
+    });
     addTurn({
       id: uid("pub"),
       role: "system",
-      text: `✓ Published “${resultSpecs[r.id]?.friendlyName ?? r.name}” — pinned read-only at lineage ${r.lineageHash ?? ""}, as-of ${(r.asOfKnowledgeTime ?? "").slice(0, 10)}. Sealed: no-lookahead · reproducible. Frozen & shareable.`,
+      text: `✓ Published “${spec?.friendlyName ?? r.name}” — pinned read-only at lineage ${r.lineageHash ?? ""}, as-of ${(r.asOfKnowledgeTime ?? "").slice(0, 10)}. Sealed: no-lookahead · reproducible. It's on your dashboard under Findings.`,
     });
-  }, [resultSpecs, addTurn]);
+  }, [resultSpecs, addTurn, bundle.workspaceId, bundle.workspaceName]);
 
   // export getters — computed lazily on click so they always reflect the latest
   // graph + conversation. The script is the terminal node's full reproducible code.

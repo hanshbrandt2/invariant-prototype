@@ -243,6 +243,14 @@ export function getDatasetCode(id: string): string {
  *  Re-exported through the data seam so components never import fixtures. */
 export { buildCodeMap as genCodeMap, datasetCode as genDatasetCode, buildPipeline, callLine, opLabel } from "@/lib/fixtures/code";
 
+/** Published-findings registry — seeded fixtures (server-safe) + the client-side
+ *  localStorage store. Components read/write findings through this seam only. */
+import { seededFindings } from "@/lib/fixtures/findings";
+export function listFindings() {
+  return seededFindings;
+}
+export { loadLocalFindings, publishFinding } from "@/lib/findings-store";
+
 /** Fork helpers (typed knobs, current value, generated metrics) — re-exported
  *  through the seam so components never import fixtures directly. */
 export { knobForOp, inferCurrent, genMetrics } from "@/lib/fixtures/variants";

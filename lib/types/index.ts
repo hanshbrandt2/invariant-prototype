@@ -421,6 +421,22 @@ export interface RecipeRun {
 /** One file in the workspace's reproducible code project (the Code view). Each
  *  artifact is a file under its stage folder; `nodeId` links it back to the
  *  graph node so canvas ⟷ file selection stays in sync. */
+/** A published finding — a result pinned read-only & sealed, with the proof that
+ *  travels with it. The registry behind publish-a-finding. */
+export interface PublishedFinding {
+  id: string; // `finding:<resultId>`
+  resultId: string;
+  workspaceId: string;
+  workspaceName: string;
+  friendlyName: string;
+  metrics: Record<string, number>;
+  lineageHash?: string;
+  asOf?: string; // knowledge time
+  publishedBy?: string;
+  publishedAt?: string; // ISO date the finding was pinned
+  sealOk: boolean;
+}
+
 export interface ProjectFile {
   path: string; // "invariant_research/features.py"
   folder: string; // "invariant_research" ("" for project root)

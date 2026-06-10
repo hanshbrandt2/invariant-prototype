@@ -6,6 +6,7 @@ import {
   listRecipes,
   listRunsByRecipe,
   getInvariants,
+  listFindings,
 } from "@/lib/data";
 import Link from "next/link";
 import { StartInput } from "@/components/dashboard/start-input";
@@ -14,6 +15,7 @@ import { UploadData } from "@/components/dashboard/upload-data";
 import { WorkspaceViews } from "@/components/dashboard/workspace-views";
 import { StarterStrip } from "@/components/dashboard/starter-strip";
 import { RecipesShelf } from "@/components/dashboard/recipes-shelf";
+import { FindingsShelf } from "@/components/dashboard/findings-shelf";
 
 type View = "recent" | "all" | "starred";
 
@@ -38,6 +40,7 @@ export default async function DashboardPage({
   const examples = pool.filter((p) => p.text !== starter.text).slice(0, 3);
   const seeds = pool.slice(0, 3);
 
+  const findings = listFindings();
   const newUser = state === "new" || workspaces.length === 0;
 
   return (
@@ -83,6 +86,17 @@ export default async function DashboardPage({
             <span className="eyebrow">validated workflows · manual → agentic</span>
           </div>
           <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
+        </section>
+      )}
+
+      {/* ── findings: published, read-only, sealed results ────────── */}
+      {!newUser && findings.length > 0 && (
+        <section className="mt-12">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="font-serif text-[1.5rem] font-semibold">Findings</h2>
+            <span className="eyebrow">published · read-only · sealed</span>
+          </div>
+          <FindingsShelf seeded={findings} />
         </section>
       )}
 
