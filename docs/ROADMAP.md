@@ -119,15 +119,15 @@ Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too 
 - **I4 — Guardrail.** `package.json` lint: `! rg 'text-\[[0-9.]+rem\]' components app` (micro-chip allowlist) so the scale can't drift back to 52.
 - **DoD:** UI defaults to 13px; **zero** arbitrary font sizes (lint green); every chart reads color/font from one theme.
 
-### M-J · Honest, beautiful charts — `ChartSpec` + `<Figure>` — J1–J3 DONE ✓ · J4 deferred
+### M-J · Honest, beautiful charts — `ChartSpec` + `<Figure>` — DONE ✓
 - **J1 — Kill the fabrication.** Delete `curve.ts` (`Math.sin` equity); add an authored backtest equity/drawdown series to fixtures; remove `preserveAspectRatio="none"` (`compare-view`); fix the mislabeled waterfall (cumulative baseline, `finding-viz`).
 - **J2 — The seam.** Add `ChartSpec` to `lib/types` (`mark: line|bar|area|scatter|heatmap`, encodings x/y/color, title-as-finding, `dataRef`) as a deliberate **subset of viz-engine's `ViewSpec`**; one `<Figure spec>` backed by Recharts; expose via `lib/data` (`getFigureSpec`). Components read a spec, never raw `{t,v}[]`.
 - **J3 — Rebuild to the editorial look.** Map 1:1 to proven gallery usages — result equity→usage09 (equity+drawdown, one calendar); dataset line→usage01; histogram→usage05; finding distribution→usage32; waterfall→usage13; compare overlay→usage02 (normalized + direct end-labels). Real axes, hairline grid, mono ticks, direct labels, title-as-finding.
 - **J4 — Marks Invariant lacks.** Add a correlation **heatmap** (diverging scale) + **regime ribbon** (`regimeColors`) — no DuckDB needed.
 - **DoD:** no synthesized/distorted chart data anywhere; all charts render a `ChartSpec` via one `<Figure>`; renderer swappable behind the seam. *(Optional, fenced: one `ssr:false` vgplot+DuckDB-WASM hero chart for a genuine large-data series — opt-in, single route.)*
-- **Status (J1–J3 done):** `curve.ts` deleted (the `Math.sin` equity is gone from all 3 surfaces); authored equity snapshot on the result spec → drawdown derived; `compare-view` distortion removed; waterfall made cumulative. `ChartSpec` + `<Figure>` (equity-drawdown / line / area / bar) + `lib/figures.ts` shipped; result equity + variant compare routed through it. **Remaining:** route the still-direct `PreviewChart`/`Histogram` callers through `<Figure>` for full unification, and **J4** (correlation heatmap + regime ribbon — additive new marks, need a consumer). Verified: tsc + build clean; Result-lens figure renders with the drawdown matching the −8.3% KPI.
+- **Status (DONE):** `curve.ts` deleted (the `Math.sin` equity is gone from all 3 surfaces); authored equity snapshot on the result spec → drawdown derived; `compare-view` distortion removed; waterfall made cumulative. `ChartSpec` + `<Figure>` (equity-drawdown / line / area / bar / heatmap / regime) + `lib/figures.ts` shipped; result equity + variant compare routed through it. **J4 done:** authored feature-correlation heatmap (diverging scale) on the matrix face, and an authored regime ribbon (`regimeColors`) on the result face — both honest snapshots. *Still optional:* route the few remaining direct `PreviewChart`/`Histogram` callers through `<Figure>` for total unification (they already read the shared theme).
 
-### M-K · Answer-first everywhere — the disclosure ladder (headline clarity fix)
+### M-K · Answer-first everywhere — the disclosure ladder (headline clarity fix) — DONE ✓
 - **K1 — Canvas leads with the answer.** Default a populated workspace to the `Result` lens with a "you are here" anchor (*"<friendlyName> — Sharpe 1.38. This is what this workspace found. How it was built ▸"*). Graph/Code/Concepts become "go deeper" rungs, not equal tabs; `Result` is visually primary.
 - **K2 — The one next move.** Surface `ResultSpec.nextProposal` (already in data, used only inside the narrative) as **one** persistent clay "next step" button on the canvas.
 - **K3 — Inspector calms down.** Default the drawer to a single Overview (lede + visual + built-from chips); collapse Spec/Contract/Checks/Code/Lineage behind one `details ▾`.
@@ -135,7 +135,7 @@ Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too 
 - **K5 — Plain language on the home surface.** Strip insider vocabulary (agentic / sealed / no-lookahead / pins) → plain verbs (Re-runs weekly / Verified / Continue); defer the technical terms to the inspector, defined on hover.
 - **DoD:** a newcomer lands on the answer, has exactly one obvious next move, and reaches graph/code/contract only by choosing "go deeper."
 
-### M-L · Numbers-as-heroes + hex craft
+### M-L · Numbers-as-heroes + hex craft — DONE ✓
 - **L1 — One hero number per data card.** Promote the defining metric (Sharpe / ann. return) to the display tier (mono, tabular-nums); demote its label to a `meta` eyebrow; secondary stats small. (`findings-shelf`, `result-face`.)
 - **L2 — Corner-tick plates.** Add a `.ticks` primitive (four clay/ink "+" via pseudo-elements) on the 3–4 hero plates (result chart, finding viz, lineage hero, dataset preview). A signal, not a texture.
 - **L3 — Mono-metadata grammar + bracketed counts.** One quiet hairline-separated mono meta line per card; `Findings [N]` / `Recipes [N]` / `Workspaces [N]` count tokens on shelf headings; `built from [3]` on inspector input groups.
@@ -143,13 +143,13 @@ Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too 
 - **L5 — Motion restraint.** Remove idle infinite loops (`sealPulse`, idle `buildPulse`); replace the springy `snapIn` overshoot (cubic-bezier 1.56) with a calm ease; animate only on state transitions + one-shot reveals.
 - **DoD:** data cards read "big number + what it is" across the room; color is signal-only; nothing breathes or bounces at rest.
 
-### M-M · Connection in language + motion
+### M-M · Connection in language + motion — DONE ✓
 - **M1 — Plain edges.** One neutral line for the spine, one faint for branches; retire the 5-way dash dictionary + its legend.
 - **M2 — Meaning in words.** Surface the dependency *kind* on hover/inspect via the existing `edge-inspector` prose; fold edge-inspection into the node drawer's Lineage view — one affordance: "click anything to inspect."
 - **M3 — Build-stream as the lesson.** Frame the `runBuild` stream as the connection story (watch data flow into the finding); a one-shot, `localStorage`-gated 3-step first-run coachmark (*"This is the finding" → "Click a node to see how it's made" → "The contract keeps it honest"*).
 - **DoD:** connection meaning is read in words + motion, not decoded from a dash legend; first-run teaches data→finding in <60s.
 
-### M-N · Hardening + guardrails
+### M-N · Hardening + guardrails — DONE ✓
 - **N1 — Contrast + size pass.** Faint-mono min size/contrast to WCAG AA; audit clay-on-clay-wash chips; emoji-as-status get text alternatives or become mono tokens.
 - **N2 — Mobile charts.** `<Figure>` responsive (no fixed-px SVG width / `overflow-x-auto` spill); the hover-only canvas gets a tap/keyboard path.
 - **N3 — Guardrail lints.** No arbitrary `text-[]`; no hardcoded chart hex (must read `lib/theme`); no synthesized chart series (chart-honesty check); a jargon-on-home allowlist.
