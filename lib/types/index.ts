@@ -421,6 +421,13 @@ export interface RecipeRun {
 /** One file in the workspace's reproducible code project (the Code view). Each
  *  artifact is a file under its stage folder; `nodeId` links it back to the
  *  graph node so canvas ⟷ file selection stays in sync. */
+/** The task-apt mini-visual a finding card leads with (not a sparkline — a
+ *  categorical/distribution picture that fits the research task). */
+export type FindingViz =
+  | { type: "bars"; bars: { label: string; pct: number; tone?: string }[] } // weights / risk contributions
+  | { type: "waterfall"; steps: { label: string; value: number }[] } // attribution
+  | { type: "histogram"; bins: number[] }; // EDA distribution
+
 /** A published finding — a result pinned read-only & sealed, with the proof that
  *  travels with it. The registry behind publish-a-finding. */
 export interface PublishedFinding {
@@ -435,6 +442,12 @@ export interface PublishedFinding {
   publishedBy?: string;
   publishedAt?: string; // ISO date the finding was pinned
   sealOk: boolean;
+  // what kind of research, so the card leads with the right sentence + picture
+  kind?: "strategy" | "portfolio" | "risk" | "attribution" | "eda";
+  headline?: string; // the plain-language one-liner
+  viz?: FindingViz; // the task-apt visual (strategy leads with its numbers)
+  stats?: { label: string; value: string }[]; // pre-formatted key numbers ($/%/×)
+  live?: boolean; // backed by a real workspace (openable) vs an illustrative seed
 }
 
 export interface ProjectFile {

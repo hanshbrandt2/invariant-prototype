@@ -484,6 +484,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     const r = viewRef.current.graph.nodes.find((n) => n.kind === "result");
     if (!r) return;
     const spec = viewRef.current.resultSpecs[r.id];
+    const m = spec?.metrics ?? {};
+    const headline = spec
+      ? `${spec.friendlyName}${typeof m.sharpe === "number" ? ` — about ${m.sharpe.toFixed(1)}× return per unit of risk` : ""}${typeof m.ann_return === "number" ? `, ${(m.ann_return * 100).toFixed(0)}% a year` : ""}.`
+      : undefined;
+    const stats: { label: string; value: string }[] = [];
+    if (typeof m.sharpe === "number") stats.push({ label: "Risk-adjusted return (Sharpe)", value: m.sharpe.toFixed(2) });
+    if (typeof m.ann_return === "number") stats.push({ label: "Annual return", value: `${(m.ann_return * 100).toFixed(0)}%` });
+    if (typeof m.max_drawdown === "number") stats.push({ label: "Worst dip", value: `${(m.max_drawdown * 100).toFixed(1)}%` });
     setPublished(true);
     // record it in the findings registry (localStorage) so it has a home + lists
     // on the dashboard Findings shelf — backend-shaped for later.
@@ -493,12 +501,16 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
       workspaceId: bundle.workspaceId,
       workspaceName: bundle.workspaceName,
       friendlyName: spec?.friendlyName ?? r.name,
-      metrics: spec?.metrics ?? {},
+      kind: "strategy",
+      headline,
+      metrics: m,
+      stats,
       lineageHash: r.lineageHash,
       asOf: r.asOfKnowledgeTime?.slice(0, 10),
       publishedBy: r.owner,
       publishedAt: new Date().toISOString().slice(0, 10),
       sealOk: true,
+      live: true,
     });
     addTurn({
       id: uid("pub"),
