@@ -214,20 +214,22 @@ function implFor(node: Node, parents: Node[], op: string): Impl {
     case "fit_model": {
       const alpha = num(sp(node).alpha, 0.1);
       const matrix = parents.find((x) => x.kind === "matrix") ?? parents[0];
-      const target = parents.find((x) => x.kind === "target") ?? parents[1];
-      const feats = (sp(matrix).columns as string[]) ?? ["zscore_20", "gas_z20", "spread_5d"];
+      const target = parents.find((x) => x.kind === "target") ?? parents.find((x) => x !== matrix) ?? parents[1];
+      const mName = matrix?.name ?? "features";
+      const tName = target?.name ?? "target";
+      const feats = (matrix ? (sp(matrix).columns as string[] | undefined) : undefined) ?? ["zscore_20", "gas_z20", "spread_5d"];
       const featList = feats.map((c) => `"${c}"`).join(", ");
       return { imports: ["import polars as pl", "from sklearn.linear_model import Ridge"], def:
-`def ${out}(${matrix.name}: pl.DataFrame, ${target.name}: pl.DataFrame, alpha: float = ${alpha}) -> dict:
+`def ${out}(${mName}: pl.DataFrame, ${tName}: pl.DataFrame, alpha: float = ${alpha}) -> dict:
     """fit_model — ridge regression of the forward return on the signals.
 
     Fit on the aligned, non-null rows only. Returns the fitted estimator plus the
     feature order, so scoring downstream is reproducible.
     """
-    df = ${matrix.name}.join(${target.name}, on="ts_event", how="inner").drop_nulls()
+    df = ${mName}.join(${tName}, on="ts_event", how="inner").drop_nulls()
     features = [${featList}]
     X = df.select(features).to_numpy()
-    y = df["${target.name}"].to_numpy()
+    y = df["${tName}"].to_numpy()
     estimator = Ridge(alpha=alpha).fit(X, y)
     return {"estimator": estimator, "features": features}` };
     }
