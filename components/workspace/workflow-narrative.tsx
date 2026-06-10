@@ -1,8 +1,10 @@
 "use client";
 
 import type { HostedDataset, LineageSubgraph, Node, ResultSpec } from "@/lib/types";
+import type { Lens } from "@/components/workspace/types";
 import { PreviewChart } from "@/components/workspace/preview-chart";
 import { equityCurve } from "@/components/workspace/curve";
+import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Longest-path depth over data edges — chronological build order. */
 function depths(sg: LineageSubgraph): Record<string, number> {
@@ -34,6 +36,30 @@ function fmtMetric(k: string, v: number) {
   return v.toFixed(k === "hit_rate" ? 3 : 2);
 }
 
+// plain-English metric labels (jargon kept in parens) — so a newcomer reads
+// meaning first and learns the term, instead of meeting the jargon cold.
+const PLAIN_LABEL: Record<string, { plain: string; jargon?: string }> = {
+  sharpe: { plain: "Risk-adjusted return", jargon: "Sharpe" },
+  hit_rate: { plain: "Win rate", jargon: "hit rate" },
+  max_drawdown: { plain: "Worst dip", jargon: "max drawdown" },
+  ann_return: { plain: "Annual return" },
+  turnover: { plain: "Turnover" },
+  ann_vol: { plain: "Volatility", jargon: "ann. vol" },
+  flagged: { plain: "Flagged" },
+  max_z: { plain: "Largest spike", jargon: "max z" },
+  share_pct: { plain: "Share" },
+};
+
+/** A plain-language one-liner from the result's numbers — what a newcomer reads first. */
+function plainHeadline(spec: ResultSpec): string {
+  const m = spec.metrics;
+  const bits: string[] = [];
+  if (typeof m.sharpe === "number") bits.push(`about ${m.sharpe.toFixed(1)}× return per unit of risk`);
+  if (typeof m.ann_return === "number") bits.push(`${(m.ann_return * 100).toFixed(0)}% a year`);
+  if (typeof m.flagged === "number") bits.push(`${m.flagged} flagged`);
+  return bits.length ? `${spec.friendlyName} — ${bits.join(", ")}.` : `${spec.friendlyName}.`;
+}
+
 /**
  * The Result lens, whole-analysis mode: the finding leads (KPIs + curve), then
  * the workflow as a top-to-bottom scrollable narrative that grows node-by-node
@@ -51,6 +77,7 @@ export function WorkflowNarrative({
   buildingOp,
   workspaceName,
   onOpenNode,
+  onOpenLens,
 }: {
   graph: LineageSubgraph;
   labels: Record<string, string>;
@@ -62,35 +89,42 @@ export function WorkflowNarrative({
   buildingOp?: string;
   workspaceName: string;
   onOpenNode: (id: string) => void;
+  onOpenLens?: (l: Lens) => void;
 }) {
   const d = depths(graph);
   const flow = graph.nodes.filter((n) => n.kind !== "policy").sort((a, b) => (d[a.id] ?? 0) - (d[b.id] ?? 0));
   const result = [...flow].reverse().find((n) => n.kind === "result");
   const spec = result ? resultSpecs[result.id] : undefined;
+  const validator = result && result.kind !== "dataset" && result.kind !== "raw-dataset" ? deriveValidator(result, graph) : undefined;
+  const ok = validator ? validatorOk(validator) : false;
 
   return (
     <div className="px-6 md:px-10 py-7 max-w-[760px] mx-auto">
-      {/* finding — leads with the visual */}
+      {/* finding — leads with a plain-language headline, the visual, human-labelled
+          numbers, a calm trust mark, and the depth (graph / code) one click away */}
       {result && spec && (
-        <button
-          onClick={() => onOpenNode(result.id)}
-          className="block w-full text-left border border-clay bg-paper mb-8 hover:bg-paper-2/40 transition-colors"
-        >
-          <div className="px-5 pt-4 pb-3 border-b border-hairline flex items-baseline justify-between">
-            <span className="eyebrow text-clay">the finding</span>
-            <span className="font-serif italic text-[0.95rem] text-ink-2">{spec.friendlyName}</span>
+        <div className="border border-clay bg-paper mb-8">
+          <div className="px-5 pt-4 pb-3 border-b border-hairline">
+            <p className="eyebrow text-clay">the finding</p>
+            <p className="mt-1.5 font-serif text-[1.3rem] leading-[1.4] text-ink max-w-[48ch]">{plainHeadline(spec)}</p>
           </div>
-          <div className="px-5 py-4">
+          <button onClick={() => onOpenNode(result.id)} className="block w-full text-left px-5 py-4 hover:bg-paper-2/40 transition-colors">
             <div className="border border-hairline bg-paper p-3">
               <PreviewChart data={equityCurve(spec.metrics)} height={150} />
             </div>
-            <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-y-3">
-              {Object.entries(spec.metrics).slice(0, 5).map(([k, v]) => (
-                <div key={k}>
-                  <div className="eyebrow">{METRIC_LABEL[k] ?? k}</div>
-                  <div className="mt-1 font-mono text-[1.15rem] text-ink tabular-nums">{fmtMetric(k, v)}</div>
-                </div>
-              ))}
+            <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-4">
+              {Object.entries(spec.metrics).slice(0, 4).map(([k, v]) => {
+                const lbl = PLAIN_LABEL[k];
+                return (
+                  <div key={k}>
+                    <div className="font-mono text-[1.2rem] text-ink tabular-nums">{fmtMetric(k, v)}</div>
+                    <div className="mt-0.5 text-[0.72rem] text-muted">
+                      {lbl?.plain ?? METRIC_LABEL[k] ?? k}
+                      {lbl?.jargon && <span className="font-mono text-[0.6rem] text-faint"> ({lbl.jargon})</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             {spec.nextProposal && (
               <p className="mt-4 text-[0.9rem] leading-relaxed text-ink-2">
@@ -98,8 +132,18 @@ export function WorkflowNarrative({
                 {spec.nextProposal.kind === "none" ? spec.nextProposal.reason : spec.nextProposal.summary}
               </p>
             )}
+          </button>
+          <div className="px-5 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
+            <span className={`font-mono text-[0.68rem] ${ok ? "text-[#3B6D11]" : "text-clay"}`}>{ok ? "✓ validated" : "! blocked"}</span>
+            {ok && <><span className="font-mono text-[0.66rem] text-clay-deep">🔒 no look-ahead</span><span className="font-mono text-[0.66rem] text-clay-deep">🔒 reproducible</span></>}
+            {onOpenLens && (
+              <span className="ml-auto flex items-center gap-4">
+                <button onClick={() => onOpenLens("graph")} className="font-mono text-[0.66rem] text-muted hover:text-ink transition-colors">how it was built ▸</button>
+                <button onClick={() => onOpenLens("code")} className="font-mono text-[0.66rem] text-muted hover:text-ink transition-colors">the code ▸</button>
+              </span>
+            )}
           </div>
-        </button>
+        </div>
       )}
 
       <p className="eyebrow mb-4">the workflow{building ? " · building…" : ` · ${workspaceName}`}</p>

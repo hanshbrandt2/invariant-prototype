@@ -1,7 +1,7 @@
 "use client";
 
 import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, VariantGroup } from "@/lib/types";
-import type { CanvasState, InspectTarget } from "@/components/workspace/types";
+import type { CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
 import { EmptyCanvas } from "@/components/workspace/empty-canvas";
 import { WorkflowGraph } from "@/components/workspace/workflow-graph";
 import { WorkflowNarrative } from "@/components/workspace/workflow-narrative";
@@ -42,6 +42,7 @@ export function Canvas({
   onFork,
   onFlashPin,
   onOpenCode,
+  onOpenLens,
 }: {
   canvas: CanvasState;
   lens: "result" | "graph" | "concepts";
@@ -68,6 +69,7 @@ export function Canvas({
   onFork: (nodeId: string) => void;
   onFlashPin?: (pinId: string) => void;
   onOpenCode?: () => void;
+  onOpenLens?: (l: Lens) => void;
 }) {
   const datasetList: HostedDataset[] = Array.from(new Map(Object.values(datasets).map((d) => [d.id, d])).values());
 
@@ -87,6 +89,7 @@ export function Canvas({
         buildingOp={inFlightId ? producerOps[inFlightId] : undefined}
         workspaceName={workspaceName}
         onOpenNode={onInspectNode}
+        onOpenLens={onOpenLens}
       />
     ) : lens === "concepts" ? (
       (() => {

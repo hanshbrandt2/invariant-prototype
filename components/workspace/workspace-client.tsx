@@ -92,9 +92,10 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
   const [openPin, setOpenPin] = useState<string | null>(null); // the expanded contract-rail pin
-  // the active lens — one analysis told four ways. The Graph is the hero, so it
-  // is the default; a deep-linked ?lens= or legacy ?view=code overrides it.
-  const [lens, setLens] = useState<Lens>(bundle.initialLens ?? (bundle.initialCodeView ? "code" : "graph"));
+  // the active lens — one analysis told four ways. A newcomer lands on the
+  // finding-led Result (plain language); Graph/Code/Concepts are one click away.
+  // A deep-linked ?lens= or legacy ?view=code overrides the default.
+  const [lens, setLens] = useState<Lens>(bundle.initialLens ?? (bundle.initialCodeView ? "code" : "result"));
   const [promoting, setPromoting] = useState(bundle.initialPromote ?? false);
   // publish-a-finding: pin the terminal result as a read-only, citable artifact.
   const [publishOpen, setPublishOpen] = useState(false);
@@ -637,6 +638,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             workspaceName={bundle.workspaceName}
             onFlashPin={setFlashedPin}
             onOpenCode={() => setLens("code")}
+            onOpenLens={setLens}
             graph={viewGraph}
             labels={viewLabels}
             producerOps={viewProducerOps}
