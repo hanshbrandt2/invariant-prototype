@@ -27,6 +27,46 @@ export function resultEquityFigure(spec: ResultSpec): ChartSpec | null {
   };
 }
 
+/** The regime ribbon (M-J · J4) from the result's AUTHORED regime snapshot —
+ *  which regime ruled each step over the eval window. Returns null if none. */
+export function regimeFigure(spec: ResultSpec): ChartSpec | null {
+  const s = spec.regimeSeries;
+  if (!s || s.length === 0) return null;
+  return {
+    mark: "regime",
+    data: s.map((p) => ({ t: p.t, state: p.state })),
+    x: "t",
+    y: "state",
+    caption: "market regime over the eval window · authored snapshot",
+  };
+}
+
+/** A feature-correlation heatmap (M-J · J4) from an AUTHORED correlation snapshot
+ *  on the matrix spec. Long-format cells (row × col → value) for the heatmap mark;
+ *  the diverging scale (clay↔paper↔data) centers at 0. Returns null if the spec
+ *  carries no `corr` (then the matrix face simply shows no heatmap). */
+export function correlationFigure(spec: unknown): ChartSpec | null {
+  if (!spec || typeof spec !== "object") return null;
+  const s = spec as { columns?: unknown; corr?: unknown };
+  const cols = Array.isArray(s.columns) ? (s.columns as string[]) : null;
+  const corr = Array.isArray(s.corr) ? (s.corr as number[][]) : null;
+  if (!cols || !corr || corr.length !== cols.length) return null;
+  const data = [];
+  for (let i = 0; i < cols.length; i++) {
+    for (let j = 0; j < cols.length; j++) {
+      if (typeof corr[i]?.[j] !== "number") return null;
+      data.push({ row: cols[i], col: cols[j], v: corr[i][j] });
+    }
+  }
+  return {
+    mark: "heatmap",
+    data,
+    x: "col",
+    y: "row",
+    caption: "feature correlation · authored snapshot · clay −1 · paper 0 · blue +1",
+  };
+}
+
 /** An honest variant comparison: the real `bestBy` metric across the sweep,
  *  winner in clay. Replaces the old fabricated equity overlay — it draws only
  *  numbers the members actually carry, no synthesized curves. */

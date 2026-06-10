@@ -232,6 +232,9 @@ export interface ResultSpec {
    *  fixed + labeled, never synthesized at render time. Drawdown is DERIVED from
    *  it (equity − running max), so the two-panel figure is internally consistent. */
   equitySeries?: { t: string; equity: number }[];
+  /** Authored regime snapshot aligned to the eval window — which market regime
+   *  ruled each step (UP / DOWN / MR / NO_TRADE). The regime ribbon reads it. */
+  regimeSeries?: { t: string; state: string }[];
 }
 
 /* ── Figures (M-J) ─────────────────────────────────────────────────
@@ -241,7 +244,7 @@ export interface ResultSpec {
    its compiler renders the SAME spec behind the unchanged seam. In the prototype
    the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
    honest because it's fixed and labeled, never fabricated at render time. */
-export type FigureMark = "line" | "area" | "bar" | "equity-drawdown";
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "heatmap" | "regime";
 export interface FigurePoint {
   [key: string]: number | string;
 }

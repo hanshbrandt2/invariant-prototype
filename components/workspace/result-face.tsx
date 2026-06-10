@@ -2,7 +2,7 @@
 
 import type { Node, ResultSpec, Validator } from "@/lib/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultEquityFigure } from "@/lib/figures";
+import { resultEquityFigure, regimeFigure } from "@/lib/figures";
 import { Metric, type MetricFormat } from "@/components/workspace/metric";
 
 const METRIC_LABEL: Record<string, string> = {
@@ -52,6 +52,14 @@ export function ResultFace({
       <div className="mt-4 border border-hairline bg-paper p-4">
         <Figure spec={resultEquityFigure(spec)} height={210} />
       </div>
+
+      {/* the regime ribbon — when the mean-reversion edge ruled, and when it didn't */}
+      {regimeFigure(spec) && (
+        <div className="mt-3 border border-hairline bg-paper px-4 py-3">
+          <p className="eyebrow mb-2">regime over the window</p>
+          <Figure spec={regimeFigure(spec)} />
+        </div>
+      )}
 
       {/* metrics — what it found */}
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-5 border border-hairline divide-x divide-hairline">

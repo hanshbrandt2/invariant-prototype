@@ -5,6 +5,8 @@ import { DatasetOverview } from "@/components/workspace/dataset-overview";
 import { ResultFace } from "@/components/workspace/result-face";
 import { FallbackFace } from "@/components/workspace/inspector/fallback-face";
 import { ArtifactData } from "@/components/workspace/inspector/artifact-data";
+import { Figure } from "@/components/workspace/figure";
+import { correlationFigure } from "@/lib/figures";
 import { type FaceProps, inputsOf, nodeById, KIND_NOUN } from "@/components/workspace/inspector/face-types";
 
 /* ── shared bits ─────────────────────────────────────────────────────────── */
@@ -103,9 +105,16 @@ function FeatureFace(p: FaceProps) {
 }
 
 function MatrixFace(p: FaceProps) {
+  const corrFig = correlationFigure(p.node.spec);
   return (
     <div className="p-6">
       <Lede p={p} />
+      {corrFig && (
+        <div className="mt-4 border border-hairline bg-paper p-4">
+          <p className="eyebrow mb-2.5">how the signals move together</p>
+          <Figure spec={corrFig} />
+        </div>
+      )}
       <Data p={p} />
       <Inputs p={p} title="columns" />
     </div>

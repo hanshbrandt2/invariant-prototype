@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip,
 } from "recharts";
 import type { ChartSpec, FigurePoint } from "@/lib/types";
-import { editorial } from "@/lib/theme/editorial";
+import { editorial, regimeColors } from "@/lib/theme/editorial";
 
 const c = editorial.color;
 const TICK = { fontFamily: "var(--font-jetbrains)", fontSize: 9, fill: c.faint } as const;
@@ -39,6 +39,10 @@ export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?
       {spec.caption && <p className="font-mono text-meta text-faint mb-2">{spec.caption}</p>}
       {spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
+      ) : spec.mark === "heatmap" ? (
+        <Heatmap data={spec.data} />
+      ) : spec.mark === "regime" ? (
+        <Regime data={spec.data} />
       ) : spec.mark === "bar" ? (
         <Bars spec={spec} height={height} />
       ) : (
@@ -82,6 +86,97 @@ function EquityDrawdown({ data, height }: { data: FigurePoint[]; height: number 
             <Tooltip {...TOOLTIP} labelFormatter={(t) => String(t)} formatter={(v) => [`${Number(v).toFixed(1)}%`, "drawdown"]} cursor={{ stroke: c.clay, strokeWidth: 1, strokeDasharray: "3 3" }} />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// Diverging color for correlations: clay (−1) ↔ paper (0) ↔ data blue (+1), via
+// the editorial 5-stop ramp. Pure interpolation; no dependency.
+function hexRgb(h: string): [number, number, number] {
+  const n = parseInt(h.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function diverge(v: number): string {
+  const stops = editorial.diverging;
+  const t = Math.max(-1, Math.min(1, v));
+  const pos = ((t + 1) / 2) * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(pos));
+  const f = pos - i;
+  const a = hexRgb(stops[i]);
+  const b = hexRgb(stops[i + 1]);
+  const ch = (k: number) => Math.round(a[k] + (b[k] - a[k]) * f).toString(16).padStart(2, "0");
+  return `#${ch(0)}${ch(1)}${ch(2)}`;
+}
+
+/** A correlation heatmap — long-format cells (row × col → value) on the diverging
+ *  scale, with direct value labels (no legend). Responsive via viewBox. */
+function Heatmap({ data }: { data: FigurePoint[] }) {
+  const labels: string[] = [];
+  const seen = new Set<string>();
+  for (const d of data) {
+    const r = String(d.row);
+    if (!seen.has(r)) { seen.add(r); labels.push(r); }
+  }
+  const N = labels.length;
+  const idx: Record<string, number> = Object.fromEntries(labels.map((l, i) => [l, i]));
+  const CELL = 46, LG = 76, TG = 16, PAD = 4;
+  const W = LG + N * CELL + PAD;
+  const H = TG + N * CELL + PAD;
+  const short = (s: string) => (s.length > 9 ? s.slice(0, 8) + "…" : s);
+  const lab = { fontFamily: "var(--font-jetbrains)", fontSize: 8.5, fill: c.muted } as const;
+  return (
+    <div className="overflow-x-auto">
+      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full h-auto" role="img" aria-label="feature correlation heatmap">
+        {labels.map((l, j) => (
+          <text key={"c" + l} x={LG + j * CELL + CELL / 2} y={TG - 5} textAnchor="middle" {...lab}>{short(l)}</text>
+        ))}
+        {labels.map((l, i) => (
+          <text key={"r" + l} x={LG - 8} y={TG + i * CELL + CELL / 2 + 3} textAnchor="end" {...lab}>{short(l)}</text>
+        ))}
+        {data.map((d, k) => {
+          const i = idx[String(d.row)];
+          const j = idx[String(d.col)];
+          const v = Number(d.v);
+          const x = LG + j * CELL;
+          const y = TG + i * CELL;
+          const light = Math.abs(v) < 0.55;
+          return (
+            <g key={k}>
+              <rect x={x + 1} y={y + 1} width={CELL - 2} height={CELL - 2} fill={diverge(v)} />
+              <text x={x + CELL / 2} y={y + CELL / 2 + 3} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="9.5" fill={light ? c.ink : c.paper}>{v.toFixed(2)}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+const REGIME_LABEL: Record<string, string> = {
+  UP: "trending up", DOWN: "trending down", MR: "mean-reverting", NO_TRADE: "no trade",
+};
+
+/** A regime ribbon — one colored segment per step (regimeColors), with a direct
+ *  legend. Reads as "which regime ruled, when" across the eval window. */
+function Regime({ data }: { data: FigurePoint[] }) {
+  const present: string[] = [];
+  const seen = new Set<string>();
+  for (const d of data) { const s = String(d.state); if (!seen.has(s)) { seen.add(s); present.push(s); } }
+  return (
+    <div>
+      <div className="flex w-full h-5 overflow-hidden border border-hairline">
+        {data.map((d, i) => (
+          <div key={i} title={REGIME_LABEL[String(d.state)] ?? String(d.state)} style={{ flex: 1, background: regimeColors[String(d.state)] ?? c.hairline }} />
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {present.map((s) => (
+          <span key={s} className="flex items-center gap-1.5 font-mono text-meta text-muted">
+            <span className="inline-block w-2.5 h-2.5 shrink-0" style={{ background: regimeColors[s] ?? c.hairline }} />
+            {REGIME_LABEL[s] ?? s}
+          </span>
+        ))}
       </div>
     </div>
   );

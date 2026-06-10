@@ -57,5 +57,23 @@ export const resultSpecs: Record<string, ResultSpec> = {
       { t: "2024-06-18", equity: 8.8 },
       { t: "2024-06-28", equity: 9.4 },
     ],
+    // Authored regime snapshot aligned to the equity weeks: mean-reversion (MR)
+    // dominates, but a trending DOWN regime mid-window is exactly where the
+    // mean-reversion edge gave back ground (the drawdown above) — honest narrative.
+    regimeSeries: [
+      { t: "2024-01-02", state: "MR" }, { t: "2024-01-09", state: "MR" },
+      { t: "2024-01-16", state: "MR" }, { t: "2024-01-23", state: "MR" },
+      { t: "2024-01-30", state: "MR" }, { t: "2024-02-06", state: "UP" },
+      { t: "2024-02-13", state: "MR" }, { t: "2024-02-20", state: "MR" },
+      { t: "2024-02-27", state: "DOWN" }, { t: "2024-03-05", state: "DOWN" },
+      { t: "2024-03-12", state: "DOWN" }, { t: "2024-03-19", state: "DOWN" },
+      { t: "2024-03-26", state: "DOWN" }, { t: "2024-04-02", state: "MR" },
+      { t: "2024-04-09", state: "MR" }, { t: "2024-04-16", state: "MR" },
+      { t: "2024-04-23", state: "MR" }, { t: "2024-04-30", state: "MR" },
+      { t: "2024-05-07", state: "MR" }, { t: "2024-05-14", state: "UP" },
+      { t: "2024-05-21", state: "NO_TRADE" }, { t: "2024-05-28", state: "NO_TRADE" },
+      { t: "2024-06-04", state: "MR" }, { t: "2024-06-11", state: "MR" },
+      { t: "2024-06-18", state: "MR" }, { t: "2024-06-28", state: "MR" },
+    ],
   },
 };
