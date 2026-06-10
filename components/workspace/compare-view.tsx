@@ -2,31 +2,8 @@
 
 import { useState } from "react";
 import type { VariantGroup } from "@/lib/types";
-import { equityCurve } from "@/components/workspace/curve";
-
-/** A clean multi-line overlay of variant curves — the winner bold, rest faint. */
-function OverlayChart({ series }: { series: { value: string; points: { v: number }[]; best: boolean }[] }) {
-  const W = 600, H = 150, P = 8;
-  const all = series.flatMap((s) => s.points.map((p) => p.v));
-  const min = Math.min(...all), max = Math.max(...all);
-  const n = series[0]?.points.length ?? 1;
-  const sx = (i: number) => P + (i / Math.max(1, n - 1)) * (W - 2 * P);
-  const sy = (v: number) => H - P - ((v - min) / (max - min || 1)) * (H - 2 * P);
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none">
-      {series.map((s) => (
-        <polyline
-          key={s.value}
-          fill="none"
-          stroke={s.best ? "var(--color-clay)" : "var(--color-hairline-2)"}
-          strokeWidth={s.best ? 2.2 : 1.2}
-          opacity={s.best ? 1 : 0.55}
-          points={s.points.map((p, i) => `${sx(i)},${sy(p.v)}`).join(" ")}
-        />
-      ))}
-    </svg>
-  );
-}
+import { Figure } from "@/components/workspace/figure";
+import { variantMetricFigure } from "@/lib/figures";
 
 const METRIC_LABEL: Record<string, string> = {
   sharpe: "Sharpe", hit_rate: "Hit rate", max_drawdown: "Max DD", turnover: "Turnover", ann_return: "Ann. return",
@@ -69,11 +46,6 @@ export function CompareView({
     ? group.members.reduce((acc, m) => ((m.metrics?.[bestBy] ?? -Infinity) > (acc.metrics?.[bestBy] ?? -Infinity) ? m : acc))
     : undefined;
 
-  // top 3 by best metric, for the overlay
-  const overlay = hasMetrics
-    ? [...group.members].sort((a, b) => (b.metrics?.[bestBy] ?? 0) - (a.metrics?.[bestBy] ?? 0)).slice(0, 3)
-    : [];
-
   return (
     <div className="p-5">
       <div className="flex items-start justify-between gap-3">
@@ -92,8 +64,11 @@ export function CompareView({
 
       {hasMetrics && (
         <div className="mt-4 border border-hairline bg-paper p-3">
-          <OverlayChart series={overlay.map((m) => ({ value: m.value, points: equityCurve(m.metrics!), best: m.value === best?.value }))} />
-          <p className="mt-1 font-mono text-meta text-faint">cumulative return · top {overlay.length} overlaid · {group.param}={best?.value} bold</p>
+          <Figure
+            spec={variantMetricFigure(group.members, bestBy, group.chosen)}
+            height={Math.max(96, group.members.length * 28)}
+          />
+          <p className="mt-1 font-mono text-meta text-faint">{METRIC_LABEL[bestBy] ?? bestBy} across {group.members.length} variants · winner in clay · on spine {group.param}={group.chosen}</p>
         </div>
       )}
 

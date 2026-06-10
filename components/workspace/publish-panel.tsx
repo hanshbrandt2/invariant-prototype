@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import type { Node, ResultSpec, Validator } from "@/lib/types";
-import { PreviewChart } from "@/components/workspace/preview-chart";
-import { equityCurve } from "@/components/workspace/curve";
+import { Figure } from "@/components/workspace/figure";
+import { resultEquityFigure } from "@/lib/figures";
 import { Metric, type MetricFormat } from "@/components/workspace/metric";
 
 const METRIC_LABEL: Record<string, string> = { sharpe: "Sharpe", hit_rate: "Hit rate", max_drawdown: "Max DD", turnover: "Turnover", ann_return: "Ann. return" };
@@ -67,7 +67,7 @@ export function PublishPanel({
           {spec ? (
             <>
               <div className="border border-hairline bg-paper p-4">
-                <PreviewChart data={equityCurve(spec.metrics)} height={180} />
+                <Figure spec={resultEquityFigure(spec)} height={190} />
               </div>
               <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 border border-hairline divide-x divide-hairline">
                 {Object.entries(spec.metrics).slice(0, 5).map(([k, v]) => (

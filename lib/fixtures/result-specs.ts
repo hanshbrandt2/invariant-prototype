@@ -25,5 +25,37 @@ export const resultSpecs: Record<string, ResultSpec> = {
       summary:
         "Widen the z-score window from 20 to 30 bars — the edge concentrates in slower reversion, and turnover drops.",
     },
+    // Authored weekly equity snapshot over the eval window (cumulative return %).
+    // Internally consistent with the metrics above: ends +9.4% (~18.8% annualized
+    // over ~6 months → ann_return 0.187) and its deepest trough is 8.3% below the
+    // running peak (→ max_drawdown −0.083). Drawdown is derived from this, not stored.
+    equitySeries: [
+      { t: "2024-01-02", equity: 0.0 },
+      { t: "2024-01-09", equity: 1.0 },
+      { t: "2024-01-16", equity: 2.2 },
+      { t: "2024-01-23", equity: 3.4 },
+      { t: "2024-01-30", equity: 4.6 },
+      { t: "2024-02-06", equity: 5.8 },
+      { t: "2024-02-13", equity: 6.9 },
+      { t: "2024-02-20", equity: 8.0 },
+      { t: "2024-02-27", equity: 7.1 },
+      { t: "2024-03-05", equity: 5.4 },
+      { t: "2024-03-12", equity: 3.2 },
+      { t: "2024-03-19", equity: 1.1 },
+      { t: "2024-03-26", equity: -0.3 },
+      { t: "2024-04-02", equity: 1.4 },
+      { t: "2024-04-09", equity: 3.0 },
+      { t: "2024-04-16", equity: 4.3 },
+      { t: "2024-04-23", equity: 5.5 },
+      { t: "2024-04-30", equity: 6.4 },
+      { t: "2024-05-07", equity: 7.2 },
+      { t: "2024-05-14", equity: 7.9 },
+      { t: "2024-05-21", equity: 8.4 },
+      { t: "2024-05-28", equity: 8.0 },
+      { t: "2024-06-04", equity: 8.7 },
+      { t: "2024-06-11", equity: 9.1 },
+      { t: "2024-06-18", equity: 8.8 },
+      { t: "2024-06-28", equity: 9.4 },
+    ],
   },
 };

@@ -37,22 +37,38 @@ export function FindingViz({ viz }: { viz: FindingViz }) {
   }
 
   if (viz.type === "waterfall") {
-    const total = viz.steps.reduce((s, x) => s + x.value, 0);
-    const bars = [...viz.steps.map((s) => ({ label: s.label, value: s.value, total: false })), { label: "total", value: total, total: true }];
-    const max = Math.max(...bars.map((b) => Math.abs(b.value)), 0.001);
-    const H = 50, BW = 34, GAP = 20, baseY = 56;
+    // A REAL waterfall: each step starts where the previous ended (running
+    // cumulative), and the final bar is the total from zero — not grouped bars
+    // off a shared baseline.
+    const H = 56, BW = 34, GAP = 20, padTop = 8;
+    let cum = 0;
+    const segs = viz.steps.map((s) => {
+      const start = cum;
+      cum += s.value;
+      return { label: s.label, value: s.value, start, end: cum, isTotal: false };
+    });
+    const bars = [...segs, { label: "total", value: cum, start: 0, end: cum, isTotal: true }];
+    const lo = Math.min(0, ...bars.map((b) => Math.min(b.start, b.end)));
+    const hi = Math.max(0, ...bars.map((b) => Math.max(b.start, b.end)));
+    const range = hi - lo || 1;
+    const yOf = (v: number) => padTop + ((hi - v) / range) * H;
+    const W = bars.length * (BW + GAP);
     return (
-      <svg width={bars.length * (BW + GAP)} height="74" className="block">
-        <line x1="0" y1={baseY} x2={bars.length * (BW + GAP)} y2={baseY} stroke="var(--color-hairline)" />
+      <svg width={W} height={padTop + H + 18} className="block">
+        <line x1="0" y1={yOf(0)} x2={W} y2={yOf(0)} stroke="var(--color-hairline)" />
         {bars.map((b, i) => {
-          const h = (Math.abs(b.value) / max) * H;
           const x = i * (BW + GAP) + 8;
-          const y = b.value >= 0 ? baseY - h : baseY;
-          const fill = b.total ? TONE.muted : b.value >= 0 ? TONE.teal : TONE.clay;
+          const yTop = yOf(Math.max(b.start, b.end));
+          const h = Math.max(Math.abs(yOf(b.start) - yOf(b.end)), 2);
+          const fill = b.isTotal ? TONE.muted : b.value >= 0 ? TONE.teal : TONE.clay;
           return (
             <g key={b.label}>
-              <rect x={x} y={y} width={BW} height={Math.max(h, 2)} fill={fill} />
-              <text x={x + BW / 2} y="70" fontSize="8.5" fill="var(--color-muted)" textAnchor="middle" fontFamily="monospace">{b.label} {b.value >= 0 ? "+" : ""}{b.value}</text>
+              {/* connector from the previous step's running total */}
+              {i > 0 && !b.isTotal && (
+                <line x1={x - GAP} y1={yOf(b.start)} x2={x} y2={yOf(b.start)} stroke="var(--color-hairline-2)" strokeDasharray="2 2" />
+              )}
+              <rect x={x} y={yTop} width={BW} height={h} fill={fill} />
+              <text x={x + BW / 2} y={padTop + H + 13} fontSize="8.5" fill="var(--color-muted)" textAnchor="middle" fontFamily="monospace">{b.label} {b.value >= 0 ? "+" : ""}{b.value}</text>
             </g>
           );
         })}

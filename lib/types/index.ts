@@ -227,6 +227,34 @@ export interface ResultSpec {
   metrics: Record<string, number>;
   lineageRefs: string[];
   nextProposal: NextProposal;
+  /** Authored equity snapshot (cumulative return %) over the eval window — the
+   *  real series the result leads with. Honest like the sampleRows/histograms:
+   *  fixed + labeled, never synthesized at render time. Drawdown is DERIVED from
+   *  it (equity − running max), so the two-panel figure is internally consistent. */
+  equitySeries?: { t: string; equity: number }[];
+}
+
+/* ── Figures (M-J) ─────────────────────────────────────────────────
+   A ChartSpec is a declarative, renderer-agnostic figure — a deliberate SUBSET
+   of viz-engine's ViewSpec (mark + encodings + title-as-finding + a data
+   binding). Today <Figure> renders it via Recharts; when @invariant/viz lands,
+   its compiler renders the SAME spec behind the unchanged seam. In the prototype
+   the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
+   honest because it's fixed and labeled, never fabricated at render time. */
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown";
+export interface FigurePoint {
+  [key: string]: number | string;
+}
+export interface ChartSpec {
+  mark: FigureMark;
+  data: FigurePoint[]; // authored snapshot rows (prototype stand-in for a dataRef)
+  x: string; // x encoding key
+  y: string | string[]; // y encoding key(s)
+  title?: string; // the finding (title-as-finding), serif
+  caption?: string; // mono sub-caption — units · window · tz
+  yLabel?: string;
+  color?: string; // series color (hex); default data-blue
+  colors?: string[]; // per-row color (bar mark) — e.g. winner in clay
 }
 
 /* ── Variations / forking ──────────────────────────────────────────

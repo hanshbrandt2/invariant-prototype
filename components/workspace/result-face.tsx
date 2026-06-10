@@ -1,8 +1,8 @@
 "use client";
 
 import type { Node, ResultSpec, Validator } from "@/lib/types";
-import { PreviewChart } from "@/components/workspace/preview-chart";
-import { equityCurve } from "@/components/workspace/curve";
+import { Figure } from "@/components/workspace/figure";
+import { resultEquityFigure } from "@/lib/figures";
 import { Metric, type MetricFormat } from "@/components/workspace/metric";
 
 const METRIC_LABEL: Record<string, string> = {
@@ -50,7 +50,7 @@ export function ResultFace({
 
       {/* the finding — lead with the visual */}
       <div className="mt-4 border border-hairline bg-paper p-4">
-        <PreviewChart data={equityCurve(spec.metrics)} height={200} />
+        <Figure spec={resultEquityFigure(spec)} height={210} />
       </div>
 
       {/* metrics — what it found */}

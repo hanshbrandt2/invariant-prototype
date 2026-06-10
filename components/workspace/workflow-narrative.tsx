@@ -3,7 +3,8 @@
 import type { HostedDataset, LineageSubgraph, Node, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { PreviewChart } from "@/components/workspace/preview-chart";
-import { equityCurve } from "@/components/workspace/curve";
+import { Figure } from "@/components/workspace/figure";
+import { resultEquityFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Longest-path depth over data edges — chronological build order. */
@@ -110,8 +111,8 @@ export function WorkflowNarrative({
           </div>
           <div className="grid md:grid-cols-12">
             <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
-              <PreviewChart data={equityCurve(spec.metrics)} height={236} />
-              <p className="mt-2 font-mono text-meta text-faint">cumulative return % · {spec.evalWindow.start} → {spec.evalWindow.end} · click to inspect</p>
+              <Figure spec={resultEquityFigure(spec)} height={236} />
+              <p className="mt-2 font-mono text-meta text-faint">equity (blue) over drawdown (clay), one calendar · click to inspect</p>
             </button>
             <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
               {Object.entries(spec.metrics).slice(0, 4).map(([k, v]) => {
