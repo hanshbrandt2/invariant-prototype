@@ -31,6 +31,7 @@ import { RunStrip } from "@/components/workspace/run-strip";
 import { ForkDialog } from "@/components/workspace/fork-dialog";
 import { WorkspaceRail } from "@/components/workspace/workspace-rail";
 import { WorkspaceTopBar } from "@/components/workspace/workspace-topbar";
+import { FirstRunCoach } from "@/components/workspace/first-run-coach";
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -625,6 +626,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           flashedPin={flashedPin}
           onFlashHandled={() => setFlashedPin(null)}
         />
+        {live && <FirstRunCoach />}
         {staleActive && (
           <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 border-b border-clay/40 bg-clay-wash">
             <span className="text-ui text-clay-deep">

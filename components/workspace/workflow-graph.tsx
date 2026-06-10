@@ -51,14 +51,10 @@ function roundedOrtho(pts: [number, number][], r = 7): string {
   return d;
 }
 
-// edge.kind → dash signature + legend label. Dash encodes the KIND of dependency.
-const EDGE_STYLE: Record<LineageEdge["kind"], { dash?: string; heavy?: boolean; label: string }> = {
-  input_dependency: { label: "input" },
-  training_data: { dash: "6 4", heavy: true, label: "training data" },
-  input_model: { heavy: true, label: "model → result" },
-  stitch_source: { dash: "2 3", label: "stitch source" },
-  presentation_source: { dash: "1 4", label: "presentation" },
-};
+// Edges are PLAIN by default (M-M · M1): one solid ink line for the spine, one
+// faint line for branches — no dash dictionary. The KIND of a dependency is read
+// in WORDS on hover/click (the edge inspector), not decoded from a dash pattern.
+// Only a look-ahead leak stays visibly distinct (clay, dashed) — a real warning.
 
 function ancestorsOf(graph: LineageSubgraph, id: string): Set<string> {
   const out = new Set<string>();
@@ -276,9 +272,7 @@ export function WorkflowGraph({
 
     const width = PAD_X * 2 + STAGE_LANES.length * LANE_W;
     const height = SPINE_Y + belowNeed + 28;
-    const presentKinds = (Object.keys(EDGE_STYLE) as LineageEdge["kind"][]).filter((k) => flowEdges.some((e) => e.kind === k));
-
-    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, forkable, grain, feeds, paths, width, height, presentKinds };
+    return { byId, flow, spine, laneX, cx, cyOf, left, right, top, cardW, cardH, forkable, grain, feeds, paths, width, height };
   }, [graph, variants, producerOps]);
 
   const active = hover ?? selectedId ?? null;
@@ -356,18 +350,6 @@ export function WorkflowGraph({
           >
             explain
           </button>
-          {L.presentKinds.length > 0 && (
-            <div className="hidden lg:flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {L.presentKinds.map((k) => (
-                <span key={k} className="flex items-center gap-1.5 font-mono text-meta text-faint">
-                  <svg width="20" height="6" className="shrink-0">
-                    <line x1="0" y1="3" x2="20" y2="3" stroke="var(--color-muted)" strokeWidth={EDGE_STYLE[k].heavy ? 1.8 : 1.1} strokeDasharray={EDGE_STYLE[k].dash} />
-                  </svg>
-                  {EDGE_STYLE[k].label}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
@@ -403,7 +385,6 @@ export function WorkflowGraph({
                 ))}
               </defs>
               {L.paths.map(({ e, d, back, spineEdge }, i) => {
-                const st = EDGE_STYLE[e.kind];
                 const litEdge = isLit(e.parentId) && isLit(e.childId);
                 const isUpEdge = active != null && (e.childId === active || up?.has(e.childId)) && (up?.has(e.parentId) ?? false);
                 const hovered = hoverEdge === i;
@@ -423,7 +404,7 @@ export function WorkflowGraph({
                 const marker = stroke.includes("clay") ? "ar-clay" : stroke.includes("ink") ? "ar-ink" : "ar-dim";
                 return (
                   <g key={i}>
-                    <path d={d} fill="none" stroke={stroke} strokeWidth={w} strokeDasharray={back ? "4 3" : st.dash} opacity={op} markerEnd={`url(#${marker})`} />
+                    <path d={d} fill="none" stroke={stroke} strokeWidth={w} strokeDasharray={back ? "4 3" : undefined} opacity={op} markerEnd={`url(#${marker})`} />
                     {back && <title>look-ahead leak — reads from a later stage</title>}
                     <path
                       d={d} fill="none" stroke="transparent" strokeWidth={14} style={{ cursor: "pointer" }}
