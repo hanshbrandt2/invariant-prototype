@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "check:typescale": "node scripts/check-typescale.mjs"
+    "check:typescale": "node scripts/check-typescale.mjs",
+    "check:charts": "node scripts/check-charts.mjs",
+    "check": "node scripts/check-typescale.mjs && node scripts/check-charts.mjs"
   },
   "dependencies": {
     "next": "16.2.7",

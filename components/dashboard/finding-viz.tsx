@@ -54,7 +54,7 @@ export function FindingViz({ viz }: { viz: FindingViz }) {
     const yOf = (v: number) => padTop + ((hi - v) / range) * H;
     const W = bars.length * (BW + GAP);
     return (
-      <svg width={W} height={padTop + H + 18} className="block">
+      <svg viewBox={`0 0 ${W} ${padTop + H + 18}`} width={W} height={padTop + H + 18} className="block max-w-full h-auto">
         <line x1="0" y1={yOf(0)} x2={W} y2={yOf(0)} stroke="var(--color-hairline)" />
         {bars.map((b, i) => {
           const x = i * (BW + GAP) + 8;
@@ -81,7 +81,7 @@ export function FindingViz({ viz }: { viz: FindingViz }) {
   const BW = 30, GAP = 6, H = 56, baseY = 60;
   const tail = Math.max(0, viz.bins.length - 3);
   return (
-    <svg width={viz.bins.length * (BW + GAP)} height="72" className="block">
+    <svg viewBox={`0 0 ${viz.bins.length * (BW + GAP)} 72`} width={viz.bins.length * (BW + GAP)} height="72" className="block max-w-full h-auto">
       <line x1="0" y1={baseY} x2={viz.bins.length * (BW + GAP)} y2={baseY} stroke="var(--color-hairline)" />
       {viz.bins.map((v, i) => {
         const h = (v / max) * H;
