@@ -11,10 +11,12 @@ This document is the **anti-drift anchor**. Every change should map to a milesto
 ## North-star principles (the guardrails)
 
 1. **Frontend-only, contract-typed mock data.** No backend, no real auth. All data is fake but typed to the real backend contracts and read through the single `lib/data` seam, so a live backend swaps in with no component changes.
-2. **Honesty bar (hard).** Never show a capability the real backend can't do. Mock data is always *labeled* (`sample · N of M`, `pre-computed snapshot · as of <date>`) and never implies a live query. Real operators only; no invented data shapes.
+2. **Honesty bar (hard).** Never show a capability the real backend can't do. Mock data is always *labeled* (`sample · N of M`, `pre-computed snapshot · as of <date>`) and never implies a live query. Real operators only; no invented data shapes. **Charts included** — a figure binds to a real (mock) source; no synthesized or distorted series (no `Math.sin` equity curve, no `preserveAspectRatio="none"` on data).
 3. **Workflow-centric, canvas-is-hero.** The product is the *workflow* (conversation → build → graph/lenses), not a catalog browser. The canvas is the one focal surface; the chat recedes into the chrome.
 4. **Editorial skin.** Warm paper / ink / clay, Source Serif 4 + Inter + JetBrains Mono, soft shadows on floating layers, rounded. No gradients, no sparklines. "Lovable meets The Economist."
 5. **Production-shaped seams.** Components are dumb (read through `lib/data`, render). Keep the data layer swappable (fixtures today → `fetch()` later). One growing app — extend, never regenerate.
+6. **One token spine.** A single *enforced* type/space/color scale — `--text-*` tokens + `lib/theme/editorial.ts` — not 52 ad-hoc `text-[Xrem]` sizes and per-file hex. Content out-shouts provenance via a ~4× display→meta ratio. Lint-guarded so it can't regrow.
+7. **Answer-first, progressive disclosure.** Every surface leads with the *answer* (plain-language finding + one visual), reveals *how* (graph / code) on demand, and *proof* (contract / checks) deeper still. Details exposed only when needed. The `Result` lens is the model; the graph hairball is a "go deeper" rung, never the first thing seen.
 
 ---
 
@@ -94,6 +96,64 @@ Convert already-real metadata + a small set of clearly-labeled authored fixtures
 - **H1 — Deploy shape:** env config, static/SSR build, fixtures↔API source toggle wired to env.
 - **H2 — Contract handoff doc:** the exact `lib/data` interface a real backend must satisfy (the swap is one seam).
 - **DoD:** deployable to AWS; documented, single-seam backend swap path.
+
+---
+
+## Phase 2 — the 10× craft pass (branch `v1.4-dev`)
+
+M-A…M-H made Invariant **feature-complete and production-shaped**. Phase 2 makes it **beautiful and legible** — the "make it feel like hex.tech / Apple / Figma" pass. The rendered target is `docs/10x-direction.html`; the diagnosis is four root causes:
+
+- **No enforced design scale** → "fonts feel too large" + crude, inconsistent charts (52 distinct `text-[Xrem]` sizes, no root font-size, per-file color hex).
+- **Mechanism-first, not answer-first** → "unclear what to do / how things connect" (canvas can open on the graph hairball; inspector shows 6 tabs at rest; `nextProposal` exists in data but is never an action).
+- **Honesty enforced for numbers but not visuals** → charts fabricate (`curve.ts` `Math.sin` equity rendered as real P&L) and distort (`preserveAspectRatio="none"`).
+- **The empty→rich arc is built but unreachable** → nothing links `?state=new`; 12 fixture workspaces force the dense layout on every visitor.
+
+Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too large" + "charts look bad" and lay the viz-engine rail). **M-K is the headline clarity fix.** L/M/N are craft, connection, and hardening.
+
+> **viz-engine stance:** do *not* take a dependency yet — `@invariant/viz` exports nothing (Phase-0 placeholder) and its DuckDB-WASM/Mosaic value (M4 over millions of rows) is moot on small pre-reduced fixtures. We **port the theme + grammar** behind a `ChartSpec` seam now, and swap to the compiled engine at its Phase 1 behind the unchanged seam. The `ChartSpec` (a deliberate subset of the eventual `ViewSpec`) is the contract between the repos: every chart Invariant needs that the engine can't yet express becomes a prioritized item for viz-engine's gallery — **the app drives the library's roadmap.**
+
+### M-I · The token spine — one enforced scale (foundation)
+- **I1 — Type scale tokens.** Add `--text-*` to `globals.css` (display 2.25 · h1 1.75 · h2 1.25 · h3 1.0625 · body 0.875 · ui 0.8125 · meta-mono 0.6875 · micro 0.5625rem) with paired leading/tracking; set `body { font-size: 0.8125rem; line-height: 1.4 }` (13px chrome, hex-grade).
+- **I2 — Migrate the 52 sizes.** Map every arbitrary `text-[Xrem]` onto the nearest token (0.82–0.86→`ui`, 0.88–0.98→`body`, 0.6–0.7→`meta`); drop dashboard h1 `2.5rem`→h1, the three section h2 `1.5rem`→h2, inspector hero `1.7rem`→h1. Reserve display type for `app/page.tsx` (marketing landing) **only**.
+- **I3 — One chart/color theme.** Port `viz-engine/apps/harness/src/theme/editorial.ts` → `lib/theme/editorial.ts` verbatim (tokens + categorical/diverging/sequential ramps + `regimeColors`). Delete the per-file `TONE` maps + hardcoded hex in `finding-viz`/`preview-chart`/`histogram`.
+- **I4 — Guardrail.** `package.json` lint: `! rg 'text-\[[0-9.]+rem\]' components app` (micro-chip allowlist) so the scale can't drift back to 52.
+- **DoD:** UI defaults to 13px; **zero** arbitrary font sizes (lint green); every chart reads color/font from one theme.
+
+### M-J · Honest, beautiful charts — `ChartSpec` + `<Figure>`
+- **J1 — Kill the fabrication.** Delete `curve.ts` (`Math.sin` equity); add an authored backtest equity/drawdown series to fixtures; remove `preserveAspectRatio="none"` (`compare-view`); fix the mislabeled waterfall (cumulative baseline, `finding-viz`).
+- **J2 — The seam.** Add `ChartSpec` to `lib/types` (`mark: line|bar|area|scatter|heatmap`, encodings x/y/color, title-as-finding, `dataRef`) as a deliberate **subset of viz-engine's `ViewSpec`**; one `<Figure spec>` backed by Recharts; expose via `lib/data` (`getFigureSpec`). Components read a spec, never raw `{t,v}[]`.
+- **J3 — Rebuild to the editorial look.** Map 1:1 to proven gallery usages — result equity→usage09 (equity+drawdown, one calendar); dataset line→usage01; histogram→usage05; finding distribution→usage32; waterfall→usage13; compare overlay→usage02 (normalized + direct end-labels). Real axes, hairline grid, mono ticks, direct labels, title-as-finding.
+- **J4 — Marks Invariant lacks.** Add a correlation **heatmap** (diverging scale) + **regime ribbon** (`regimeColors`) — no DuckDB needed.
+- **DoD:** no synthesized/distorted chart data anywhere; all charts render a `ChartSpec` via one `<Figure>`; renderer swappable behind the seam. *(Optional, fenced: one `ssr:false` vgplot+DuckDB-WASM hero chart for a genuine large-data series — opt-in, single route.)*
+
+### M-K · Answer-first everywhere — the disclosure ladder (headline clarity fix)
+- **K1 — Canvas leads with the answer.** Default a populated workspace to the `Result` lens with a "you are here" anchor (*"<friendlyName> — Sharpe 1.38. This is what this workspace found. How it was built ▸"*). Graph/Code/Concepts become "go deeper" rungs, not equal tabs; `Result` is visually primary.
+- **K2 — The one next move.** Surface `ResultSpec.nextProposal` (already in data, used only inside the narrative) as **one** persistent clay "next step" button on the canvas.
+- **K3 — Inspector calms down.** Default the drawer to a single Overview (lede + visual + built-from chips); collapse Spec/Contract/Checks/Code/Lineage behind one `details ▾`.
+- **K4 — The empty state ships.** Make the welcome/empty variant the real default (first-visit via `localStorage`; keep `?state=new` for demos): one hero + 3 prompts + hosted data, nothing else; surface one exemplar Finding as the visible finish line; delete the duplicate "Start here" strip.
+- **K5 — Plain language on the home surface.** Strip insider vocabulary (agentic / sealed / no-lookahead / pins) → plain verbs (Re-runs weekly / Verified / Continue); defer the technical terms to the inspector, defined on hover.
+- **DoD:** a newcomer lands on the answer, has exactly one obvious next move, and reaches graph/code/contract only by choosing "go deeper."
+
+### M-L · Numbers-as-heroes + hex craft
+- **L1 — One hero number per data card.** Promote the defining metric (Sharpe / ann. return) to the display tier (mono, tabular-nums); demote its label to a `meta` eyebrow; secondary stats small. (`findings-shelf`, `result-face`.)
+- **L2 — Corner-tick plates.** Add a `.ticks` primitive (four clay/ink "+" via pseudo-elements) on the 3–4 hero plates (result chart, finding viz, lineage hero, dataset preview). A signal, not a texture.
+- **L3 — Mono-metadata grammar + bracketed counts.** One quiet hairline-separated mono meta line per card; `Findings [N]` / `Recipes [N]` / `Workspaces [N]` count tokens on shelf headings; `built from [3]` on inspector input groups.
+- **L4 — Color = signal.** Clay does exactly one job per surface (the action); kind/sealed/status become neutral ink-muted mono tokens, not colored chips; strip decorative emoji (🔒 ✓ ⤴ ▸); multicolor only inside charts, palette trimmed to ~3.
+- **L5 — Motion restraint.** Remove idle infinite loops (`sealPulse`, idle `buildPulse`); replace the springy `snapIn` overshoot (cubic-bezier 1.56) with a calm ease; animate only on state transitions + one-shot reveals.
+- **DoD:** data cards read "big number + what it is" across the room; color is signal-only; nothing breathes or bounces at rest.
+
+### M-M · Connection in language + motion
+- **M1 — Plain edges.** One neutral line for the spine, one faint for branches; retire the 5-way dash dictionary + its legend.
+- **M2 — Meaning in words.** Surface the dependency *kind* on hover/inspect via the existing `edge-inspector` prose; fold edge-inspection into the node drawer's Lineage view — one affordance: "click anything to inspect."
+- **M3 — Build-stream as the lesson.** Frame the `runBuild` stream as the connection story (watch data flow into the finding); a one-shot, `localStorage`-gated 3-step first-run coachmark (*"This is the finding" → "Click a node to see how it's made" → "The contract keeps it honest"*).
+- **DoD:** connection meaning is read in words + motion, not decoded from a dash legend; first-run teaches data→finding in <60s.
+
+### M-N · Hardening + guardrails
+- **N1 — Contrast + size pass.** Faint-mono min size/contrast to WCAG AA; audit clay-on-clay-wash chips; emoji-as-status get text alternatives or become mono tokens.
+- **N2 — Mobile charts.** `<Figure>` responsive (no fixed-px SVG width / `overflow-x-auto` spill); the hover-only canvas gets a tap/keyboard path.
+- **N3 — Guardrail lints.** No arbitrary `text-[]`; no hardcoded chart hex (must read `lib/theme`); no synthesized chart series (chart-honesty check); a jargon-on-home allowlist.
+- **N4 — Success test.** "Can a non-quant explain what a workspace found in one sentence?" — the acceptance bar for K1/K4.
+- **DoD:** WCAG AA on text/contrast; charts don't overflow on mobile; guardrails prevent scale/theme/honesty regressions.
 
 ---
 

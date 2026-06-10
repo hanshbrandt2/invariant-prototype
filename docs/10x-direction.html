@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — the 10× direction</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF7F1; --paper-2:#F3EEE4; --paper-3:#ECE5D6;
+    --ink:#1C1B18; --ink-2:#4A463D; --muted:#837C6E; --faint:#A9A194;
+    --clay:#BE4D2B; --clay-deep:#9C3C20; --clay-wash:#FBF1EC;
+    --data:#1F4E79; --hairline:#E7E1D5; --hairline-2:#D8D0BF; --green:#3B6D11;
+    --serif:'Source Serif 4',Georgia,serif;
+    --sans:'Inter',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    /* the proposed 7-step scale — note the dramatic display→meta jump */
+    --t-display:2.25rem; --t-hero:3rem; --t-h1:1.75rem; --t-h2:1.25rem;
+    --t-body:0.875rem; --t-ui:0.8125rem; --t-meta:0.6875rem; --t-micro:0.5625rem;
+  }
+  *{box-sizing:border-box;border-color:var(--hairline);}
+  html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:var(--t-ui);line-height:1.45;}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 28px 96px;}
+  .mono{font-family:var(--mono);}
+  .serif{font-family:var(--serif);}
+  .eyebrow{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);}
+  .clay{color:var(--clay);} .muted{color:var(--muted);} .faint{color:var(--faint);}
+  .tnum{font-variant-numeric:tabular-nums;}
+  a{color:inherit;text-decoration:none;}
+  hr.rule{border:0;border-top:1px solid var(--hairline);margin:0;}
+
+  /* page header */
+  .pagehead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:40px;}
+  .pagehead h1{font-family:var(--serif);font-weight:600;font-size:var(--t-h1);margin:0;letter-spacing:-.015em;}
+  .pagehead .sub{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.04em;}
+
+  /* corner-tick "instrumented plate" framing — the hex move */
+  .plate{position:relative;border:1px solid var(--hairline);background:var(--paper);}
+  .tick{position:absolute;width:11px;height:11px;pointer-events:none;}
+  .tick::before{content:"";position:absolute;left:0;top:50%;width:11px;height:1px;background:var(--clay);transform:translateY(-50%);}
+  .tick::after{content:"";position:absolute;top:0;left:50%;width:1px;height:11px;background:var(--clay);transform:translateX(-50%);}
+  .tick.tl{left:-6px;top:-6px}.tick.tr{right:-6px;top:-6px}.tick.bl{left:-6px;bottom:-6px}.tick.br{right:-6px;bottom:-6px}
+
+  /* ── the hero: answer-first Result surface ─────────────────── */
+  .hero{padding:30px 34px 30px;}
+  .hero .meta-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;}
+  .hero h2{font-family:var(--serif);font-weight:600;font-size:var(--t-display);line-height:1.08;
+    letter-spacing:-.018em;margin:0;max-width:24ch;}
+  .hero .lede{font-size:var(--t-body);color:var(--ink-2);max-width:62ch;margin:12px 0 0;line-height:1.55;}
+
+  /* KPI row — ONE number is the hero */
+  .kpis{display:flex;align-items:flex-end;gap:36px;margin:26px 0 8px;flex-wrap:wrap;}
+  .kpi-hero .v{font-family:var(--mono);font-weight:500;font-size:var(--t-hero);line-height:.9;letter-spacing:-.02em;}
+  .kpi-hero .k{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-top:8px;}
+  .kpi .v{font-family:var(--mono);font-size:var(--t-h2);font-weight:500;letter-spacing:-.01em;}
+  .kpi .v.pos{color:var(--green);} .kpi .v.neg{color:var(--clay);}
+  .kpi .k{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px;}
+
+  /* the chart frame */
+  .chartframe{margin-top:24px;}
+  .chart-title{font-family:var(--serif);font-weight:500;font-size:var(--t-h2);letter-spacing:-.01em;margin:0 0 2px;}
+  .chart-sub{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.03em;margin:0 0 12px;}
+  svg.fig{display:block;width:100%;height:auto;}
+  svg.fig text{font-family:var(--mono);fill:var(--faint);font-size:10px;}
+  svg.fig text.ylab{fill:var(--muted);font-size:10px;}
+
+  /* trust + disclosure + next */
+  .footrow{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:24px;flex-wrap:wrap;}
+  .trust{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.03em;}
+  .trust b{color:var(--ink-2);font-weight:500;}
+  .disclose{display:flex;gap:18px;}
+  .disclose a{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.04em;color:var(--muted);
+    border-bottom:1px solid transparent;padding-bottom:1px;transition:color .15s,border-color .15s;}
+  .disclose a:hover{color:var(--ink);border-color:var(--hairline-2);}
+  .next{display:inline-flex;align-items:center;gap:8px;background:var(--clay);color:var(--paper);
+    font-family:var(--mono);font-size:var(--t-ui);font-weight:500;letter-spacing:.01em;
+    padding:9px 16px;border:none;cursor:pointer;transition:background .15s;}
+  .next:hover{background:var(--clay-deep);}
+  .next .arr{font-size:1em;}
+
+  /* section caption */
+  .cap{display:flex;align-items:baseline;gap:10px;margin:64px 0 18px;}
+  .cap h3{font-family:var(--serif);font-weight:600;font-size:var(--t-h2);margin:0;letter-spacing:-.01em;}
+  .cap .n{font-family:var(--mono);font-size:var(--t-meta);color:var(--faint);}
+  .cap .note{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.04em;margin-left:auto;}
+
+  /* before / after grid */
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media(max-width:760px){.ba{grid-template-columns:1fr;}}
+  .ba .label{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .ba .label .dot{width:6px;height:6px;border-radius:50%;}
+  .dot.bad{background:var(--clay);} .dot.good{background:var(--green);}
+
+  /* finding card — BEFORE (today) */
+  .card{border:1px solid var(--hairline);background:var(--paper);padding:16px;}
+  .card.b .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .card.b .chip{font-family:var(--mono);font-size:var(--t-micro);background:var(--clay-wash);color:var(--clay);padding:2px 6px;letter-spacing:.06em;}
+  .card.b .sealed{font-family:var(--mono);font-size:var(--t-micro);color:var(--green);letter-spacing:.06em;}
+  .card.b h4{font-family:var(--serif);font-weight:600;font-size:0.98rem;margin:0 0 8px;line-height:1.25;}
+  .card.b .bars span{display:block;height:8px;background:var(--paper-3);margin:5px 0;position:relative;}
+  .card.b .bars span i{position:absolute;left:0;top:0;bottom:0;background:#3a5a78;}
+  .card.b .statline{display:flex;gap:14px;margin:10px 0 8px;align-items:baseline;}
+  .card.b .statline .v{font-family:var(--mono);font-size:0.95rem;}
+  .card.b .statline .k{font-family:var(--mono);font-size:0.66rem;color:var(--muted);}
+  .card.b .foot{font-family:var(--mono);font-size:0.56rem;color:var(--faint);line-height:1.5;border-top:1px solid var(--hairline);padding-top:7px;margin-top:6px;}
+  .card.b .open{color:var(--clay);}
+
+  /* finding card — AFTER (10×) */
+  .card.a{padding:20px 20px 16px;}
+  .card.a .v-hero{font-family:var(--mono);font-weight:500;font-size:2.25rem;line-height:.9;letter-spacing:-.02em;}
+  .card.a .k-hero{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:7px 0 14px;}
+  .card.a h4{font-family:var(--serif);font-weight:600;font-size:1.05rem;line-height:1.3;margin:0 0 14px;letter-spacing:-.005em;}
+  .card.a .sub{display:flex;gap:20px;margin:0 0 16px;}
+  .card.a .sub .v{font-family:var(--mono);font-size:var(--t-body);}
+  .card.a .sub .v.pos{color:var(--green);} .card.a .sub .v.neg{color:var(--clay);}
+  .card.a .sub .k{font-family:var(--mono);font-size:var(--t-micro);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:4px;}
+  .card.a .foot{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.03em;display:flex;justify-content:space-between;border-top:1px solid var(--hairline);padding-top:11px;}
+  .card.a .foot .open{color:var(--clay);}
+
+  /* type scale demo */
+  .scale-row{display:flex;align-items:baseline;gap:16px;padding:9px 0;border-bottom:1px solid var(--hairline);}
+  .scale-row .role{font-family:var(--mono);font-size:var(--t-micro);letter-spacing:.12em;text-transform:uppercase;color:var(--faint);width:120px;flex:none;}
+  .scale-row .px{font-family:var(--mono);font-size:var(--t-micro);color:var(--faint);margin-left:auto;flex:none;}
+  .swatches{display:flex;gap:0;margin-top:14px;border:1px solid var(--hairline);}
+  .sw{flex:1;height:46px;display:flex;align-items:flex-end;padding:6px;font-family:var(--mono);font-size:var(--t-micro);}
+  .legend{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);line-height:1.7;margin-top:10px;}
+  .legend b{color:var(--ink-2);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="pagehead">
+    <h1>The 10× direction</h1>
+    <span class="sub">invariant · design study · answer-first</span>
+  </div>
+
+  <!-- ════════ HERO: the answer-first Result surface ════════ -->
+  <div class="plate hero">
+    <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+
+    <div class="meta-top">
+      <span class="eyebrow">Finding · crude-oil-research</span>
+      <span class="mono" style="font-size:var(--t-meta);color:var(--muted);letter-spacing:.04em;">as-of 2025-06 · sealed</span>
+    </div>
+
+    <h2>Mean-reversion on the crude–gas spread survived out-of-sample.</h2>
+    <p class="lede">A 20-day z-score on the WTI–Henry-Hub spread, traded with a 5-day hold. Held its edge on
+      2024–25 data it never saw while fitting — the risk is the carry regime, not the signal.</p>
+
+    <!-- ONE number leads; the rest recede -->
+    <div class="kpis">
+      <div class="kpi-hero">
+        <div class="v tnum">1.38</div>
+        <div class="k">Sharpe · out-of-sample</div>
+      </div>
+      <div class="kpi"><div class="v pos tnum">+14.2%</div><div class="k">ann. return</div></div>
+      <div class="kpi"><div class="v neg tnum">−12.6%</div><div class="k">max drawdown</div></div>
+      <div class="kpi"><div class="v tnum">0.71</div><div class="k">hit rate</div></div>
+    </div>
+
+    <!-- the editorial chart: title is the finding; equity + drawdown share one calendar -->
+    <div class="chartframe">
+      <p class="chart-title">Equity climbs, but every gain is paid for in drawdown below.</p>
+      <p class="chart-sub">cumulative return (R) · daily · America/New_York · M4-reduced</p>
+      <svg class="fig" viewBox="0 0 900 372" id="fig" aria-label="Equity and drawdown"></svg>
+    </div>
+
+    <div class="footrow">
+      <span class="trust">verified · <b>no-lookahead</b> · reproducible · lineage&nbsp;<b>7f3a·c91d</b></span>
+      <div class="disclose">
+        <a href="#">how it was built ▸</a>
+        <a href="#">the checks ▸</a>
+        <a href="#">the code ▸</a>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+      <button class="next">Next: re-run on 2025 carry regime <span class="arr">→</span></button>
+      <span class="mono" style="font-size:var(--t-meta);color:var(--faint);letter-spacing:.04em;">the platform's suggested next step — from the result's own proposal</span>
+    </div>
+  </div>
+
+  <!-- ════════ before / after: the finding CARD ════════ -->
+  <div class="cap">
+    <h3>The card</h3><span class="n">[ numbers as heroes ]</span>
+    <span class="note">one big number · one meta line · color = signal only</span>
+  </div>
+  <div class="ba">
+    <div>
+      <div class="label"><span class="dot bad"></span>today</div>
+      <div class="card b">
+        <div class="top">
+          <span class="chip">RESULT</span>
+          <span class="sealed">✓ sealed</span>
+        </div>
+        <h4>Crude–gas spread mean-reversion</h4>
+        <div class="bars">
+          <span><i style="width:62%"></i></span>
+          <span><i style="width:41%"></i></span>
+          <span><i style="width:78%"></i></span>
+        </div>
+        <div class="statline">
+          <span><span class="v">1.38</span> <span class="k">sharpe</span></span>
+          <span><span class="v">+14.2%</span> <span class="k">ann</span></span>
+          <span><span class="v">−12.6%</span> <span class="k">dd</span></span>
+        </div>
+        <div class="foot">🔒 no-lookahead · reproducible<br>crude-oil-research · as-of 2025-06 · <span class="open">open ▸</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="label"><span class="dot good"></span>10×</div>
+      <div class="card a plate">
+        <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+        <div class="v-hero tnum">1.38</div>
+        <div class="k-hero">Sharpe · out-of-sample</div>
+        <h4>The crude–gas spread reverts — and it held out-of-sample.</h4>
+        <div class="sub">
+          <span><div class="v pos tnum">+14.2%</div><div class="k">ann. return</div></span>
+          <span><div class="v neg tnum">−12.6%</div><div class="k">max dd</div></span>
+          <span><div class="v tnum">0.71</div><div class="k">hit</div></span>
+        </div>
+        <div class="foot"><span>crude-oil-research · sealed · 7f3a</span><span class="open">open ▸</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ the type scale ════════ -->
+  <div class="cap">
+    <h3>The scale</h3><span class="n">[ 52 sizes → 7 ]</span>
+    <span class="note">a ~4× display-to-meta ratio, so content out-shouts provenance</span>
+  </div>
+  <div class="ba">
+    <div>
+      <div class="label"><span class="dot bad"></span>today — everything in the 11–17px muddle</div>
+      <div class="plate" style="padding:18px 20px;">
+        <div style="font-family:var(--serif);font-size:0.98rem;font-weight:600;margin-bottom:6px;">Finding headline (0.98rem)</div>
+        <div style="font-family:var(--mono);font-size:0.95rem;margin-bottom:6px;">1.38 metric value (0.95rem)</div>
+        <div style="font-family:var(--mono);font-size:0.9rem;color:var(--ink-2);margin-bottom:6px;">inspector body label (0.90rem)</div>
+        <div style="font-family:var(--mono);font-size:0.86rem;color:var(--muted);margin-bottom:6px;">spec value row (0.86rem)</div>
+        <div style="font-family:var(--mono);font-size:0.82rem;color:var(--muted);margin-bottom:6px;">nav / control (0.82rem)</div>
+        <div style="font-family:var(--mono);font-size:0.66rem;color:var(--faint);">label (0.66rem)</div>
+        <div class="legend" style="margin-top:14px;color:var(--clay);">⚠ nothing leads — the number (0.95) is <b>smaller</b> than the headline (0.98), and every tier sits within 1.4× of the next.</div>
+      </div>
+    </div>
+    <div>
+      <div class="label"><span class="dot good"></span>10× — extremes do the work</div>
+      <div class="plate" style="padding:18px 20px;">
+        <div class="scale-row"><span class="role">hero</span><span style="font-family:var(--mono);font-size:var(--t-hero);line-height:1;letter-spacing:-.02em;">1.38</span><span class="px">48px · the one number</span></div>
+        <div class="scale-row"><span class="role">display</span><span class="serif" style="font-size:var(--t-display);">Finding</span><span class="px">36px · serif</span></div>
+        <div class="scale-row"><span class="role">h2 / chart</span><span class="serif" style="font-size:var(--t-h2);">Section</span><span class="px">20px</span></div>
+        <div class="scale-row"><span class="role">body</span><span style="font-size:var(--t-body);">prose &amp; values</span><span class="px">14px</span></div>
+        <div class="scale-row"><span class="role">ui</span><span style="font-size:var(--t-ui);">controls · nav · chat</span><span class="px">13px</span></div>
+        <div class="scale-row"><span class="role">meta</span><span class="mono" style="font-size:var(--t-meta);">hash · date · count</span><span class="px">11px mono</span></div>
+        <div class="scale-row" style="border:0;"><span class="role">micro</span><span class="mono" style="font-size:var(--t-micro);">chips</span><span class="px">9px mono</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ tokens ════════ -->
+  <div class="cap">
+    <h3>The tokens</h3><span class="n">[ one source of truth ]</span>
+    <span class="note">ported verbatim from viz-engine/editorial.ts — color = signal, never decoration</span>
+  </div>
+  <div class="swatches">
+    <div class="sw" style="background:var(--paper);color:var(--muted);">paper</div>
+    <div class="sw" style="background:var(--paper-3);color:var(--ink-2);">paper-3</div>
+    <div class="sw" style="background:var(--hairline);color:var(--ink-2);">hairline</div>
+    <div class="sw" style="background:var(--data);color:#fff;">data #1F4E79</div>
+    <div class="sw" style="background:var(--clay);color:#fff;">clay #BE4D2B</div>
+    <div class="sw" style="background:var(--ink);color:var(--paper);">ink #1C1B18</div>
+  </div>
+  <div class="legend">
+    <b>data-blue</b> = the primary series · <b>clay</b> = exactly one job per surface (the action, or loss) ·
+    <b>ink/muted/faint</b> = a single recede ramp for all metadata. Multicolor lives <b>only inside charts</b>.
+  </div>
+
+</div>
+
+<script>
+  // ── render the equity + drawdown figure (illustrative mockup data) ──
+  const eq = [0,0.4,1.1,0.9,1.8,2.6,2.3,3.4,4.2,5.0,4.6,5.5,6.4,5.9,4.4,3.6,4.2,5.3,6.6,7.6,8.5,8.1,9.5,10.7,11.6,11.1,12.3,13.6,14.5,13.9,15.2,16.5,17.4,17.0,18.1,19.0];
+  const run = []; let m=-1e9; for(const v of eq){ m=Math.max(m,v); run.push(m); }
+  const dd = eq.map((v,i)=>v-run[i]);            // <= 0
+
+  const W=900, ML=56, MR=18, MT=8;
+  const topH=210, gap=6, botH=96;
+  const x = i => ML + i*(W-ML-MR)/(eq.length-1);
+
+  // top panel scales
+  const eqMax=20, eqMin=0;
+  const yT = v => MT + (eqMax-v)/(eqMax-eqMin)*(topH-MT-18);
+  // bottom panel scales (drawdown, 0 at top)
+  const ddMin=Math.min(...dd); const bTop=topH+gap;
+  const yB = v => bTop + 6 + (0-v)/(0-ddMin)*(botH-6-22);
+
+  const path = (pts)=>pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const eqPts = eq.map((v,i)=>[x(i),yT(v)]);
+  const ddPts = dd.map((v,i)=>[x(i),yB(v)]);
+
+  let s='';
+  // top y-gridlines + labels (0,5,10,15,20)
+  [0,5,10,15,20].forEach(g=>{
+    const yy=yT(g);
+    s+=`<line x1="${ML}" y1="${yy}" x2="${W-MR}" y2="${yy}" stroke="#E7E1D5" stroke-width="1"/>`;
+    s+=`<text x="${ML-8}" y="${yy+3}" text-anchor="end" class="ylab">${g}</text>`;
+  });
+  // equity area + line (data blue)
+  const area = path(eqPts)+` L ${x(eq.length-1).toFixed(1)} ${yT(0).toFixed(1)} L ${x(0).toFixed(1)} ${yT(0).toFixed(1)} Z`;
+  s+=`<path d="${area}" fill="#1F4E79" fill-opacity="0.10"/>`;
+  s+=`<path d="${path(eqPts)}" fill="none" stroke="#1F4E79" stroke-width="1.6"/>`;
+  s+=`<text x="${ML-8}" y="${MT+10}" text-anchor="end" class="ylab" style="font-style:normal">R</text>`;
+
+  // bottom drawdown baseline + grid
+  s+=`<line x1="${ML}" y1="${yB(0)}" x2="${W-MR}" y2="${yB(0)}" stroke="#E7E1D5"/>`;
+  const ddArea = path(ddPts)+` L ${x(eq.length-1).toFixed(1)} ${yB(0).toFixed(1)} L ${x(0).toFixed(1)} ${yB(0).toFixed(1)} Z`;
+  s+=`<path d="${ddArea}" fill="#BE4D2B" fill-opacity="0.16"/>`;
+  s+=`<path d="${path(ddPts)}" fill="none" stroke="#BE4D2B" stroke-width="1.1"/>`;
+  s+=`<text x="${ML-8}" y="${yB(0)+3}" text-anchor="end" class="ylab">0</text>`;
+  s+=`<text x="${ML-8}" y="${yB(ddMin)+3}" text-anchor="end" class="ylab">${ddMin.toFixed(0)}</text>`;
+  s+=`<text x="${ML-46}" y="${bTop+botH/2}" transform="rotate(-90 ${ML-46} ${bTop+botH/2})" text-anchor="middle" class="ylab">drawdown</text>`;
+
+  // x year ticks (every 12 months)
+  ['2022','2023','2024'].forEach((yr,k)=>{
+    const xx=x(k*12);
+    s+=`<line x1="${xx}" y1="${bTop+botH-20}" x2="${xx}" y2="${bTop+botH-16}" stroke="#D8D0BF"/>`;
+    s+=`<text x="${xx}" y="${bTop+botH-5}" text-anchor="middle">${yr}</text>`;
+  });
+
+  document.getElementById('fig').innerHTML=s;
+</script>
+</body>
+</html>
