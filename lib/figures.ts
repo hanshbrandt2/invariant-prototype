@@ -27,6 +27,22 @@ export function resultEquityFigure(spec: ResultSpec): ChartSpec | null {
   };
 }
 
+/** The signal space — the 20-day z-score over the eval window, with the dived
+ *  point (`center`) in focus. The space a return point opens into. */
+export function signalFigure(spec: ResultSpec, center: number): ChartSpec | null {
+  const s = spec.signalSeries;
+  if (!s || s.length === 0) return null;
+  const focus = Math.max(0, Math.min(s.length - 1, center));
+  return {
+    mark: "signal",
+    data: s.map((p) => ({ t: p.t, z: p.z })),
+    x: "t",
+    y: "z",
+    focus,
+    caption: "20-day z-score · ±2σ · authored snapshot",
+  };
+}
+
 /** Feature weights — the model's learned coefficients as signed, diverging bars
  *  (positive = data blue, negative = clay). Sorted biggest-first so the dominant
  *  signal reads at the top. Pure read of the model spec's coefficients; no synth. */

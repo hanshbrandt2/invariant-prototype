@@ -75,5 +75,20 @@ export const resultSpecs: Record<string, ResultSpec> = {
       { t: "2024-06-04", state: "MR" }, { t: "2024-06-11", state: "MR" },
       { t: "2024-06-18", state: "MR" }, { t: "2024-06-28", state: "MR" },
     ],
+    // Authored signal snapshot (20-day z-score) on the equity weeks. Pinned past
+    // +2σ through late Feb–March — the signal kept betting on reversion exactly
+    // when the spread trended, which is the drawdown above. The honest story a
+    // return point dives into.
+    signalSeries: [
+      { t: "2024-01-02", z: 0.8 }, { t: "2024-01-09", z: 1.1 }, { t: "2024-01-16", z: 0.6 },
+      { t: "2024-01-23", z: 1.3 }, { t: "2024-01-30", z: 0.9 }, { t: "2024-02-06", z: 1.6 },
+      { t: "2024-02-13", z: 1.2 }, { t: "2024-02-20", z: 1.9 }, { t: "2024-02-27", z: 2.4 },
+      { t: "2024-03-05", z: 2.7 }, { t: "2024-03-12", z: 2.6 }, { t: "2024-03-19", z: 2.8 },
+      { t: "2024-03-26", z: 2.5 }, { t: "2024-04-02", z: 1.7 }, { t: "2024-04-09", z: 1.0 },
+      { t: "2024-04-16", z: 0.4 }, { t: "2024-04-23", z: -0.3 }, { t: "2024-04-30", z: 0.6 },
+      { t: "2024-05-07", z: 1.1 }, { t: "2024-05-14", z: 0.8 }, { t: "2024-05-21", z: 1.4 },
+      { t: "2024-05-28", z: 0.5 }, { t: "2024-06-04", z: 0.9 }, { t: "2024-06-11", z: 1.2 },
+      { t: "2024-06-18", z: 0.7 }, { t: "2024-06-28", z: 1.0 },
+    ],
   },
 };

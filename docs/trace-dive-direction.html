@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — trace as a dive through spaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--paper:#FAF7F1;--paper-2:#F3EEE4;--ink:#1C1B18;--ink-2:#4A463D;--muted:#7b7466;--faint:#93897a;--clay:#BE4D2B;--clay-deep:#9C3C20;--clay-wash:#FBF1EC;--data:#1F4E79;--hairline:#E7E1D5;--hairline-2:#D8D0BF;--green:#3B6D11;--sage:#7A8B6F;--serif:'Source Serif 4',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:0.8125rem;line-height:1.5;}
+  .wrap{max-width:760px;margin:0 auto;padding:38px 28px 90px;}
+  .mono{font-family:var(--mono);} .faint{color:var(--faint);} .muted{color:var(--muted);}
+  .eyebrow{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--clay);}
+  h1{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.015em;margin:4px 0 4px;}
+  .sub{font-family:var(--mono);font-size:0.6875rem;color:var(--muted);letter-spacing:.04em;}
+  .lead{font-size:0.9rem;color:var(--ink-2);line-height:1.6;max-width:68ch;margin:16px 0 8px;}
+  .lead b{color:var(--ink);font-weight:500;}
+
+  /* depth breadcrumb */
+  .depth{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--mono);font-size:0.625rem;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:22px 0 8px;}
+  .depth b{color:var(--ink);} .depth .sep{color:var(--hairline-2);}
+
+  /* a space panel */
+  .space{position:relative;border:1px solid var(--hairline);background:var(--paper);padding:14px 18px 12px;}
+  .space.deep{border-left:2px solid var(--clay);}
+  .space .lbl{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .space .lbl .n{font-family:var(--mono);font-size:0.625rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  .space .lbl .n b{color:var(--clay);}
+  .space .lbl .ax{font-family:var(--mono);font-size:0.5625rem;color:var(--faint);letter-spacing:.04em;}
+  .space .msg{font-size:0.85rem;color:var(--ink-2);line-height:1.5;margin-top:9px;}
+  .space .msg b{color:var(--ink);font-weight:500;}
+  .space .info{position:absolute;top:12px;right:14px;font-family:var(--mono);font-size:0.5625rem;color:var(--faint);}
+
+  /* the dive connector — zoom INTO the selected point */
+  .dive{position:relative;height:62px;}
+  .dive svg{position:absolute;inset:0;width:100%;height:100%;}
+  .dive .cap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--paper);padding:2px 12px;font-family:var(--mono);font-size:0.625rem;letter-spacing:.04em;color:var(--clay);white-space:nowrap;}
+  svg{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">design study</div>
+  <h1>Trace is a dive, not a ledger</h1>
+  <div class="sub">invariant · click a point → it opens into the graph that made it, in its own space → and that into the next, down to the raw bars</div>
+  <p class="lead">No hashes, no DAG to read. A number is a <b>point</b>; inspect it and you fall <b>inside</b> it — into the graph that produced it, drawn in its own space. Keep going and you descend through the analysis, space by space, until you land on the raw bars. The lineage is still exact underneath; you just <b>experience</b> it instead of auditing it.</p>
+
+  <div class="depth"><b>① return</b><span class="sep">▸</span> ② signal<span class="sep">▸</span> ③ spread<span class="sep">▸</span> ④ raw bars &nbsp;·&nbsp; <span class="mono" style="color:var(--muted)">you are diving into the −8.3% drawdown</span></div>
+
+  <!-- ① RETURN SPACE -->
+  <div class="space">
+    <div class="lbl"><span class="n"><b>①</b> return space</span><span class="ax">cumulative return % · 2024</span></div>
+    <svg id="s1" viewBox="0 0 700 150" style="width:100%;height:auto"></svg>
+    <div class="msg">The finding's equity. <b>This trough — the −8.3% drawdown in March.</b> What made it?</div>
+  </div>
+  <div class="dive"><svg id="d1"></svg><span class="cap">↓ inside this point</span></div>
+
+  <!-- ② SIGNAL SPACE -->
+  <div class="space deep">
+    <div class="lbl"><span class="n"><b>②</b> signal space</span><span class="ax">20-day z-score · March · ±2σ bands</span></div>
+    <svg id="s2" viewBox="0 0 700 150" style="width:100%;height:auto"></svg>
+    <div class="msg">The signal stayed pinned above +2σ — <b>it kept betting on reversion that never came.</b> Each red mark is a losing entry. Why was the signal wrong?</div>
+  </div>
+  <div class="dive"><svg id="d2"></svg><span class="cap">↓ inside this point</span></div>
+
+  <!-- ③ SPREAD SPACE -->
+  <div class="space deep">
+    <div class="lbl"><span class="n"><b>③</b> spread space</span><span class="ax">crude–gas spread · March</span></div>
+    <svg id="s3" viewBox="0 0 700 150" style="width:100%;height:auto"></svg>
+    <div class="msg">Because the spread <b>trended instead of reverting</b> — it walked away from its mean all month. That's the raw price relationship breaking. Show me the bars.</div>
+  </div>
+  <div class="dive"><svg id="d3"></svg><span class="cap">↓ inside this point</span></div>
+
+  <!-- ④ RAW -->
+  <div class="space deep">
+    <div class="lbl"><span class="n"><b>④</b> raw bars · the source</span><span class="ax">WTI front-month · 1-minute OHLC · Mar 14</span></div>
+    <svg id="s4" viewBox="0 0 700 160" style="width:100%;height:auto"></svg>
+    <div class="msg"><b>crude_oil_1m</b> — the raw 1-minute candles. You've reached the floor: 3.8M rows, the source everything above was built from.</div>
+    <span class="info">ⓘ lineage · hash</span>
+  </div>
+</div>
+
+<script>
+const C={ink:'#1C1B18',ink2:'#4A463D',data:'#1F4E79',clay:'#BE4D2B',hair:'#E7E1D5',hair2:'#D8D0BF',faint:'#93897a',muted:'#7b7466',sage:'#7A8B6F'};
+const MONO="'JetBrains Mono',monospace";
+const tx=(x,y,s,o={})=>`<text x="${x}" y="${y}" text-anchor="${o.a||'start'}" font-family="${MONO}" font-size="${o.s||9}" fill="${o.c||C.faint}">${s}</text>`;
+function line(id,pts,{stroke=C.data,fill=false,W=700,H=150,ML=34,MR=14,bands=null,zero=false,sel=null,marks=[]}={}){
+  const mn=Math.min(...pts, bands?-bands:Infinity), mx=Math.max(...pts, bands?bands:-Infinity);
+  const lo=zero?Math.min(0,mn):mn, hi=mx;
+  const x=i=>ML+i*(W-ML-MR)/(pts.length-1), y=v=>10+(hi-v)/((hi-lo)||1)*(H-30);
+  const d=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  let s='';
+  if(bands){[bands,-bands].forEach(b=>{s+=`<line x1="${ML}" y1="${y(b)}" x2="${W-MR}" y2="${y(b)}" stroke="${C.hair2}" stroke-dasharray="3 3"/>`+tx(ML-4,y(b)+3,(b>0?'+':'')+b+'σ',{a:'end',s:8});});}
+  if(zero||bands){s+=`<line x1="${ML}" y1="${y(0)}" x2="${W-MR}" y2="${y(0)}" stroke="${C.hair}"/>`;}
+  if(fill){s+=`<path d="${d} L ${x(pts.length-1)} ${y(zero?0:lo)} L ${x(0)} ${y(zero?0:lo)} Z" fill="${stroke}" fill-opacity="0.08"/>`;}
+  s+=`<path d="${d}" fill="none" stroke="${stroke}" stroke-width="1.7"/>`;
+  marks.forEach(m=>{s+=`<circle cx="${x(m)}" cy="${y(pts[m])}" r="3" fill="${C.clay}"/>`;});
+  if(sel!=null){const sx=x(sel),sy=y(pts[sel]);s+=`<rect x="${sx-7}" y="${sy-7}" width="14" height="14" fill="none" stroke="${C.clay}" stroke-width="1.5"/><circle cx="${sx}" cy="${sy}" r="3.2" fill="${C.clay}"/>`;}
+  document.getElementById(id).innerHTML=s;
+  return {x,y,sx:sel!=null?x(sel):W/2};
+}
+// ① equity
+const eq=[0,1,2.2,3.4,4.6,5.8,6.9,8,7.1,5.4,3.2,1.1,-0.3,1.4,3,4.3,5.5,6.4,7.2,7.9,8.4,8,8.7,9.1,8.8,9.4];
+const r1=line('s1',eq,{fill:true,zero:true,sel:12});
+// ② z-score March: pinned high (signal said revert), with losing entries
+const z=[1.2,1.9,2.4,2.7,2.5,2.8,2.6,2.9,2.7,2.4,2.6,2.3,2.5,2.2,2.4,2.1,1.8,1.5,1.1,0.6];
+const r2=line('s2',z,{stroke:C.data,bands:2,sel:7,marks:[2,5,7,9]});
+// ③ spread March: trends down (walks away from mean)
+const sp=[0.4,0.1,-0.2,-0.5,-0.9,-1.1,-1.4,-1.8,-2.0,-2.3,-2.5,-2.4,-2.7,-2.9,-3.0,-3.2,-3.1,-3.3,-3.4,-3.5];
+const r3=line('s3',sp,{stroke:C.ink2,zero:true,sel:8});
+// ④ candles
+(function(){const W=700,ML=34,MR=14,H=160;let p=79.6;const o=[];for(let i=0;i<36;i++){const dr=-0.06+Math.sin(i*0.5)*0.10; const op=p; const cl=op+dr-(i%4===0?0.05:0); const hi=Math.max(op,cl)+0.10; const lo=Math.min(op,cl)-0.10; o.push([op,hi,lo,cl]); p=cl;} const all=o.flatMap(c=>[c[1],c[2]]);const mn=Math.min(...all),mx=Math.max(...all);const cw=(W-ML-MR)/o.length;const x=i=>ML+i*cw+cw/2;const y=v=>10+(mx-v)/((mx-mn)||1)*(H-34);let s='';o.forEach((c,i)=>{const[op,h,l,cl]=c;const up=cl>=op;const col=up?C.data:C.clay;s+=`<line x1="${x(i)}" y1="${y(h)}" x2="${x(i)}" y2="${y(l)}" stroke="${col}"/>`;const yt=y(Math.max(op,cl)),hb=Math.max(Math.abs(y(op)-y(cl)),1);s+=`<rect x="${x(i)-cw*0.3}" y="${yt}" width="${cw*0.6}" height="${hb}" fill="${up?'none':col}" stroke="${col}"/>`;});['09:30','11:00','12:30','14:00','15:30'].forEach((t,k)=>{s+=tx(x(k*8),H-4,t,{a:'middle',s:8});});document.getElementById('s4').innerHTML=s;})();
+// dive funnels: from the selected point of the panel above, widening to the next panel
+function funnel(id,fromX){const el=document.getElementById(id);const W=el.clientWidth||700,H=62;const fx=fromX/700*W;el.setAttribute('viewBox',`0 0 ${W} ${H}`);el.innerHTML=`<line x1="${fx-7}" y1="2" x2="14" y2="${H-2}" stroke="${C.clay}" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/><line x1="${fx+7}" y1="2" x2="${W-14}" y2="${H-2}" stroke="${C.clay}" stroke-width="1" stroke-dasharray="3 3" opacity="0.55"/>`;}
+function draw(){funnel('d1',r1.sx);funnel('d2',r2.sx);funnel('d3',r3.sx);}
+draw();window.addEventListener('resize',draw);
+</script>
+</body>
+</html>

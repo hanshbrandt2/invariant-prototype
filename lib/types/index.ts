@@ -235,6 +235,9 @@ export interface ResultSpec {
   /** Authored regime snapshot aligned to the eval window — which market regime
    *  ruled each step (UP / DOWN / MR / NO_TRADE). The regime ribbon reads it. */
   regimeSeries?: { t: string; state: string }[];
+  /** Authored signal snapshot (the 20-day z-score) aligned to the eval window —
+   *  the "signal space" a return point dives into. */
+  signalSeries?: { t: string; z: number }[];
 }
 
 /* ── Figures (M-J) ─────────────────────────────────────────────────
@@ -244,7 +247,7 @@ export interface ResultSpec {
    its compiler renders the SAME spec behind the unchanged seam. In the prototype
    the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
    honest because it's fixed and labeled, never fabricated at render time. */
-export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "heatmap" | "regime" | "weights";
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "signal" | "heatmap" | "regime" | "weights";
 export interface FigurePoint {
   [key: string]: number | string;
 }
@@ -258,6 +261,7 @@ export interface ChartSpec {
   yLabel?: string;
   color?: string; // series color (hex); default data-blue
   colors?: string[]; // per-row color (bar mark) — e.g. winner in clay
+  focus?: number; // a focused index (the dived point) for marks that highlight a window
 }
 
 /* ── Variations / forking ──────────────────────────────────────────

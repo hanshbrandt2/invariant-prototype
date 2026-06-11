@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ComposedChart, Area, Line, BarChart, Bar, Cell,
   XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip,
@@ -29,7 +30,7 @@ const monthFmt = (t: string) => {
  * data-blue series, direct labels. The renderer is swappable: when @invariant/viz
  * lands, the same ChartSpec compiles through it behind this boundary.
  */
-export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?: number }) {
+export function Figure({ spec, height = 240, onPick, selected }: { spec: ChartSpec | null; height?: number; onPick?: (i: number) => void; selected?: number }) {
   if (!spec || spec.data.length === 0) return null;
   return (
     <figure className="m-0">
@@ -38,7 +39,9 @@ export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?
       )}
       {spec.caption && <p className="font-mono text-meta text-faint mb-2">{spec.caption}</p>}
       {spec.mark === "equity-hero" ? (
-        <EquityHero data={spec.data} />
+        <EquityHero data={spec.data} onPick={onPick} selected={selected} />
+      ) : spec.mark === "signal" ? (
+        <Signal data={spec.data} focus={spec.focus} />
       ) : spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
       ) : spec.mark === "heatmap" ? (
@@ -68,7 +71,8 @@ const tk = { fontFamily: "var(--font-jetbrains)", fontSize: 11, fill: c.faint } 
 /** The HERO equity chart — big, annotated, with the regime shaded under the
  *  curve, so it tells "the result + when it worked + the risk" in one picture and
  *  the prose becomes optional. Peak / drawdown / end are computed from the data. */
-function EquityHero({ data }: { data: FigurePoint[] }) {
+function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: (i: number) => void; selected?: number }) {
+  const [hover, setHover] = useState<number | null>(null);
   const eq = data.map((d) => Number(d.equity));
   const dd = data.map((d) => Number(d.drawdown));
   const n = eq.length;
@@ -138,6 +142,29 @@ function EquityHero({ data }: { data: FigurePoint[] }) {
         <text x={W - MR + 8} y={yB(0) + 4} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.faint}>drawdown</text>
         {/* month ticks */}
         {ticks.map((t) => <text key={t.i} x={x(t.i)} y={bTop + botH + 4} textAnchor="middle" {...tk}>{t.m}</text>)}
+        {/* hover affordance — a value is a point you can dive into */}
+        {onPick && hover !== null && (
+          <g pointerEvents="none">
+            <line x1={x(hover)} y1={MT} x2={x(hover)} y2={MT + topH} stroke={c.hairline2} />
+            <circle cx={x(hover)} cy={yT(eq[hover])} r={4} fill={c.paper} stroke={c.data} strokeWidth={1.5} />
+          </g>
+        )}
+        {/* the dived point */}
+        {selected != null && selected >= 0 && selected < n && (
+          <g pointerEvents="none">
+            <circle cx={x(selected)} cy={yT(eq[selected])} r={6.5} fill="none" stroke={c.clay} strokeWidth={1.5} />
+            <circle cx={x(selected)} cy={yT(eq[selected])} r={3.5} fill={c.clay} />
+          </g>
+        )}
+        {/* per-point hit bands — click a point to dive into the signal that made it */}
+        {onPick && data.map((_, i) => {
+          const x0 = i === 0 ? ML : (x(i - 1) + x(i)) / 2;
+          const x1 = i === n - 1 ? W - MR : (x(i) + x(i + 1)) / 2;
+          return (
+            <rect key={"hit" + i} x={x0} y={MT} width={x1 - x0} height={topH} fill="transparent" style={{ cursor: "pointer" }}
+              onClick={() => onPick(i)} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover((h) => (h === i ? null : h))} />
+          );
+        })}
       </svg>
       {hasRegime && (
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-meta text-muted">
@@ -146,6 +173,47 @@ function EquityHero({ data }: { data: FigurePoint[] }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** The signal space — the 20-day z-score over the window, ±2σ bands, with the
+ *  dived point in focus, its neighborhood shaded, and extended (|z|>2) points
+ *  marked. The space a return point opens into. */
+function Signal({ data, focus }: { data: FigurePoint[]; focus?: number }) {
+  const z = data.map((d) => Number(d.z));
+  const n = z.length;
+  if (n < 2) return null;
+  const W = 1000, ML = 42, MR = 16, MT = 14, plotH = 184;
+  const BOT = MT + plotH, H = BOT + 22;
+  const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
+  const zLo = Math.min(-2.5, ...z) - 0.2, zHi = Math.max(2.5, ...z) + 0.2;
+  const y = (v: number) => MT + ((zHi - v) / (zHi - zLo)) * (plotH - MT);
+  const path = z.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+  const f = focus != null ? Math.max(0, Math.min(n - 1, focus)) : null;
+  const lo = f != null ? Math.max(0, f - 4) : 0, hi = f != null ? Math.min(n - 1, f + 4) : 0;
+  const ticks: { i: number; m: string }[] = [];
+  let lastM = "";
+  data.forEach((d, i) => { const m = monthAbbr(String(d.t)); if (m !== lastM) { ticks.push({ i, m }); lastM = m; } });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="z-score signal">
+      {f != null && <rect x={x(lo)} y={MT} width={x(hi) - x(lo)} height={plotH - MT} fill="rgba(190,77,43,0.06)" />}
+      {[2, -2].map((b) => (
+        <g key={b}>
+          <line x1={ML} y1={y(b)} x2={W - MR} y2={y(b)} stroke={c.hairline2} strokeDasharray="3 3" />
+          <text x={ML - 6} y={y(b) + 3} textAnchor="end" {...tk}>{b > 0 ? "+" : ""}{b}σ</text>
+        </g>
+      ))}
+      <line x1={ML} y1={y(0)} x2={W - MR} y2={y(0)} stroke={c.hairline} />
+      <path d={path} fill="none" stroke={c.data} strokeWidth={1.8} />
+      {z.map((v, i) => (Math.abs(v) > 2 ? <circle key={i} cx={x(i)} cy={y(v)} r={2.6} fill={c.clay} /> : null))}
+      {f != null && (
+        <g>
+          <circle cx={x(f)} cy={y(z[f])} r={6} fill="none" stroke={c.clay} strokeWidth={1.5} />
+          <circle cx={x(f)} cy={y(z[f])} r={3.2} fill={c.clay} />
+        </g>
+      )}
+      {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
+    </svg>
   );
 }
 

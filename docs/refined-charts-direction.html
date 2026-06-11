@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — charts with restraint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--paper:#FAF7F1;--paper-2:#F3EEE4;--ink:#1C1B18;--ink-2:#4A463D;--muted:#7b7466;--faint:#93897a;--clay:#BE4D2B;--clay-deep:#9C3C20;--clay-wash:#FBF1EC;--data:#1F4E79;--hairline:#E7E1D5;--hairline-2:#D8D0BF;--green:#3B6D11;--sage:#7A8B6F;--serif:'Source Serif 4',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:0.8125rem;line-height:1.5;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 32px 90px;}
+  .mono{font-family:var(--mono);} .serif{font-family:var(--serif);} .faint{color:var(--faint);} .muted{color:var(--muted);}
+  .eyebrow{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--clay);}
+  .head h1{font-family:var(--serif);font-weight:600;font-size:1.5rem;letter-spacing:-.015em;margin:0 0 4px;}
+  .head .s{font-family:var(--mono);font-size:0.6875rem;color:var(--muted);letter-spacing:.04em;}
+  .principles{font-family:var(--mono);font-size:0.625rem;color:var(--muted);letter-spacing:.04em;margin:18px 0 34px;display:flex;flex-wrap:wrap;gap:6px 14px;}
+  .principles b{color:var(--ink-2);}
+
+  /* the refined factors chapter — proportioned, a jewel not a billboard */
+  .chapter{max-width:600px;}
+  .chapter h2{font-family:var(--serif);font-weight:600;font-size:1.3rem;letter-spacing:-.01em;line-height:1.2;margin:6px 0 0;}
+  .lede{font-size:0.875rem;color:var(--ink-2);line-height:1.55;max-width:60ch;margin:9px 0 0;}
+  .panel{margin-top:18px;border:1px solid var(--hairline);background:var(--paper);padding:18px 20px 14px;}
+  .panel .cc{display:flex;align-items:baseline;justify-content:space-between;font-family:var(--mono);font-size:0.625rem;letter-spacing:.04em;color:var(--faint);margin-bottom:6px;}
+  .panel .ct{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px;}
+  .chip{font-family:var(--mono);font-size:0.625rem;color:var(--muted);border:1px solid var(--hairline);background:var(--paper-2);padding:4px 9px;letter-spacing:.02em;}
+  .chip b{color:var(--ink-2);font-weight:500;}
+
+  /* the contrast strip */
+  .contrast{margin-top:46px;border-top:1px solid var(--hairline);padding-top:22px;}
+  .contrast .lbl{font-family:var(--mono);font-size:0.625rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+  .contrast .lbl .d{width:7px;height:7px;border-radius:50%;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start;}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+  .mini{border:1px solid var(--hairline);background:var(--paper);}
+  .mini.bad{padding:0;}
+  .mini.bad .cell{display:grid;grid-template-columns:repeat(3,1fr);}
+  .mini.bad .cell div{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:1.1rem;color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">design study</div>
+    <h1>Charts with restraint</h1>
+    <div class="s">invariant · the correlation, reconsidered — proportion, type, color, one message</div>
+  </div>
+  <div class="principles">
+    <span><b>Size to the information</b>, not the canvas</span>·
+    <span><b>One message</b> per chart</span>·
+    <span><b>Real labels</b>, not variable names</span>·
+    <span><b>Drop the redundant</b> (the 1.00 diagonal, the mirror)</span>·
+    <span><b>Color is signal</b></span>·
+    <span><b>Earned negative space</b></span>
+  </div>
+
+  <!-- the refined factors chapter -->
+  <section class="chapter">
+    <div class="eyebrow">02 · the factors</div>
+    <h2>Two signals move together; gas is the diversifier.</h2>
+    <p class="lede">Three columns feed the matrix. Only the relationships that matter — the z-score and the spread track each other; gas pulls slightly the other way.</p>
+
+    <div class="panel">
+      <div class="cc"><span class="ct">how the signals relate</span><span>correlation · authored snapshot</span></div>
+      <svg id="corr" viewBox="0 0 600 196" style="width:100%;height:auto"></svg>
+    </div>
+
+    <div class="chips">
+      <span class="chip"><b>Front-month continuous</b></span>
+      <span class="chip"><b>Log returns</b></span>
+      <span class="chip"><b>20-day z-score</b></span>
+      <span class="chip"><b>Gas z-score</b></span>
+      <span class="chip"><b>Crude–gas spread</b></span>
+    </div>
+  </section>
+
+  <!-- the contrast: what I shipped vs. what it should be -->
+  <div class="contrast">
+    <div class="grid2">
+      <div>
+        <div class="lbl"><span class="d" style="background:var(--clay)"></span>what I shipped — a billboard of mostly-noise</div>
+        <div class="mini bad">
+          <div class="cell">
+            <div style="background:#1F4E79">1.00</div><div style="background:#c2d2e0;color:#1C1B18">0.31</div><div style="background:#9db6cd;color:#1C1B18">0.58</div>
+            <div style="background:#c2d2e0;color:#1C1B18">0.31</div><div style="background:#1F4E79">1.00</div><div style="background:#f3e3da;color:#1C1B18">-0.12</div>
+            <div style="background:#9db6cd;color:#1C1B18">0.58</div><div style="background:#f3e3da;color:#1C1B18">-0.12</div><div style="background:#1F4E79">1.00</div>
+          </div>
+        </div>
+        <p class="mono faint" style="font-size:0.625rem;margin-top:8px">9 cells · 3 are 1.00 · 3 are mirrored · 2 carry information.</p>
+      </div>
+      <div>
+        <div class="lbl"><span class="d" style="background:var(--green)"></span>the same data, with feeling</div>
+        <div class="mini" style="padding:16px">
+          <svg id="corr2" viewBox="0 0 560 170" style="width:100%;height:auto"></svg>
+        </div>
+        <p class="mono faint" style="font-size:0.625rem;margin-top:8px">3 relationships · ranked · labeled · proportioned. Reads in one glance.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const C={ink:'#1C1B18',ink2:'#4A463D',data:'#1F4E79',clay:'#BE4D2B',hair:'#E7E1D5',hair2:'#D8D0BF',faint:'#93897a',muted:'#7b7466'};
+const MONO="'JetBrains Mono',monospace", SANS="'Inter',system-ui,sans-serif";
+// elegant correlation: ranked connected-dots on a centered −1..+1 axis
+function corr(id, pairs, {W=600,LG=232,top=30,rowH=44}={}){
+  const AX0=LG+8, AX1=W-34, mid=(AX0+AX1)/2;
+  const xOf=r=>AX0+((r+1)/2)*(AX1-AX0);
+  let s='';
+  // faint gridlines + center
+  [-0.5,0.5].forEach(g=>{s+=`<line x1="${xOf(g)}" y1="${top-10}" x2="${xOf(g)}" y2="${top+pairs.length*rowH-6}" stroke="${C.hair}"/>`});
+  s+=`<line x1="${mid}" y1="${top-12}" x2="${mid}" y2="${top+pairs.length*rowH-4}" stroke="${C.hair2}"/>`;
+  pairs.forEach((p,i)=>{
+    const y=top+i*rowH+rowH/2-6, xr=xOf(p.r), col=p.r>=0?C.data:C.clay;
+    // label, right aligned
+    s+=`<text x="${LG-2}" y="${y-3}" text-anchor="end" font-family="${SANS}" font-size="13" fill="${C.ink}">${p.a}</text>`;
+    s+=`<text x="${LG-2}" y="${y+12}" text-anchor="end" font-family="${SANS}" font-size="11" fill="${C.muted}">&amp; ${p.b}</text>`;
+    // connector from 0 to r + dot
+    s+=`<line x1="${mid}" y1="${y+3}" x2="${xr}" y2="${y+3}" stroke="${col}" stroke-width="2"/>`;
+    s+=`<circle cx="${xr}" cy="${y+3}" r="4.5" fill="${col}"/>`;
+    const right=p.r>=0;
+    s+=`<text x="${xr+(right?10:-10)}" y="${y+7}" text-anchor="${right?'start':'end'}" font-family="${MONO}" font-size="13" font-weight="500" fill="${col}">${p.r>=0?'+':''}${p.r.toFixed(2)}</text>`;
+  });
+  // axis ticks
+  const ay=top+pairs.length*rowH+4;
+  [-1,0,1].forEach(t=>{s+=`<text x="${xOf(t)}" y="${ay+10}" text-anchor="middle" font-family="${MONO}" font-size="9" fill="${C.faint}">${t>0?'+':''}${t}</text>`});
+  s+=`<text x="${AX0}" y="${ay+10}" text-anchor="start" font-family="${MONO}" font-size="9" fill="${C.faint}"></text>`;
+  s+=`<text x="${mid}" y="${top-16}" text-anchor="middle" font-family="${MONO}" font-size="8.5" fill="${C.faint}" letter-spacing="1">DIVERGE · 0 · CO-MOVE</text>`;
+  document.getElementById(id).innerHTML=s;
+}
+const pairs=[
+  {a:'20-day z-score', b:'crude–gas spread', r:0.58},
+  {a:'20-day z-score', b:'gas z-score', r:0.31},
+  {a:'gas z-score', b:'crude–gas spread', r:-0.12},
+];
+corr('corr', pairs);
+corr('corr2', pairs, {W:560,LG:212,top:24,rowH:42});
+</script>
+</body>
+</html>

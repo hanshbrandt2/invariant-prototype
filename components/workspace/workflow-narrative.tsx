@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultHeroFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
+import { resultHeroFigure, signalFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Read a model spec's learned coefficients (free-form dict) → typed weights. */
@@ -203,6 +203,9 @@ export function WorkflowNarrative({
   ].filter((c) => c.ok);
   const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
 
+  // dive: a return point opens into the signal space that made it (index into the
+  // equity series, or null when not diving).
+  const [dive, setDive] = useState<number | null>(null);
   // scroll-spy: highlight the chapter currently near the top of the canvas
   const [active, setActive] = useState<string | undefined>(undefined);
   const ids = chapters.map((c) => c.id).join(",");
@@ -239,6 +242,22 @@ export function WorkflowNarrative({
 
   const figureCount = [heroFig, corrFig, weightsFig, regimeFig].filter(Boolean).length;
 
+  // the dive: which signal-space window a clicked return point opens into. Early
+  // return narrows dive→number and signalSeries→defined for the rest of the block.
+  const diveView = (() => {
+    if (dive === null || !spec?.signalSeries) return null;
+    const sig = spec.signalSeries;
+    const fi = Math.max(0, Math.min(sig.length - 1, dive));
+    const month = new Date(sig[fi].t).toLocaleString("en-US", { month: "long" });
+    const win = sig.slice(Math.max(0, fi - 3), fi + 4);
+    const avgZ = win.reduce((a, b) => a + b.z, 0) / (win.length || 1);
+    const extended = Math.abs(avgZ) > 1.8;
+    const msg = extended
+      ? `Around ${month}, the z-score sat at ${avgZ >= 0 ? "+" : ""}${avgZ.toFixed(1)}σ — pinned past its band, betting on a reversion that didn't come. That stretch is the drawdown above.`
+      : `Around ${month}, the z-score stayed within its ±2σ bands — the signal behaved here.`;
+    return { month, msg, fig: signalFigure(spec, fi) };
+  })();
+
   return (
     <div className="px-6 md:px-8 py-7 max-w-[1280px] mx-auto">
       <div className="grid md:grid-cols-[164px_1fr] gap-7 md:gap-9 items-start">
@@ -265,13 +284,33 @@ export function WorkflowNarrative({
                   {typeof spec.metrics.hit_rate === "number" && <Kpi v={fmtMetric("hit_rate", spec.metrics.hit_rate)} k="win" />}
                 </div>
               </div>
-              <button onClick={() => onOpenNode(result.id)} className="group block w-full text-left ticks border border-hairline bg-paper p-4 hover:bg-paper-2/20 transition-colors">
+              <div className="ticks border border-hairline bg-paper p-4">
                 <div className="flex items-baseline justify-between gap-3 px-1 mb-1.5 font-mono text-meta text-faint">
                   <span>{heroFig?.caption ?? ""}</span>
-                  <span className="group-hover:text-clay transition-colors">click to inspect</span>
+                  <button onClick={() => onOpenNode(result.id)} className="hover:text-clay transition-colors">inspect ▸</button>
                 </div>
-                <Figure spec={heroFig ? { ...heroFig, caption: undefined } : null} />
-              </button>
+                <Figure
+                  spec={heroFig ? { ...heroFig, caption: undefined } : null}
+                  onPick={spec.signalSeries ? (i) => setDive((cur) => (cur === i ? null : i)) : undefined}
+                  selected={dive ?? undefined}
+                />
+                {spec.signalSeries && (
+                  <p className="mt-2 px-1 font-mono text-meta text-faint">↑ click any point to dive into the signal that made it</p>
+                )}
+              </div>
+              {diveView && (
+                <div className="rise mt-2 border border-hairline border-l-2 border-l-clay bg-paper p-4">
+                  <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
+                    <p className="font-mono text-meta uppercase tracking-[0.12em]">
+                      <span className="text-faint">① return</span> <span className="text-hairline-2">▸</span> <span className="text-clay">② signal space</span>
+                      <span className="text-faint normal-case tracking-normal"> · inside the {diveView.month} point</span>
+                    </p>
+                    <button onClick={() => setDive(null)} className="font-mono text-meta text-muted hover:text-ink transition-colors">↑ back to return</button>
+                  </div>
+                  <Figure spec={diveView.fig} />
+                  <p className="mt-2.5 text-ui leading-snug text-ink-2 max-w-[66ch]">{diveView.msg}</p>
+                </div>
+              )}
               {spec.nextProposal && (() => {
                 const np = spec.nextProposal;
                 if (np.kind === "none" || !onNextStep) return null;
@@ -313,7 +352,7 @@ export function WorkflowNarrative({
               ? `${labelForFeature(String(top.row))} and ${labelForFeature(String(top.col))} ${Number(top.v) >= 0 ? "move together" : "pull apart"} — the rest are nearly independent.`
               : "The signals that feed the model.";
             return (
-              <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[880px]">
+              <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[680px]">
                 <p className="eyebrow text-clay">{num("factors")} · the factors</p>
                 <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[36ch]">{headline}</h2>
                 <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The signals joined into the matrix the model reads. Each is one column on a shared clock; the heatmap below is how they co-move.</p>

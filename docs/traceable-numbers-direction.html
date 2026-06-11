@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — every number is traceable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--paper:#FAF7F1;--paper-2:#F3EEE4;--paper-3:#ECE5D6;--ink:#1C1B18;--ink-2:#4A463D;--muted:#7b7466;--faint:#93897a;--clay:#BE4D2B;--clay-deep:#9C3C20;--clay-wash:#FBF1EC;--data:#1F4E79;--hairline:#E7E1D5;--hairline-2:#D8D0BF;--green:#3B6D11;--sage:#7A8B6F;--serif:'Source Serif 4',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:0.8125rem;line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 30px 90px;}
+  .mono{font-family:var(--mono);} .serif{font-family:var(--serif);} .clay{color:var(--clay);} .muted{color:var(--muted);} .faint{color:var(--faint);} .tnum{font-variant-numeric:tabular-nums;}
+  .eyebrow{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  h1{font-family:var(--serif);font-weight:600;font-size:1.6rem;letter-spacing:-.015em;margin:0 0 4px;}
+  .sub{font-family:var(--mono);font-size:0.6875rem;color:var(--muted);letter-spacing:.04em;margin-bottom:26px;}
+  .lead{font-size:0.95rem;color:var(--ink-2);line-height:1.6;max-width:74ch;margin:0 0 24px;}
+  .lead b{color:var(--ink);font-weight:500;}
+
+  .split{display:grid;grid-template-columns:1fr 420px;gap:24px;align-items:start;}
+  @media(max-width:900px){.split{grid-template-columns:1fr;}}
+
+  /* the viz with selectable numbers */
+  .plate{position:relative;border:1px solid var(--hairline);background:var(--paper);padding:18px 20px;}
+  .plate .cc{font-family:var(--mono);font-size:0.6875rem;color:var(--faint);margin:0 0 14px;}
+  .kpis{display:flex;align-items:flex-end;gap:28px;margin-bottom:18px;}
+  .kpi .v{font-family:var(--mono);font-weight:500;font-size:1.3rem;cursor:pointer;border-bottom:2px dotted transparent;padding-bottom:1px;}
+  .kpi.big .v{font-size:2.5rem;line-height:.85;}
+  .kpi .v:hover{border-bottom-color:var(--hairline-2);}
+  .kpi .v.sel{color:var(--clay);border-bottom:2px solid var(--clay);}
+  .kpi .v.pos{color:var(--green);} .kpi .v.neg{color:var(--clay);}
+  .kpi .k{font-family:var(--mono);font-size:0.5625rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:6px;}
+  .hint{font-family:var(--mono);font-size:0.6875rem;color:var(--faint);margin-top:14px;}
+  .hint b{color:var(--clay);}
+
+  /* the TRACE drawer */
+  .trace{border:1px solid var(--hairline-2);background:#fff;}
+  .trace-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--hairline);}
+  .trace-head .t{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.14em;text-transform:uppercase;color:var(--clay);}
+  .trace-head .v{font-family:var(--mono);font-weight:500;font-size:1.05rem;}
+  .trace-sub{padding:8px 16px;border-bottom:1px solid var(--hairline);font-family:var(--mono);font-size:0.6875rem;color:var(--muted);line-height:1.5;background:var(--paper-2);}
+  .chain{padding:6px 0;}
+  .step{position:relative;padding:9px 16px 9px 40px;}
+  .step::before{content:"";position:absolute;left:23px;top:0;bottom:0;width:1px;background:var(--hairline-2);}
+  .step:first-child::before{top:18px;} .step:last-child::before{bottom:18px;}
+  .step .dot{position:absolute;left:19px;top:13px;width:9px;height:9px;border-radius:50%;background:var(--paper);border:1.5px solid var(--hairline-2);}
+  .step.raw .dot{background:var(--clay);border-color:var(--clay);}
+  .step.figure .dot{background:var(--data);border-color:var(--data);}
+  .step .kind{font-family:var(--mono);font-size:0.5625rem;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);}
+  .step .name{font-size:0.8125rem;color:var(--ink);margin-top:1px;}
+  .step .op{font-family:var(--mono);font-size:0.625rem;color:var(--muted);margin-top:2px;}
+  .step .op b{color:var(--ink-2);}
+  .step .hash{font-family:var(--mono);font-size:0.5625rem;color:var(--faint);}
+  .step .row1{display:flex;justify-content:space-between;gap:8px;align-items:baseline;}
+  .step.raw{background:var(--clay-wash);}
+  .step.raw .name{font-weight:500;}
+  .actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .actions button{font-family:var(--mono);font-size:0.625rem;letter-spacing:.04em;border:1px solid var(--hairline-2);background:var(--paper);color:var(--ink-2);padding:4px 9px;cursor:pointer;}
+  .actions button.primary{border-color:var(--clay);color:var(--clay);}
+  .branch{font-family:var(--mono);font-size:0.625rem;color:var(--faint);padding:2px 16px 8px 40px;}
+  .foot{padding:11px 16px;border-top:1px solid var(--hairline);font-family:var(--mono);font-size:0.625rem;color:var(--muted);line-height:1.6;}
+  .foot .now{color:var(--green);} .foot .later{color:var(--clay);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Every number traces to the raw data</h1>
+  <div class="sub">invariant · design study · click a value → walk its lineage to the source</div>
+  <p class="lead">A number in a visualization isn't a string — it's a <b>bound value</b>: a cell of a query result tied to an artifact, with a content hash and a lineage. Hover any number and it's traceable; click it and the <b>trace drawer</b> walks every step from the figure down to the raw bars. Nothing is a dead end.</p>
+
+  <div class="split">
+    <!-- the viz: numbers are selectable -->
+    <div class="plate">
+      <p class="cc">the finding · click a number to trace it</p>
+      <div class="kpis">
+        <div class="kpi big"><div class="v sel tnum">1.42</div><div class="k">Sharpe</div></div>
+        <div class="kpi"><div class="v pos tnum">+18.7%</div><div class="k">ann.</div></div>
+        <div class="kpi"><div class="v neg tnum">−8.3%</div><div class="k">max dd</div></div>
+        <div class="kpi"><div class="v tnum">0.561</div><div class="k">win</div></div>
+      </div>
+      <svg viewBox="0 0 560 150" style="width:100%;height:auto" id="eq"></svg>
+      <p class="hint">↑ <b>1.42</b> is selected. Every cell of the heatmap, every point on this curve, every weight — same affordance. <b>No number is hidden.</b></p>
+    </div>
+
+    <!-- the trace drawer for 1.42 -->
+    <div class="trace">
+      <div class="trace-head"><span class="t">trace</span><span class="v">Sharpe 1.42</span></div>
+      <div class="trace-sub">= mean(daily returns) / std(daily returns) · √252, over 124 trading days of the backtest equity.</div>
+      <div class="chain">
+        <div class="step figure"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">figure</div><div class="name">Sharpe ratio</div></div><div class="hash">spec 2a1f·9e</div></div>
+          <div class="op">a <b>ViewSpec</b> over the equity series · annualized</div>
+        </div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">result</div><div class="name">bt_2024_06_meanrev</div></div><div class="hash">7f3a·c91d</div></div>
+          <div class="op">backtest · <b>evaluate_strategy</b> · validator green</div>
+        </div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">model</div><div class="name">linreg_baseline</div></div><div class="hash">e2b9·1c6a</div></div>
+          <div class="op"><b>fit_model</b> · ridge α=0.1 · weights z:+0.42 g:−0.18 s:+0.09</div>
+        </div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">matrix</div><div class="name">signal_matrix_v3</div></div><div class="hash">55a0·7e3b</div></div>
+          <div class="op"><b>join_feature</b> (asof) · 124,318 rows × 3 cols</div>
+        </div>
+        <div class="branch">↳ 3 feature columns + target fwd_ret_5m · expanding the z-score path:</div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">feature</div><div class="name">zscore_20</div></div><div class="hash">b71c·0a</div></div>
+          <div class="op"><b>rolling_zscore</b>(window=20) of front_month_ret</div>
+        </div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">feature</div><div class="name">front_month_ret</div></div><div class="hash">9d3e·4a</div></div>
+          <div class="op"><b>log_returns</b> of front_month_cont</div>
+        </div>
+        <div class="step"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">feature</div><div class="name">front_month_cont</div></div><div class="hash">1f7b·62</div></div>
+          <div class="op"><b>stitch_contracts</b> · governed by policy roll:wti:v3</div>
+        </div>
+        <div class="step raw"><span class="dot"></span>
+          <div class="row1"><div><div class="kind">data · the source</div><div class="name">crude_oil_1m</div></div><div class="hash">databento</div></div>
+          <div class="op">raw 1-minute OHLCV · <b>3,810,442 rows</b> · 0.4% missing</div>
+          <div class="actions">
+            <button>open dataset</button>
+            <button>see the SQL</button>
+            <button class="primary">re-derive 1.42 →</button>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <span class="now">● now</span> the chain, the operators, the hashes — over the DAG you already have. &nbsp;
+        <span class="later">● backend</span> the exact rows + SQL behind each step, and one-click re-derivation.
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const eq=[0,1,2.2,3.4,4.6,5.8,6.9,8,7.1,5.4,3.2,1.1,-0.3,1.4,3,4.3,5.5,6.4,7.2,7.9,8.4,8,8.7,9.1,8.8,9.4];
+(function(){const W=560,H=150,ML=8,MR=8,MT=8,MB=8;const x=i=>ML+i*(W-ML-MR)/(eq.length-1);const mn=Math.min(...eq),mx=Math.max(...eq);const y=v=>MT+(mx-v)/(mx-mn)*(H-MT-MB);const d=eq.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');document.getElementById('eq').innerHTML=`<path d="${d} L ${x(eq.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z" fill="#1F4E79" fill-opacity="0.09"/><path d="${d}" fill="none" stroke="#1F4E79" stroke-width="1.8"/>`;})();
+</script>
+</body>
+</html>
