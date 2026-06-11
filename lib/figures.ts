@@ -43,6 +43,22 @@ export function signalFigure(spec: ResultSpec, center: number): ChartSpec | null
   };
 }
 
+/** The spread space — the crude–gas spread under the signal, with the dived point
+ *  in focus. The z-score above is just this, standardized. */
+export function spreadFigure(spec: ResultSpec, center: number): ChartSpec | null {
+  const s = spec.spreadSeries;
+  if (!s || s.length === 0) return null;
+  const focus = Math.max(0, Math.min(s.length - 1, center));
+  return {
+    mark: "spread",
+    data: s.map((p) => ({ t: p.t, spread: p.spread })),
+    x: "t",
+    y: "spread",
+    focus,
+    caption: "crude–gas spread · vs its trailing mean · authored snapshot",
+  };
+}
+
 /** Feature weights — the model's learned coefficients as signed, diverging bars
  *  (positive = data blue, negative = clay). Sorted biggest-first so the dominant
  *  signal reads at the top. Pure read of the model spec's coefficients; no synth. */

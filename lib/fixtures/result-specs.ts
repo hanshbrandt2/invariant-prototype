@@ -90,5 +90,19 @@ export const resultSpecs: Record<string, ResultSpec> = {
       { t: "2024-05-28", z: 0.5 }, { t: "2024-06-04", z: 0.9 }, { t: "2024-06-11", z: 1.2 },
       { t: "2024-06-18", z: 0.7 }, { t: "2024-06-28", z: 1.0 },
     ],
+    // Authored spread snapshot (crude–gas spread). It trends away from its mean
+    // through Feb–March (which is what the z-score above measured) and reverts by
+    // April — the level underneath the signal. Same weeks as the equity.
+    spreadSeries: [
+      { t: "2024-01-02", spread: 0.2 }, { t: "2024-01-09", spread: -0.1 }, { t: "2024-01-16", spread: 0.3 },
+      { t: "2024-01-23", spread: 0.0 }, { t: "2024-01-30", spread: 0.4 }, { t: "2024-02-06", spread: 0.7 },
+      { t: "2024-02-13", spread: 1.1 }, { t: "2024-02-20", spread: 1.6 }, { t: "2024-02-27", spread: 2.2 },
+      { t: "2024-03-05", spread: 2.7 }, { t: "2024-03-12", spread: 3.0 }, { t: "2024-03-19", spread: 3.1 },
+      { t: "2024-03-26", spread: 2.9 }, { t: "2024-04-02", spread: 2.2 }, { t: "2024-04-09", spread: 1.5 },
+      { t: "2024-04-16", spread: 0.9 }, { t: "2024-04-23", spread: 0.3 }, { t: "2024-04-30", spread: 0.0 },
+      { t: "2024-05-07", spread: 0.4 }, { t: "2024-05-14", spread: 0.2 }, { t: "2024-05-21", spread: 0.6 },
+      { t: "2024-05-28", spread: 0.1 }, { t: "2024-06-04", spread: 0.4 }, { t: "2024-06-11", spread: 0.5 },
+      { t: "2024-06-18", spread: 0.2 }, { t: "2024-06-28", spread: 0.5 },
+    ],
   },
 };

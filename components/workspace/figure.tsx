@@ -41,7 +41,9 @@ export function Figure({ spec, height = 240, onPick, selected }: { spec: ChartSp
       {spec.mark === "equity-hero" ? (
         <EquityHero data={spec.data} onPick={onPick} selected={selected} />
       ) : spec.mark === "signal" ? (
-        <Signal data={spec.data} focus={spec.focus} />
+        <Signal data={spec.data} focus={spec.focus} onPick={onPick} selected={selected} />
+      ) : spec.mark === "spread" ? (
+        <Spread data={spec.data} focus={spec.focus} onPick={onPick} selected={selected} />
       ) : spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
       ) : spec.mark === "heatmap" ? (
@@ -176,10 +178,39 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
   );
 }
 
-/** The signal space — the 20-day z-score over the window, ±2σ bands, with the
- *  dived point in focus, its neighborhood shaded, and extended (|z|>2) points
- *  marked. The space a return point opens into. */
-function Signal({ data, focus }: { data: FigurePoint[]; focus?: number }) {
+// Shared interaction layer for the dive charts: hover guide + the dived-from
+// marker + per-point hit bands. A point is something you can fall into.
+function HitLayer({ x, n, top, bottom, py, onPick, selected, W, ML, MR }: {
+  x: (i: number) => number; n: number; top: number; bottom: number; py: (i: number) => number;
+  onPick?: (i: number) => void; selected?: number; W: number; ML: number; MR: number;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  return (
+    <>
+      {onPick && hover !== null && hover < n && (
+        <g pointerEvents="none">
+          <line x1={x(hover)} y1={top} x2={x(hover)} y2={bottom} stroke={c.hairline2} />
+          <circle cx={x(hover)} cy={py(hover)} r={4} fill={c.paper} stroke={c.data} strokeWidth={1.5} />
+        </g>
+      )}
+      {selected != null && selected >= 0 && selected < n && (
+        <g pointerEvents="none">
+          <circle cx={x(selected)} cy={py(selected)} r={6.5} fill="none" stroke={c.clay} strokeWidth={1.5} />
+          <circle cx={x(selected)} cy={py(selected)} r={3.5} fill={c.clay} />
+        </g>
+      )}
+      {onPick && Array.from({ length: n }).map((_, i) => {
+        const x0 = i === 0 ? ML : (x(i - 1) + x(i)) / 2;
+        const x1 = i === n - 1 ? W - MR : (x(i) + x(i + 1)) / 2;
+        return <rect key={i} x={x0} y={top} width={x1 - x0} height={bottom - top} fill="transparent" style={{ cursor: "pointer" }} onClick={() => onPick(i)} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover((h) => (h === i ? null : h))} />;
+      })}
+    </>
+  );
+}
+
+/** The signal space — the 20-day z-score over the window, ±2σ bands, the dived
+ *  window shaded, extended (|z|>2) points marked. Its points dive into the spread. */
+function Signal({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?: number; onPick?: (i: number) => void; selected?: number }) {
   const z = data.map((d) => Number(d.z));
   const n = z.length;
   if (n < 2) return null;
@@ -207,12 +238,49 @@ function Signal({ data, focus }: { data: FigurePoint[]; focus?: number }) {
       <path d={path} fill="none" stroke={c.data} strokeWidth={1.8} />
       {z.map((v, i) => (Math.abs(v) > 2 ? <circle key={i} cx={x(i)} cy={y(v)} r={2.6} fill={c.clay} /> : null))}
       {f != null && (
-        <g>
-          <circle cx={x(f)} cy={y(z[f])} r={6} fill="none" stroke={c.clay} strokeWidth={1.5} />
-          <circle cx={x(f)} cy={y(z[f])} r={3.2} fill={c.clay} />
+        <g pointerEvents="none">
+          <circle cx={x(f)} cy={y(z[f])} r={5.5} fill="none" stroke={c.clay} strokeWidth={1.2} strokeOpacity={0.6} />
         </g>
       )}
       {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
+      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(z[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} />
+    </svg>
+  );
+}
+
+/** The spread space — the crude–gas spread vs its trailing mean. The signal above
+ *  is just this, standardized; the distance from the mean IS the z-score. */
+function Spread({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?: number; onPick?: (i: number) => void; selected?: number }) {
+  const sp = data.map((d) => Number(d.spread));
+  const n = sp.length;
+  if (n < 2) return null;
+  const mean = sp.map((_, i) => { const w = sp.slice(Math.max(0, i - 4), i + 1); return w.reduce((a, b) => a + b, 0) / w.length; });
+  const W = 1000, ML = 42, MR = 16, MT = 14, plotH = 184;
+  const BOT = MT + plotH, H = BOT + 22;
+  const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
+  const lo = Math.min(...sp) - 0.5, hi = Math.max(...sp) + 0.6;
+  const y = (v: number) => MT + ((hi - v) / (hi - lo)) * (plotH - MT);
+  const path = (arr: number[]) => arr.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ");
+  const f = focus != null ? Math.max(0, Math.min(n - 1, focus)) : null;
+  const wlo = f != null ? Math.max(0, f - 4) : 0, whi = f != null ? Math.min(n - 1, f + 4) : 0;
+  const ticks: { i: number; m: string }[] = [];
+  let lastM = "";
+  data.forEach((d, i) => { const m = monthAbbr(String(d.t)); if (m !== lastM) { ticks.push({ i, m }); lastM = m; } });
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="crude-gas spread">
+      {f != null && <rect x={x(wlo)} y={MT} width={x(whi) - x(wlo)} height={plotH - MT} fill="rgba(190,77,43,0.06)" />}
+      <path d={path(mean)} fill="none" stroke={c.faint} strokeWidth={1} strokeDasharray="4 3" />
+      <text x={W - MR} y={y(mean[n - 1]) - 5} textAnchor="end" fontFamily="var(--font-jetbrains)" fontSize={9} fill={c.faint}>trailing mean</text>
+      {f != null && <line x1={x(f)} y1={y(sp[f])} x2={x(f)} y2={y(mean[f])} stroke={c.clay} strokeWidth={1.1} strokeDasharray="2 2" />}
+      <path d={path(sp)} fill="none" stroke={c.ink2} strokeWidth={1.8} />
+      {f != null && (
+        <g pointerEvents="none">
+          <circle cx={x(f)} cy={y(sp[f])} r={6} fill="none" stroke={c.clay} strokeWidth={1.5} />
+          <circle cx={x(f)} cy={y(sp[f])} r={3.2} fill={c.clay} />
+        </g>
+      )}
+      {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
+      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(sp[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} />
     </svg>
   );
 }

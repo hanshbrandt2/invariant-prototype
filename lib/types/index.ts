@@ -238,6 +238,9 @@ export interface ResultSpec {
   /** Authored signal snapshot (the 20-day z-score) aligned to the eval window —
    *  the "signal space" a return point dives into. */
   signalSeries?: { t: string; z: number }[];
+  /** Authored spread snapshot (the crude–gas spread) aligned to the eval window —
+   *  the space UNDERNEATH the signal: the z-score is just this, standardized. */
+  spreadSeries?: { t: string; spread: number }[];
 }
 
 /* ── Figures (M-J) ─────────────────────────────────────────────────
@@ -247,7 +250,7 @@ export interface ResultSpec {
    its compiler renders the SAME spec behind the unchanged seam. In the prototype
    the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
    honest because it's fixed and labeled, never fabricated at render time. */
-export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "signal" | "heatmap" | "regime" | "weights";
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "signal" | "spread" | "heatmap" | "regime" | "weights";
 export interface FigurePoint {
   [key: string]: number | string;
 }
