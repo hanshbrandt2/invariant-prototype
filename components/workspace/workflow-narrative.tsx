@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultEquityFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
+import { resultHeroFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Read a model spec's learned coefficients (free-form dict) → typed weights. */
@@ -77,20 +77,6 @@ function fmtMetric(k: string, v: number) {
   return v.toFixed(k === "hit_rate" ? 3 : 2);
 }
 
-// plain-English metric labels (jargon kept in parens) — so a newcomer reads
-// meaning first and learns the term, instead of meeting the jargon cold.
-const PLAIN_LABEL: Record<string, { plain: string; jargon?: string }> = {
-  sharpe: { plain: "Risk-adjusted return", jargon: "Sharpe" },
-  hit_rate: { plain: "Win rate", jargon: "hit rate" },
-  max_drawdown: { plain: "Worst dip", jargon: "max drawdown" },
-  ann_return: { plain: "Annual return" },
-  turnover: { plain: "Turnover" },
-  ann_vol: { plain: "Volatility", jargon: "ann. vol" },
-  flagged: { plain: "Flagged" },
-  max_z: { plain: "Largest spike", jargon: "max z" },
-  share_pct: { plain: "Share" },
-};
-
 /** A plain-language one-liner from the result's numbers — what a newcomer reads first. */
 function plainHeadline(spec: ResultSpec): string {
   const m = spec.metrics;
@@ -122,6 +108,16 @@ function ChapterRail({ chapters, active, onJump, meta }: { chapters: ChapterDef[
       </div>
       {meta && <p className="mt-4 font-mono text-micro text-faint leading-relaxed">{meta}</p>}
     </nav>
+  );
+}
+
+/** One stat in the finding's KPI strip — the hero metric large, the rest quiet. */
+function Kpi({ v, k, big, tone }: { v: string; k: string; big?: boolean; tone?: "pos" | "neg" }) {
+  return (
+    <div>
+      <div className={`font-mono tabular-nums leading-none ${big ? "text-display" : "text-h2"} ${tone === "pos" ? "text-green" : tone === "neg" ? "text-clay" : "text-ink"}`}>{v}</div>
+      <div className="mt-1.5 font-mono text-meta uppercase tracking-[0.13em] text-muted">{k}</div>
+    </div>
   );
 }
 
@@ -189,7 +185,8 @@ export function WorkflowNarrative({
   const weightsFig = coefs ? featureWeightsFigure(coefs, labelForFeature) : null;
   const modelLabel = modelNode ? labels[modelNode.id] ?? modelNode.name : undefined;
   const modelSpec = (modelNode?.spec ?? {}) as { kind?: string; alpha?: number; target?: string };
-  // when it worked — the regime ribbon
+  // the finding's hero chart (annotated, regime-shaded) + the regime ribbon
+  const heroFig = spec ? resultHeroFigure(spec) : null;
   const regimeFig = spec ? regimeFigure(spec) : null;
   // the factors — the matrix's authored correlation + the feature inputs
   const featureNodes = flow.filter((n) => n.kind === "feature");
@@ -240,11 +237,11 @@ export function WorkflowNarrative({
     );
   }
 
-  const figureCount = [resultEquityFigure(spec ?? ({} as ResultSpec)), corrFig, weightsFig, regimeFig].filter(Boolean).length;
+  const figureCount = [heroFig, corrFig, weightsFig, regimeFig].filter(Boolean).length;
 
   return (
-    <div className="px-6 md:px-8 py-7 max-w-[1100px] mx-auto">
-      <div className="grid md:grid-cols-[172px_1fr] gap-8 md:gap-10 items-start">
+    <div className="px-6 md:px-8 py-7 max-w-[1280px] mx-auto">
+      <div className="grid md:grid-cols-[164px_1fr] gap-7 md:gap-9 items-start">
         <ChapterRail
           chapters={chapters}
           active={activeId}
@@ -253,58 +250,46 @@ export function WorkflowNarrative({
         />
 
         <div className="min-w-0 space-y-9">
-          {/* ── 01 · THE FINDING (TL;DR) ── */}
+          {/* ── 01 · THE FINDING — one big annotated chart is the hero ── */}
           {result && spec && (
             <section id="ch-finding" data-chapter="finding" className="scroll-mt-4">
-              <div className="ticks border border-hairline bg-paper">
-                <div className="px-6 pt-5 pb-4 border-b border-hairline">
+              <div className="flex items-end justify-between gap-6 flex-wrap mb-3">
+                <div className="max-w-[58ch]">
                   <p className="eyebrow text-clay">{num("finding")} · the finding</p>
-                  <p className="mt-2 font-serif text-h2 leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
+                  <h2 className="mt-1.5 font-serif text-h3 font-medium text-ink-2 leading-snug">{plainHeadline(spec)}</h2>
                 </div>
-                <div className="grid md:grid-cols-12">
-                  <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
-                    <Figure spec={resultEquityFigure(spec)} height={236} />
-                    <p className="mt-2 font-mono text-meta text-faint">equity (blue) over drawdown (clay), one calendar · click to inspect</p>
+                <div className="flex items-end gap-7 shrink-0">
+                  {typeof spec.metrics.sharpe === "number" && <Kpi v={fmtMetric("sharpe", spec.metrics.sharpe)} k="Sharpe" big />}
+                  {typeof spec.metrics.ann_return === "number" && <Kpi v={fmtMetric("ann_return", spec.metrics.ann_return)} k="ann." tone="pos" />}
+                  {typeof spec.metrics.max_drawdown === "number" && <Kpi v={fmtMetric("max_drawdown", spec.metrics.max_drawdown)} k="max dd" tone="neg" />}
+                  {typeof spec.metrics.hit_rate === "number" && <Kpi v={fmtMetric("hit_rate", spec.metrics.hit_rate)} k="win" />}
+                </div>
+              </div>
+              <button onClick={() => onOpenNode(result.id)} className="group block w-full text-left ticks border border-hairline bg-paper p-4 hover:bg-paper-2/20 transition-colors">
+                <div className="flex items-baseline justify-between gap-3 px-1 mb-1.5 font-mono text-meta text-faint">
+                  <span>{heroFig?.caption ?? ""}</span>
+                  <span className="group-hover:text-clay transition-colors">click to inspect</span>
+                </div>
+                <Figure spec={heroFig ? { ...heroFig, caption: undefined } : null} />
+              </button>
+              {spec.nextProposal && (() => {
+                const np = spec.nextProposal;
+                if (np.kind === "none" || !onNextStep) return null;
+                return (
+                  <button onClick={() => onNextStep(np.summary)} className="group mt-2 w-full flex items-center gap-3.5 bg-clay text-paper px-4 py-2.5 hover:bg-clay-deep transition-colors text-left">
+                    <span className="font-mono text-meta uppercase tracking-[0.14em] text-paper/70 shrink-0">next move</span>
+                    <span className="text-ui leading-snug min-w-0">{np.summary}</span>
+                    <span className="ml-auto font-mono text-meta tracking-[0.08em] shrink-0">run this next →</span>
                   </button>
-                  <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
-                    {Object.entries(spec.metrics).slice(0, 4).map(([k, v], i) => {
-                      const lbl = PLAIN_LABEL[k];
-                      return (
-                        <div key={k}>
-                          <div className={`font-mono ${i === 0 ? "text-display" : "text-h2"} text-ink tabular-nums leading-none`}>{fmtMetric(k, v)}</div>
-                          <div className="mt-1 text-meta text-muted">
-                            {lbl?.plain ?? METRIC_LABEL[k] ?? k}
-                            {lbl?.jargon && <span className="font-mono text-meta text-faint"> ({lbl.jargon})</span>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {spec.nextProposal && (() => {
-                      const np = spec.nextProposal;
-                      return (
-                        <div className="mt-1 pt-3 border-t border-hairline">
-                          <p className="eyebrow text-clay mb-1.5">next move</p>
-                          {np.kind === "none" || !onNextStep ? (
-                            <p className="text-ui leading-relaxed text-ink-2">{np.kind === "none" ? np.reason : np.summary}</p>
-                          ) : (
-                            <button onClick={() => onNextStep(np.summary)} className="group w-full text-left bg-clay text-paper px-3.5 py-2.5 hover:bg-clay-deep transition-colors">
-                              <span className="block text-ui leading-snug">{np.summary}</span>
-                              <span className="mt-1 block font-mono text-meta uppercase tracking-[0.12em] text-paper/70 group-hover:text-paper">run this next →</span>
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-                <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
-                  <span className={`font-mono text-meta ${ok ? "text-green" : "text-clay"}`}>{ok ? "validated" : "blocked"}</span>
-                  {ok && <><span className="font-mono text-meta text-muted">no look-ahead</span><span className="font-mono text-meta text-muted">reproducible</span></>}
-                  <span className="ml-auto flex items-center gap-4">
-                    {chapters.some((c) => c.id === "recipe") && <button onClick={() => jump("recipe")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>}
-                    {onOpenLens && <button onClick={() => onOpenLens("code")} className="font-mono text-meta text-muted hover:text-ink transition-colors">the code ▸</button>}
-                  </span>
-                </div>
+                );
+              })()}
+              <div className="mt-3 flex items-center gap-4 flex-wrap">
+                <span className={`font-mono text-meta ${ok ? "text-green" : "text-clay"}`}>{ok ? "validated" : "blocked"}</span>
+                {ok && <><span className="font-mono text-meta text-muted">no look-ahead</span><span className="font-mono text-meta text-muted">reproducible</span></>}
+                <span className="ml-auto flex items-center gap-4">
+                  {chapters.some((c) => c.id === "recipe") && <button onClick={() => jump("recipe")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>}
+                  {onOpenLens && <button onClick={() => onOpenLens("code")} className="font-mono text-meta text-muted hover:text-ink transition-colors">the code ▸</button>}
+                </span>
               </div>
               <Evidence label="all metrics · provenance">
                 <div className="grid grid-cols-2 sm:grid-cols-4 border border-hairline divide-x divide-y divide-hairline">

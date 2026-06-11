@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — viz as the hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF7F1;--paper-2:#F3EEE4;--paper-3:#ECE5D6;--ink:#1C1B18;--ink-2:#4A463D;--muted:#7b7466;--faint:#93897a;
+    --clay:#BE4D2B;--clay-deep:#9C3C20;--clay-wash:#FBF1EC;--data:#1F4E79;--hairline:#E7E1D5;--hairline-2:#D8D0BF;--green:#3B6D11;--sage:#7A8B6F;
+    --serif:'Source Serif 4',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:0.8125rem;line-height:1.5;}
+  .frame{margin:14px;border:1px solid var(--hairline);background:#fff;border-radius:8px;overflow:hidden;}
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--hairline);}
+  .topbar .bc{font-family:var(--mono);font-size:0.8125rem;color:var(--faint);} .topbar .bc b{color:var(--ink);}
+  .lensbar{display:inline-flex;align-items:stretch;border:1px solid var(--hairline-2);font-family:var(--mono);font-size:0.6875rem;text-transform:uppercase;letter-spacing:.1em;margin-left:8px;}
+  .lensbar b{background:var(--ink);color:var(--paper);padding:5px 12px;font-weight:500;} .lensbar span{padding:5px 12px;color:var(--muted);} .lensbar i{width:1px;background:var(--hairline-2);}
+  .mono{font-family:var(--mono);} .serif{font-family:var(--serif);} .clay{color:var(--clay);} .muted{color:var(--muted);} .faint{color:var(--faint);} .tnum{font-variant-numeric:tabular-nums;}
+  .eyebrow{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+
+  .body{display:grid;grid-template-columns:168px 1fr;gap:36px;padding:26px 30px 60px;}
+  .rail{position:sticky;top:20px;align-self:start;}
+  .rail .rt{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;}
+  .rail a{display:flex;gap:8px;align-items:baseline;text-decoration:none;padding:6px 0 6px 12px;border-left:2px solid var(--hairline);color:var(--muted);}
+  .rail a .n{font-family:var(--mono);font-size:0.5625rem;color:var(--faint);}
+  .rail a.on{border-left-color:var(--clay);color:var(--ink);font-weight:500;} .rail a.on .n{color:var(--clay);}
+
+  /* chapter — viz is the hero */
+  .chapter{margin-bottom:34px;}
+  .cap{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:10px;}
+  .cap .h{max-width:60ch;}
+  .cap .k{font-family:var(--mono);font-size:0.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--clay);}
+  .cap h2{font-family:var(--serif);font-weight:500;font-size:1.15rem;letter-spacing:-.01em;line-height:1.25;margin:4px 0 0;color:var(--ink-2);}
+  /* the KPI strip — numbers as a quiet ribbon, not a sidebar */
+  .kpis{display:flex;align-items:flex-end;gap:30px;}
+  .kpis .big .v{font-family:var(--mono);font-weight:500;font-size:2.4rem;line-height:.85;letter-spacing:-.02em;}
+  .kpis .v{font-family:var(--mono);font-weight:500;font-size:1.2rem;line-height:1;}
+  .kpis .v.pos{color:var(--green);} .kpis .v.neg{color:var(--clay);}
+  .kpis .k{font-family:var(--mono);font-size:0.5625rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-top:6px;}
+
+  .plate{position:relative;border:1px solid var(--hairline);background:var(--paper);}
+  .tick{position:absolute;width:12px;height:12px;pointer-events:none;}
+  .tick::before{content:"";position:absolute;left:0;top:50%;width:12px;height:1px;background:var(--clay);transform:translateY(-50%);}
+  .tick::after{content:"";position:absolute;top:0;left:50%;width:1px;height:12px;background:var(--clay);transform:translateX(-50%);}
+  .tick.tl{left:-1px;top:-1px}.tick.tr{right:-1px;top:-1px}.tick.bl{left:-1px;bottom:-1px}.tick.br{right:-1px;bottom:-1px}
+  .heroviz{padding:14px 18px 10px;}
+  .heroviz .cc{font-family:var(--mono);font-size:0.6875rem;color:var(--faint);letter-spacing:.03em;margin:2px 2px 8px;display:flex;justify-content:space-between;}
+  .nextbar{display:flex;align-items:center;gap:14px;background:var(--clay);color:var(--paper);padding:11px 18px;margin-top:2px;}
+  .nextbar .lab{font-family:var(--mono);font-size:0.5625rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(250,247,241,.75);flex:none;}
+  .nextbar .txt{font-size:0.8125rem;}
+  .nextbar .go{margin-left:auto;font-family:var(--mono);font-size:0.6875rem;letter-spacing:.08em;flex:none;}
+  .legrow{display:flex;gap:18px;margin-top:9px;font-family:var(--mono);font-size:0.6875rem;color:var(--muted);}
+  .legrow span{display:flex;align-items:center;gap:6px;} .sw{width:11px;height:11px;display:inline-block;}
+  .note{font-size:0.8125rem;color:var(--faint);max-width:62ch;margin:8px 2px 0;}
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <span class="bc">Dashboard / <b>crude-oil-research</b></span>
+    <span class="lensbar"><b>insight</b><i></i><span>graph</span><span>code</span><span>concepts</span></span>
+  </div>
+  <div class="body">
+    <nav class="rail">
+      <div class="rt">the story</div>
+      <a class="on"><span class="n">01</span> The finding</a>
+      <a><span class="n">02</span> The factors</a>
+      <a><span class="n">03</span> What drove it</a>
+      <a><span class="n">04</span> When it works</a>
+      <a><span class="n">05</span> How it was built</a>
+    </nav>
+
+    <div class="story">
+      <!-- 01 · THE FINDING — one big annotated chart carries the whole story -->
+      <section class="chapter">
+        <div class="cap">
+          <div class="h">
+            <div class="k">01 · the finding</div>
+            <h2>Mean-reversion on the crude–gas spread — it paid, except the one month it trended.</h2>
+          </div>
+          <div class="kpis">
+            <div class="big"><div class="v tnum">1.42</div><div class="k">Sharpe</div></div>
+            <div><div class="v pos tnum">+18.7%</div><div class="k">ann.</div></div>
+            <div><div class="v neg tnum">−8.3%</div><div class="k">max dd</div></div>
+            <div><div class="v tnum">0.561</div><div class="k">win</div></div>
+          </div>
+        </div>
+        <div class="plate ticks heroviz">
+          <div class="cc"><span>cumulative return % · 2024 · regime shaded underneath · authored snapshot</span><span>equity (blue) · drawdown (clay)</span></div>
+          <svg id="hero" viewBox="0 0 1000 440" style="width:100%;height:auto"></svg>
+          <div class="legrow">
+            <span><i class="sw" style="background:#7A8B6F33;border:1px solid #7A8B6F"></i> mean-reverting regime</span>
+            <span><i class="sw" style="background:#BE4D2B22;border:1px solid #BE4D2B"></i> trending regime (the drawdown)</span>
+          </div>
+        </div>
+        <div class="nextbar"><span class="lab">next move</span><span class="txt">Widen the z-score window 20 → 30 bars — the edge concentrates in slower reversion, and turnover drops.</span><span class="go">run this next →</span></div>
+        <p class="note">Read the chart, not the words: the curve climbs through mean-reverting weeks (green), gives back 8.3% in the one trending stretch (red, March), and ends +9.4%. The number on the left is why it's worth trading.</p>
+      </section>
+
+      <!-- 02 · THE FACTORS — a big heatmap is the hero -->
+      <section class="chapter">
+        <div class="cap"><div class="h"><div class="k">02 · the factors</div><h2>Three signals, one engine — and only the z-score and the spread really move together.</h2></div></div>
+        <div class="plate heroviz" style="padding:18px;">
+          <div class="cc"><span>feature correlation · authored snapshot</span><span>clay −1 · paper 0 · blue +1</span></div>
+          <svg id="heat" viewBox="0 0 1000 300" style="width:100%;height:auto"></svg>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const C={paper:'#FAF7F1',ink:'#1C1B18',data:'#1F4E79',clay:'#BE4D2B',hair:'#E7E1D5',hair2:'#D8D0BF',faint:'#93897a',muted:'#7b7466',sage:'#7A8B6F',green:'#3B6D11'};
+const MONO="'JetBrains Mono',monospace";
+const txt=(x,y,s,o={})=>`<text x="${x}" y="${y}" text-anchor="${o.a||'start'}" font-family="${o.f||MONO}" font-size="${o.s||11}" fill="${o.c||C.faint}"${o.w?` font-weight="${o.w}"`:''}>${s}</text>`;
+
+/* ── the hero: big annotated equity + regime shading + drawdown ── */
+(function(){
+  const eq=[0,1,2.2,3.4,4.6,5.8,6.9,8,7.1,5.4,3.2,1.1,-0.3,1.4,3,4.3,5.5,6.4,7.2,7.9,8.4,8,8.7,9.1,8.8,9.4];
+  const reg=['MR','MR','MR','MR','MR','UP','MR','MR','DOWN','DOWN','DOWN','DOWN','DOWN','MR','MR','MR','MR','MR','MR','UP','NO','NO','MR','MR','MR','MR'];
+  let m=-1e9;const dd=eq.map(v=>{m=Math.max(m,v);return +(v-m).toFixed(2)});
+  const W=1000,ML=46,MR=120,MT=18,topH=300,gap=10,botH=78;
+  const x=i=>ML+i*(W-ML-MR)/(eq.length-1);
+  const yT=v=>MT+(11-v)/(11-(-2))*(topH-MT-22);
+  const ddMin=Math.min(...dd),bTop=MT+topH+gap;
+  const yB=v=>bTop+6+(0-v)/(0-ddMin)*(botH-6-20);
+  const path=p=>p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
+  const eqP=eq.map((v,i)=>[x(i),yT(v)]),ddP=dd.map((v,i)=>[x(i),yB(v)]);
+  let s='';
+  // regime background bands (the "when it worked", shaded under the curve)
+  const colOf={MR:'rgba(122,139,111,0.13)',UP:'rgba(31,78,121,0.07)',DOWN:'rgba(190,77,43,0.10)',NO:'rgba(170,162,148,0.10)'};
+  for(let i=0;i<eq.length;i++){const x0=i===0?ML:(x(i-1)+x(i))/2;const x1=i===eq.length-1?(W-MR):(x(i)+x(i+1))/2;s+=`<rect x="${x0}" y="${MT}" width="${x1-x0}" height="${topH-MT}" fill="${colOf[reg[i]]}"/>`;}
+  // gridlines + y labels
+  [0,4,8].forEach(g=>{const y=yT(g);s+=`<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="${C.hair}"/>`+txt(ML-8,y+4,g+'%',{a:'end',s:11});});
+  // equity area + line
+  s+=`<path d="${path(eqP)} L ${x(eq.length-1)} ${yT(0)} L ${x(0)} ${yT(0)} Z" fill="${C.data}" fill-opacity="0.10"/>`;
+  s+=`<path d="${path(eqP)}" fill="none" stroke="${C.data}" stroke-width="2.4"/>`;
+  // annotations: peak, drawdown, end
+  const pk=7,tr=12;
+  s+=`<circle cx="${x(pk)}" cy="${yT(eq[pk])}" r="3.5" fill="${C.data}"/>`+txt(x(pk),yT(eq[pk])-10,'peak +8.0%',{a:'middle',c:C.ink,s:12,w:500});
+  // drawdown bracket peak->trough
+  s+=`<line x1="${x(pk)}" y1="${yT(eq[pk])}" x2="${x(tr)}" y2="${yT(eq[pk])}" stroke="${C.clay}" stroke-dasharray="3 3"/>`;
+  s+=`<line x1="${x(tr)}" y1="${yT(eq[pk])}" x2="${x(tr)}" y2="${yT(eq[tr])}" stroke="${C.clay}" stroke-width="1.4"/>`;
+  s+=`<circle cx="${x(tr)}" cy="${yT(eq[tr])}" r="3.5" fill="${C.clay}"/>`;
+  s+=txt(x(tr)+8,(yT(eq[pk])+yT(eq[tr]))/2,'−8.3%',{c:C.clay,s:13,w:600})+txt(x(tr)+8,(yT(eq[pk])+yT(eq[tr]))/2+14,'March trend',{c:C.clay,s:10});
+  // end value label (in the right margin)
+  s+=`<circle cx="${x(25)}" cy="${yT(9.4)}" r="3.5" fill="${C.data}"/>`+txt(x(25)+9,yT(9.4)+4,'+9.4%',{c:C.ink,s:14,w:600});
+  // drawdown panel
+  s+=`<line x1="${ML}" y1="${yB(0)}" x2="${W-MR}" y2="${yB(0)}" stroke="${C.hair2}"/>`;
+  s+=`<path d="${path(ddP)} L ${x(eq.length-1)} ${yB(0)} L ${x(0)} ${yB(0)} Z" fill="${C.clay}" fill-opacity="0.16"/>`;
+  s+=`<path d="${path(ddP)}" fill="none" stroke="${C.clay}" stroke-width="1.4"/>`;
+  s+=txt(ML-8,yB(ddMin)+4,ddMin.toFixed(0)+'%',{a:'end',s:10})+txt(W-MR+8,yB(0)+4,'drawdown',{s:10,c:C.faint});
+  // x ticks
+  ['Jan','Feb','Mar','Apr','May','Jun'].forEach((mo,k)=>{const xx=x(k*5);s+=txt(xx,bTop+botH+2,mo,{a:'middle',s:11});});
+  document.getElementById('hero').innerHTML=s;
+})();
+
+/* ── a big correlation heatmap ── */
+(function(){
+  const labs=['z-score · 20','gas z-score','crude–gas spread'];
+  const M=[[1,0.31,0.58],[0.31,1,-0.12],[0.58,-0.12,1]];
+  const stops=['#BE4D2B','#E3B9A6','#FAF7F1','#9DB6CD','#1F4E79'];
+  const hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const div=v=>{const t=Math.max(-1,Math.min(1,v)),p=(t+1)/2*4,i=Math.min(3,Math.floor(p)),f=p-i,a=hex(stops[i]),b=hex(stops[i+1]);return`rgb(${a.map((x,k)=>Math.round(x+(b[k]-x)*f)).join(',')})`;};
+  const N=3,CELL=78,LG=150,TG=26,W=1000;
+  let s='';
+  labs.forEach((l,j)=>s+=txt(LG+j*CELL+CELL/2,TG-8,l,{a:'middle',s:11,c:C.muted}));
+  labs.forEach((l,i)=>s+=txt(LG-12,TG+i*CELL+CELL/2+4,l,{a:'end',s:11,c:C.muted}));
+  for(let i=0;i<N;i++)for(let j=0;j<N;j++){const v=M[i][j],x=LG+j*CELL,y=TG+i*CELL,light=Math.abs(v)<0.55;s+=`<rect x="${x+1}" y="${y+1}" width="${CELL-2}" height="${CELL-2}" fill="${div(v)}"/>`+txt(x+CELL/2,y+CELL/2+5,v.toFixed(2),{a:'middle',s:15,c:light?C.ink:C.paper,w:500});}
+  document.getElementById('heat').innerHTML=s;
+})();
+</script>
+</body>
+</html>

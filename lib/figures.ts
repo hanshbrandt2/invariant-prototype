@@ -85,6 +85,30 @@ export function correlationFigure(spec: unknown): ChartSpec | null {
   };
 }
 
+/** The hero equity figure — the big, annotated chart the finding leads with.
+ *  Merges the authored equity snapshot with the regime snapshot (same weekly
+ *  dates) so the renderer can shade the regime under the curve; drawdown is
+ *  derived. Annotations (peak / trough / end) are computed from this data by the
+ *  renderer — nothing fabricated. */
+export function resultHeroFigure(spec: ResultSpec): ChartSpec | null {
+  const s = spec.equitySeries;
+  if (!s || s.length === 0) return null;
+  const regByT: Record<string, string> = {};
+  for (const r of spec.regimeSeries ?? []) regByT[r.t] = r.state;
+  let peak = -Infinity;
+  const data = s.map((p) => {
+    peak = Math.max(peak, p.equity);
+    return { t: p.t, equity: p.equity, drawdown: +(p.equity - peak).toFixed(2), regime: regByT[p.t] ?? "" };
+  });
+  return {
+    mark: "equity-hero",
+    data,
+    x: "t",
+    y: ["equity", "drawdown"],
+    caption: `cumulative return % · ${spec.evalWindow.start} → ${spec.evalWindow.end} · regime shaded · authored snapshot`,
+  };
+}
+
 /** An honest variant comparison: the real `bestBy` metric across the sweep,
  *  winner in clay. Replaces the old fabricated equity overlay — it draws only
  *  numbers the members actually carry, no synthesized curves. */

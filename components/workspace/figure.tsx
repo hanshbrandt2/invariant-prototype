@@ -37,7 +37,9 @@ export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?
         <figcaption className="font-serif text-h3 text-ink leading-snug mb-0.5">{spec.title}</figcaption>
       )}
       {spec.caption && <p className="font-mono text-meta text-faint mb-2">{spec.caption}</p>}
-      {spec.mark === "equity-drawdown" ? (
+      {spec.mark === "equity-hero" ? (
+        <EquityHero data={spec.data} />
+      ) : spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
       ) : spec.mark === "heatmap" ? (
         <Heatmap data={spec.data} />
@@ -51,6 +53,99 @@ export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?
         <LineArea spec={spec} height={height} />
       )}
     </figure>
+  );
+}
+
+const REGIME_FILL: Record<string, string> = {
+  MR: "rgba(122,139,111,0.15)", UP: "rgba(31,78,121,0.07)", DOWN: "rgba(190,77,43,0.11)", NO_TRADE: "rgba(170,162,148,0.10)",
+};
+const monthAbbr = (t: string) => {
+  const dt = new Date(t);
+  return Number.isNaN(dt.getTime()) ? t.slice(5, 7) : dt.toLocaleString("en-US", { month: "short" });
+};
+const tk = { fontFamily: "var(--font-jetbrains)", fontSize: 11, fill: c.faint } as const;
+
+/** The HERO equity chart — big, annotated, with the regime shaded under the
+ *  curve, so it tells "the result + when it worked + the risk" in one picture and
+ *  the prose becomes optional. Peak / drawdown / end are computed from the data. */
+function EquityHero({ data }: { data: FigurePoint[] }) {
+  const eq = data.map((d) => Number(d.equity));
+  const dd = data.map((d) => Number(d.drawdown));
+  const n = eq.length;
+  if (n < 2) return null;
+  const W = 1000, ML = 48, MR = 120, MT = 20, topH = 296, gap = 10, botH = 76;
+  const H = MT + topH + gap + botH + 24;
+  const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
+  const eqLo = Math.min(0, ...eq) - 1;
+  const eqHi = Math.max(...eq) + 1.8;
+  const yT = (v: number) => MT + ((eqHi - v) / (eqHi - eqLo)) * (topH - MT - 22);
+  const ddMin = Math.min(...dd, -0.001);
+  const bTop = MT + topH + gap;
+  const yB = (v: number) => bTop + 6 + ((0 - v) / (0 - ddMin)) * (botH - 6 - 20);
+  const path = (pts: number[][]) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
+  const eqP = eq.map((v, i) => [x(i), yT(v)]);
+  const ddP = dd.map((v, i) => [x(i), yB(v)]);
+  // the drawdown story: the trough (deepest drawdown) and the RUNNING peak before
+  // it — not the global max, which is often just the endpoint.
+  let tr = 0; for (let i = 1; i < n; i++) if (dd[i] < dd[tr]) tr = i;
+  let pk = 0; for (let i = 1; i <= tr; i++) if (eq[i] > eq[pk]) pk = i;
+  const hasDD = dd[tr] < -0.5 && tr > pk;
+  const hasRegime = data.some((d) => REGIME_FILL[String(d.regime)]);
+  const gy = [0, 4, 8].filter((g) => g <= eqHi);
+  // month ticks at the first occurrence of each month
+  const ticks: { i: number; m: string }[] = [];
+  let lastM = "";
+  data.forEach((d, i) => { const m = monthAbbr(String(d.t)); if (m !== lastM) { ticks.push({ i, m }); lastM = m; } });
+  const midY = (yT(eq[pk]) + yT(eq[tr])) / 2;
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="equity, drawdown and market regime">
+        {/* regime shading under the curve */}
+        {data.map((d, i) => {
+          const x0 = i === 0 ? ML : (x(i - 1) + x(i)) / 2;
+          const x1 = i === n - 1 ? W - MR : (x(i) + x(i + 1)) / 2;
+          const fill = REGIME_FILL[String(d.regime)];
+          return fill ? <rect key={i} x={x0} y={MT} width={x1 - x0} height={topH - MT} fill={fill} /> : null;
+        })}
+        {gy.map((g) => (
+          <g key={g}>
+            <line x1={ML} y1={yT(g)} x2={W - MR} y2={yT(g)} stroke={c.hairline} />
+            <text x={ML - 8} y={yT(g) + 4} textAnchor="end" {...tk}>{g}%</text>
+          </g>
+        ))}
+        <path d={`${path(eqP)} L ${x(n - 1)} ${yT(0)} L ${x(0)} ${yT(0)} Z`} fill={c.data} fillOpacity={0.1} />
+        <path d={path(eqP)} fill="none" stroke={c.data} strokeWidth={2.4} />
+        {/* the peak → drawdown story (only when there's a real drawdown) */}
+        {hasDD && (
+          <>
+            <circle cx={x(pk)} cy={yT(eq[pk])} r={3.5} fill={c.data} />
+            <text x={x(pk)} y={yT(eq[pk]) - 11} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize={12} fontWeight={500} fill={c.ink}>peak +{eq[pk].toFixed(1)}%</text>
+            <line x1={x(pk)} y1={yT(eq[pk])} x2={x(tr)} y2={yT(eq[pk])} stroke={c.clay} strokeDasharray="3 3" />
+            <line x1={x(tr)} y1={yT(eq[pk])} x2={x(tr)} y2={yT(eq[tr])} stroke={c.clay} strokeWidth={1.4} />
+            <circle cx={x(tr)} cy={yT(eq[tr])} r={3.5} fill={c.clay} />
+            <text x={x(tr) + 8} y={midY} fontFamily="var(--font-jetbrains)" fontSize={13} fontWeight={600} fill={c.clay}>{dd[tr].toFixed(1)}%</text>
+            <text x={x(tr) + 8} y={midY + 14} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.clay}>{monthAbbr(String(data[tr].t))} trend</text>
+          </>
+        )}
+        {/* end value */}
+        <circle cx={x(n - 1)} cy={yT(eq[n - 1])} r={3.5} fill={c.data} />
+        <text x={x(n - 1) + 9} y={yT(eq[n - 1]) + 4} fontFamily="var(--font-jetbrains)" fontSize={14} fontWeight={600} fill={c.ink}>+{eq[n - 1].toFixed(1)}%</text>
+        {/* drawdown panel */}
+        <line x1={ML} y1={yB(0)} x2={W - MR} y2={yB(0)} stroke={c.hairline2} />
+        <path d={`${path(ddP)} L ${x(n - 1)} ${yB(0)} L ${x(0)} ${yB(0)} Z`} fill={c.clay} fillOpacity={0.16} />
+        <path d={path(ddP)} fill="none" stroke={c.clay} strokeWidth={1.4} />
+        <text x={ML - 8} y={yB(ddMin) + 4} textAnchor="end" fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.faint}>{ddMin.toFixed(0)}%</text>
+        <text x={W - MR + 8} y={yB(0) + 4} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.faint}>drawdown</text>
+        {/* month ticks */}
+        {ticks.map((t) => <text key={t.i} x={x(t.i)} y={bTop + botH + 4} textAnchor="middle" {...tk}>{t.m}</text>)}
+      </svg>
+      {hasRegime && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-meta text-muted">
+          <span className="flex items-center gap-1.5"><i className="inline-block w-2.5 h-2.5" style={{ background: "rgba(122,139,111,0.35)", outline: "1px solid #7A8B6F" }} /> mean-reverting regime</span>
+          <span className="flex items-center gap-1.5"><i className="inline-block w-2.5 h-2.5" style={{ background: "rgba(190,77,43,0.28)", outline: `1px solid ${c.clay}` }} /> trending regime (the drawdown)</span>
+        </div>
+      )}
+    </div>
   );
 }
 
