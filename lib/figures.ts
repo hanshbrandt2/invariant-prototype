@@ -126,7 +126,7 @@ export function correlationFigure(spec: unknown): ChartSpec | null {
     data,
     x: "col",
     y: "row",
-    caption: "feature correlation · authored snapshot · clay −1 · paper 0 · blue +1",
+    caption: "feature correlation · authored snapshot · ranked by strength",
   };
 }
 

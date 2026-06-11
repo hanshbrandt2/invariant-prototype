@@ -49,7 +49,7 @@ export function Figure({ spec, height = 240, onPick, selected }: { spec: ChartSp
       ) : spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
       ) : spec.mark === "heatmap" ? (
-        <Heatmap data={spec.data} />
+        <Correlation data={spec.data} />
       ) : spec.mark === "regime" ? (
         <Regime data={spec.data} />
       ) : spec.mark === "weights" ? (
@@ -71,6 +71,9 @@ const monthAbbr = (t: string) => {
   return Number.isNaN(dt.getTime()) ? t.slice(5, 7) : dt.toLocaleString("en-US", { month: "short" });
 };
 const tk = { fontFamily: "var(--font-jetbrains)", fontSize: 11, fill: c.faint } as const;
+// Shared geometry for the SVG dive-chart family (signal / spread / candles) — so the
+// cascade reads as one coherent system, and stays proportioned as it gets deep.
+const DV = { W: 1000, ML: 44, MR: 16, MT: 14, plotH: 152 };
 
 /** The HERO equity chart — big, annotated, with the regime shaded under the
  *  curve, so it tells "the result + when it worked + the risk" in one picture and
@@ -216,7 +219,7 @@ function Signal({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?
   const z = data.map((d) => Number(d.z));
   const n = z.length;
   if (n < 2) return null;
-  const W = 1000, ML = 42, MR = 16, MT = 14, plotH = 184;
+  const { W, ML, MR, MT, plotH } = DV;
   const BOT = MT + plotH, H = BOT + 22;
   const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
   const zLo = Math.min(-2.5, ...z) - 0.2, zHi = Math.max(2.5, ...z) + 0.2;
@@ -257,7 +260,7 @@ function Spread({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?
   const n = sp.length;
   if (n < 2) return null;
   const mean = sp.map((_, i) => { const w = sp.slice(Math.max(0, i - 4), i + 1); return w.reduce((a, b) => a + b, 0) / w.length; });
-  const W = 1000, ML = 42, MR = 16, MT = 14, plotH = 184;
+  const { W, ML, MR, MT, plotH } = DV;
   const BOT = MT + plotH, H = BOT + 22;
   const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
   const lo = Math.min(...sp) - 0.5, hi = Math.max(...sp) + 0.6;
@@ -293,7 +296,7 @@ function Candles({ data }: { data: FigurePoint[] }) {
   const n = data.length;
   if (n < 1) return null;
   const o = data.map((d) => Number(d.o)), h = data.map((d) => Number(d.h)), l = data.map((d) => Number(d.l)), cl = data.map((d) => Number(d.c));
-  const W = 1000, ML = 48, MR = 16, MT = 14, plotH = 200;
+  const { W, ML, MR, MT, plotH } = DV;
   const BOT = MT + plotH, H = BOT + 22;
   const lo = Math.min(...l), hi = Math.max(...h);
   const pad = (hi - lo) * 0.08 || 0.1;
@@ -367,62 +370,53 @@ function EquityDrawdown({ data, height }: { data: FigurePoint[]; height: number 
   );
 }
 
-// Diverging color for correlations: clay (−1) ↔ paper (0) ↔ data blue (+1), via
-// the editorial 5-stop ramp. Pure interpolation; no dependency.
-function hexRgb(h: string): [number, number, number] {
-  const n = parseInt(h.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-function diverge(v: number): string {
-  const stops = editorial.diverging;
-  const t = Math.max(-1, Math.min(1, v));
-  const pos = ((t + 1) / 2) * (stops.length - 1);
-  const i = Math.min(stops.length - 2, Math.floor(pos));
-  const f = pos - i;
-  const a = hexRgb(stops[i]);
-  const b = hexRgb(stops[i + 1]);
-  const ch = (k: number) => Math.round(a[k] + (b[k] - a[k]) * f).toString(16).padStart(2, "0");
-  return `#${ch(0)}${ch(1)}${ch(2)}`;
-}
+// Plain names for the technical feature ids (so charts never shout 'zscore_20').
+const PRETTY: Record<string, string> = {
+  zscore_20: "20-day z-score", gas_z20: "gas z-score", gas_z40: "gas z-score · 40",
+  spread_5d: "crude–gas spread", front_month_ret: "log returns", front_month_cont: "front-month continuous",
+};
+const prettify = (s: string) => PRETTY[s] ?? s.replace(/_/g, " ");
 
-/** A correlation heatmap — long-format cells (row × col → value) on the diverging
- *  scale, with direct value labels (no legend). Responsive via viewBox. */
-function Heatmap({ data }: { data: FigurePoint[] }) {
-  const labels: string[] = [];
+/** Correlation as RANKED RELATIONSHIPS, not a block grid: each unique off-diagonal
+ *  pair as a connected dot on a centered −1…+1 axis, sorted by strength. Drops the
+ *  redundant 1.00 diagonal and the mirror; reads in one glance. Proportioned. */
+function Correlation({ data }: { data: FigurePoint[] }) {
   const seen = new Set<string>();
+  const pairs: { a: string; b: string; r: number }[] = [];
   for (const d of data) {
-    const r = String(d.row);
-    if (!seen.has(r)) { seen.add(r); labels.push(r); }
+    const a = String(d.row), b = String(d.col);
+    if (a === b) continue;
+    const key = [a, b].sort().join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    pairs.push({ a, b, r: Number(d.v) });
   }
-  const N = labels.length;
-  const idx: Record<string, number> = Object.fromEntries(labels.map((l, i) => [l, i]));
-  const CELL = 104, LG = 152, TG = 30, PAD = 6;
-  const W = LG + N * CELL + PAD;
-  const H = TG + N * CELL + PAD;
-  const short = (s: string) => (s.length > 13 ? s.slice(0, 12) + "…" : s);
-  const lab = { fontFamily: "var(--font-jetbrains)", fontSize: 12, fill: c.muted } as const;
+  pairs.sort((x, y) => Math.abs(y.r) - Math.abs(x.r));
+  const n = pairs.length;
+  if (n === 0) return null;
+  const W = 700, LG = 252, AX1 = W - 38, AX0 = LG + 12, MT = 28, rowH = 46;
+  const H = MT + n * rowH + 14;
+  const xOf = (r: number) => AX0 + ((Math.max(-1, Math.min(1, r)) + 1) / 2) * (AX1 - AX0);
+  const mid = xOf(0);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="feature correlation heatmap">
-      {labels.map((l, j) => (
-        <text key={"c" + l} x={LG + j * CELL + CELL / 2} y={TG - 9} textAnchor="middle" {...lab}>{short(l)}</text>
-      ))}
-      {labels.map((l, i) => (
-        <text key={"r" + l} x={LG - 10} y={TG + i * CELL + CELL / 2 + 4} textAnchor="end" {...lab}>{short(l)}</text>
-      ))}
-      {data.map((d, k) => {
-        const i = idx[String(d.row)];
-        const j = idx[String(d.col)];
-        const v = Number(d.v);
-        const x = LG + j * CELL;
-        const y = TG + i * CELL;
-        const light = Math.abs(v) < 0.55;
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" style={{ maxWidth: 640 }} role="img" aria-label="feature correlations, ranked">
+      {[-0.5, 0.5].map((g) => <line key={g} x1={xOf(g)} y1={MT - 8} x2={xOf(g)} y2={MT + n * rowH - 6} stroke={c.hairline} />)}
+      <line x1={mid} y1={MT - 11} x2={mid} y2={MT + n * rowH - 4} stroke={c.hairline2} />
+      <text x={mid} y={MT - 15} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="8.5" fill={c.faint} letterSpacing="1.5">DIVERGE · 0 · CO-MOVE</text>
+      {pairs.map((p, i) => {
+        const y = MT + i * rowH + rowH / 2 - 4;
+        const xr = xOf(p.r), col = p.r >= 0 ? c.data : c.clay, right = p.r >= 0;
         return (
-          <g key={k}>
-            <rect x={x + 1} y={y + 1} width={CELL - 2} height={CELL - 2} fill={diverge(v)} />
-            <text x={x + CELL / 2} y={y + CELL / 2 + 6} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="18" fill={light ? c.ink : c.paper}>{v.toFixed(2)}</text>
+          <g key={i}>
+            <text x={LG - 6} y={y - 2} textAnchor="end" fontFamily="var(--font-inter)" fontSize="13" fill={c.ink}>{prettify(p.a)}</text>
+            <text x={LG - 6} y={y + 13} textAnchor="end" fontFamily="var(--font-inter)" fontSize="11" fill={c.muted}>&amp; {prettify(p.b)}</text>
+            <line x1={mid} y1={y + 4} x2={xr} y2={y + 4} stroke={col} strokeWidth={2} />
+            <circle cx={xr} cy={y + 4} r={4.5} fill={col} />
+            <text x={xr + (right ? 11 : -11)} y={y + 8} textAnchor={right ? "start" : "end"} fontFamily="var(--font-jetbrains)" fontSize="13" fontWeight={500} fill={col}>{right ? "+" : ""}{p.r.toFixed(2)}</text>
           </g>
         );
       })}
+      {[-1, 0, 1].map((t) => <text key={t} x={xOf(t)} y={MT + n * rowH + 6} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="9" fill={c.faint}>{t > 0 ? "+" : ""}{t}</text>)}
     </svg>
   );
 }
@@ -439,12 +433,20 @@ function Regime({ data }: { data: FigurePoint[] }) {
   for (const d of data) { const s = String(d.state); if (!seen.has(s)) { seen.add(s); present.push(s); } }
   return (
     <div>
-      <div className="flex w-full h-5 overflow-hidden border border-hairline">
+      <div className="flex w-full h-6 overflow-hidden border border-hairline">
         {data.map((d, i) => (
           <div key={i} title={REGIME_LABEL[String(d.state)] ?? String(d.state)} style={{ flex: 1, background: regimeColors[String(d.state)] ?? c.hairline }} />
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+      {/* month axis — on the same calendar as the equity above */}
+      <div className="flex w-full mt-1">
+        {data.map((d, i) => {
+          const m = monthAbbr(String(d.t));
+          const show = i === 0 || monthAbbr(String(data[i - 1].t)) !== m;
+          return <div key={i} className="flex-1 font-mono text-meta text-faint leading-none">{show ? m : ""}</div>;
+        })}
+      </div>
+      <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1">
         {present.map((s) => (
           <span key={s} className="flex items-center gap-1.5 font-mono text-meta text-muted">
             <span className="inline-block w-2.5 h-2.5 shrink-0" style={{ background: regimeColors[s] ?? c.hairline }} />

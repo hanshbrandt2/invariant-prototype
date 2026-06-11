@@ -398,7 +398,7 @@ export function WorkflowNarrative({
               <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[680px]">
                 <p className="eyebrow text-clay">{num("factors")} · the factors</p>
                 <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[36ch]">{headline}</h2>
-                <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The signals joined into the matrix the model reads. Each is one column on a shared clock; the heatmap below is how they co-move.</p>
+                <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The signals joined into the matrix the model reads. Each is one column on a shared clock; the chart below ranks how they co-move.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {featureNodes.map((n) => (
                     <button key={n.id} onClick={() => onOpenNode(n.id)} className="group border border-hairline bg-paper px-3 py-2 text-left hover:border-ink transition-colors">
