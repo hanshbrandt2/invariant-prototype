@@ -241,6 +241,9 @@ export interface ResultSpec {
   /** Authored spread snapshot (the crude–gas spread) aligned to the eval window —
    *  the space UNDERNEATH the signal: the z-score is just this, standardized. */
   spreadSeries?: { t: string; spread: number }[];
+  /** Authored raw-bar sample (WTI front-month, 1-minute OHLC) — the FLOOR of the
+   *  dive: the source the spread, and everything above it, is built from. */
+  rawCandles?: { t: string; o: number; h: number; l: number; c: number }[];
 }
 
 /* ── Figures (M-J) ─────────────────────────────────────────────────
@@ -250,7 +253,7 @@ export interface ResultSpec {
    its compiler renders the SAME spec behind the unchanged seam. In the prototype
    the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
    honest because it's fixed and labeled, never fabricated at render time. */
-export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "signal" | "spread" | "heatmap" | "regime" | "weights";
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "equity-hero" | "signal" | "spread" | "candles" | "heatmap" | "regime" | "weights";
 export interface FigurePoint {
   [key: string]: number | string;
 }

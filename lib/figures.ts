@@ -59,6 +59,19 @@ export function spreadFigure(spec: ResultSpec, center: number): ChartSpec | null
   };
 }
 
+/** The raw bars — WTI front-month 1-minute candles, the floor of the dive. */
+export function candleFigure(spec: ResultSpec): ChartSpec | null {
+  const r = spec.rawCandles;
+  if (!r || r.length === 0) return null;
+  return {
+    mark: "candles",
+    data: r.map((p) => ({ t: p.t, o: p.o, h: p.h, l: p.l, c: p.c })),
+    x: "t",
+    y: "c",
+    caption: "WTI front-month · 1-minute OHLC · crude_oil_1m · the source",
+  };
+}
+
 /** Feature weights — the model's learned coefficients as signed, diverging bars
  *  (positive = data blue, negative = clay). Sorted biggest-first so the dominant
  *  signal reads at the top. Pure read of the model spec's coefficients; no synth. */

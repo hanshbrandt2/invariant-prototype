@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultHeroFigure, signalFigure, spreadFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
+import { resultHeroFigure, signalFigure, spreadFigure, candleFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Read a model spec's learned coefficients (free-form dict) → typed weights. */
@@ -89,10 +89,10 @@ function plainHeadline(spec: ResultSpec): string {
 
 type ChapterDef = { id: string; title: string; ok: boolean };
 
-// the dive: a stack of spaces you've fallen through (return → signal → spread → …)
-type DiveSpace = "signal" | "spread";
+// the dive: a stack of spaces you've fallen through (return → signal → spread → raw)
+type DiveSpace = "signal" | "spread" | "raw";
 type DiveLevel = { space: DiveSpace; index: number };
-const SPACE_LABEL: Record<string, string> = { return: "return", signal: "signal space", spread: "spread space" };
+const SPACE_LABEL: Record<string, string> = { return: "return", signal: "signal space", spread: "spread space", raw: "raw bars" };
 const DIVE_NUM = ["①", "②", "③", "④", "⑤"];
 
 /** The navigable spine of the research story — sticky, click-to-jump, highlights
@@ -260,7 +260,7 @@ export function WorkflowNarrative({
       const msg = extended
         ? `Around ${month}, the z-score sat at ${avgZ >= 0 ? "+" : ""}${avgZ.toFixed(1)}σ — pinned past its band. The z-score is just the spread standardized; underneath is the spread itself.`
         : `Around ${month}, the z-score held inside ±2σ. Underneath is the spread it standardizes.`;
-      return { fig: signalFigure(spec, fi), month, msg, below: spec.spreadSeries ? ("spread" as DiveSpace) : null };
+      return { fig: signalFigure(spec, fi), where: `inside the ${month} point`, msg, below: spec.spreadSeries ? ("spread" as DiveSpace) : null };
     }
     if (lvl.space === "spread" && spec && spec.spreadSeries) {
       const sp = spec.spreadSeries;
@@ -271,9 +271,17 @@ export function WorkflowNarrative({
       const dev = sp[fi].spread - mean;
       const far = Math.abs(dev) > 0.8;
       const msg = far
-        ? `Around ${month}, the spread sat ${dev >= 0 ? "+" : ""}${dev.toFixed(1)} from its mean — it trended away instead of reverting. Underneath: the WTI & gas bars whose difference makes it.`
-        : `Around ${month}, the spread hugged its mean. Underneath: the raw WTI & gas bars.`;
-      return { fig: spreadFigure(spec, fi), month, msg, below: null as DiveSpace | null };
+        ? `Around ${month}, the spread sat ${dev >= 0 ? "+" : ""}${dev.toFixed(1)} from its mean — it trended away instead of reverting. Underneath: the raw WTI bars its crude leg is built from.`
+        : `Around ${month}, the spread hugged its mean. Underneath: the raw WTI bars.`;
+      return { fig: spreadFigure(spec, fi), where: `inside the ${month} point`, msg, below: spec.rawCandles ? ("raw" as DiveSpace) : null };
+    }
+    if (lvl.space === "raw" && spec && spec.rawCandles) {
+      return {
+        fig: candleFigure(spec),
+        where: "the Mar 14 session",
+        msg: "The raw 1-minute bars — crude_oil_1m, ~3.8M rows. This is the floor: everything above was built from here. (The gas leg traces down the same way.)",
+        below: null as DiveSpace | null,
+      };
     }
     return null;
   });
@@ -332,7 +340,7 @@ export function WorkflowNarrative({
                             <span className={k === path.length - 1 ? "text-clay" : "text-faint"}>{DIVE_NUM[k] ?? "·"} {SPACE_LABEL[sp] ?? sp}</span>
                           </Fragment>
                         ))}
-                        <span className="text-faint normal-case tracking-normal"> · inside the {v.month} point</span>
+                        <span className="text-faint normal-case tracking-normal"> · {v.where}</span>
                       </p>
                       <button onClick={() => setDiveStack((s) => s.slice(0, depth))} className="font-mono text-meta text-muted hover:text-ink transition-colors">↑ back</button>
                     </div>

@@ -44,6 +44,8 @@ export function Figure({ spec, height = 240, onPick, selected }: { spec: ChartSp
         <Signal data={spec.data} focus={spec.focus} onPick={onPick} selected={selected} />
       ) : spec.mark === "spread" ? (
         <Spread data={spec.data} focus={spec.focus} onPick={onPick} selected={selected} />
+      ) : spec.mark === "candles" ? (
+        <Candles data={spec.data} />
       ) : spec.mark === "equity-drawdown" ? (
         <EquityDrawdown data={spec.data} height={height} />
       ) : spec.mark === "heatmap" ? (
@@ -281,6 +283,47 @@ function Spread({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?
       )}
       {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
       <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(sp[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} />
+    </svg>
+  );
+}
+
+/** The raw bars — 1-minute candlesticks (up = hollow blue, down = filled clay).
+ *  The floor of the dive: nothing falls below the source. */
+function Candles({ data }: { data: FigurePoint[] }) {
+  const n = data.length;
+  if (n < 1) return null;
+  const o = data.map((d) => Number(d.o)), h = data.map((d) => Number(d.h)), l = data.map((d) => Number(d.l)), cl = data.map((d) => Number(d.c));
+  const W = 1000, ML = 48, MR = 16, MT = 14, plotH = 200;
+  const BOT = MT + plotH, H = BOT + 22;
+  const lo = Math.min(...l), hi = Math.max(...h);
+  const pad = (hi - lo) * 0.08 || 0.1;
+  const yLo = lo - pad, yHi = hi + pad;
+  const cw = (W - ML - MR) / n;
+  const x = (i: number) => ML + i * cw + cw / 2;
+  const y = (v: number) => MT + ((yHi - v) / (yHi - yLo)) * (plotH - MT);
+  const gy = [yLo + (yHi - yLo) * 0.15, (yLo + yHi) / 2, yHi - (yHi - yLo) * 0.15];
+  const tickEvery = Math.max(1, Math.round(n / 6));
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="raw 1-minute candles">
+      {gy.map((g, k) => (
+        <g key={k}>
+          <line x1={ML} y1={y(g)} x2={W - MR} y2={y(g)} stroke={c.hairline} />
+          <text x={ML - 8} y={y(g) + 3} textAnchor="end" {...tk}>{g.toFixed(2)}</text>
+        </g>
+      ))}
+      {data.map((_, i) => {
+        const up = cl[i] >= o[i];
+        const col = up ? c.data : c.clay;
+        const yt = y(Math.max(o[i], cl[i]));
+        const hb = Math.max(Math.abs(y(o[i]) - y(cl[i])), 1);
+        return (
+          <g key={i}>
+            <line x1={x(i)} y1={y(h[i])} x2={x(i)} y2={y(l[i])} stroke={col} strokeWidth={1} />
+            <rect x={x(i) - cw * 0.3} y={yt} width={cw * 0.6} height={hb} fill={up ? c.paper : col} stroke={col} strokeWidth={1} />
+          </g>
+        );
+      })}
+      {data.map((d, i) => (i % tickEvery === 0 ? <text key={"t" + i} x={x(i)} y={H - 5} textAnchor="middle" {...tk}>{String(d.t)}</text> : null))}
     </svg>
   );
 }
