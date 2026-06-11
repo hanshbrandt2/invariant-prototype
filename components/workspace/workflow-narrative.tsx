@@ -1,10 +1,10 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultEquityFigure, featureWeightsFigure, regimeFigure } from "@/lib/figures";
+import { resultEquityFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
 
 /** Read a model spec's learned coefficients (free-form dict) → typed weights. */
@@ -60,6 +60,12 @@ function depths(sg: LineageSubgraph): Record<string, number> {
   return d;
 }
 
+const KIND_TAG: Record<string, string> = {
+  dataset: "DATASET", "raw-dataset": "DATASET", feature: "FEATURE", matrix: "MATRIX",
+  target: "TARGET", model: "MODEL", result: "RESULT", strategy: "STRATEGY",
+  universe: "UNIVERSE", figure: "FIGURE",
+};
+
 const METRIC_LABEL: Record<string, string> = {
   sharpe: "Sharpe", hit_rate: "Hit rate", max_drawdown: "Max DD", turnover: "Turnover",
   ann_return: "Ann. return", flagged: "Flagged", max_z: "Max z", share_pct: "Share",
@@ -95,11 +101,49 @@ function plainHeadline(spec: ResultSpec): string {
   return bits.length ? `${spec.friendlyName} — ${bits.join(", ")}.` : `${spec.friendlyName}.`;
 }
 
+type ChapterDef = { id: string; title: string; ok: boolean };
+
+/** The navigable spine of the research story — sticky, click-to-jump, highlights
+ *  the chapter you're reading (scroll-spy in the parent). */
+function ChapterRail({ chapters, active, onJump, meta }: { chapters: ChapterDef[]; active?: string; onJump: (id: string) => void; meta?: string }) {
+  return (
+    <nav className="hidden md:block sticky top-2 self-start">
+      <p className="font-mono text-meta uppercase tracking-[0.16em] text-faint mb-3">the story</p>
+      <div className="flex flex-col">
+        {chapters.map((c, i) => {
+          const on = active === c.id;
+          return (
+            <button key={c.id} onClick={() => onJump(c.id)} className={`flex gap-2 items-baseline text-left py-1.5 pl-3 -ml-px border-l-2 transition-colors ${on ? "border-clay" : "border-hairline hover:border-hairline-2"}`}>
+              <span className={`font-mono text-micro ${on ? "text-clay" : "text-faint"}`}>{String(i + 1).padStart(2, "0")}</span>
+              <span className={`text-ui ${on ? "text-ink font-medium" : "text-muted"}`}>{c.title}</span>
+            </button>
+          );
+        })}
+      </div>
+      {meta && <p className="mt-4 font-mono text-micro text-faint leading-relaxed">{meta}</p>}
+    </nav>
+  );
+}
+
+/** Progressive depth: the heavy diagnostics hide behind one "evidence ▾" control. */
+function Evidence({ label, children }: { label?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-4 border-t border-dashed border-hairline-2 pt-3">
+      <button onClick={() => setOpen((o) => !o)} className="font-mono text-meta text-muted hover:text-ink transition-colors">
+        the evidence {open ? "▴" : "▾"}{label && <span className="text-faint"> · {label}</span>}
+      </button>
+      {open && <div className="mt-3">{children}</div>}
+    </div>
+  );
+}
+
 /**
- * The Result lens, whole-analysis mode: the finding leads (KPIs + curve), then
- * the workflow as a top-to-bottom scrollable narrative that grows node-by-node
- * as the build streams. Each card drills into its kind-aware face. This is the
- * "watch it build" surface — density earned, never dumped.
+ * The Insight lens as a chaptered research story (Phase 1). A sticky chapter rail
+ * over a top-to-bottom narrative; each chapter LEADS with one visualization and a
+ * one-line thesis; heavy diagnostics live behind "evidence ▾". Chapters are
+ * DATA-GATED — only the ones with real data render, so the story's length matches
+ * the research depth (no fabricated chapters).
  */
 export function WorkflowNarrative({
   graph,
@@ -110,7 +154,6 @@ export function WorkflowNarrative({
   building,
   buildingLabel,
   buildingOp,
-  workspaceName,
   onOpenNode,
   onOpenLens,
   onNextStep,
@@ -135,154 +178,242 @@ export function WorkflowNarrative({
   const validator = result && result.kind !== "dataset" && result.kind !== "raw-dataset" ? deriveValidator(result, graph) : undefined;
   const ok = validator ? validatorOk(validator) : false;
 
-  // ── the visual story: what drove it (model weights) · when it worked (regime) ──
-  const modelNode = flow.find((n) => n.kind === "model");
-  const coefs = readCoefficients(modelNode?.spec);
   const labelForFeature = (key: string) => {
     const fn = graph.nodes.find((n) => n.name === key);
     return fn ? labels[fn.id] ?? key : key;
   };
+
+  // what drove it — the model's learned weights
+  const modelNode = flow.find((n) => n.kind === "model");
+  const coefs = readCoefficients(modelNode?.spec);
   const weightsFig = coefs ? featureWeightsFigure(coefs, labelForFeature) : null;
   const modelLabel = modelNode ? labels[modelNode.id] ?? modelNode.name : undefined;
+  const modelSpec = (modelNode?.spec ?? {}) as { kind?: string; alpha?: number; target?: string };
+  // when it worked — the regime ribbon
   const regimeFig = spec ? regimeFigure(spec) : null;
+  // the factors — the matrix's authored correlation + the feature inputs
+  const featureNodes = flow.filter((n) => n.kind === "feature");
+  const matrixNode = flow.find((n) => n.kind === "matrix");
+  const corrFig = matrixNode ? correlationFigure(matrixNode.spec) : null;
+
+  // ── data-gated chapters: only the ones we have honest data for ──
+  const chapters: ChapterDef[] = [
+    { id: "finding", title: "The finding", ok: !!(result && spec) },
+    { id: "factors", title: "The factors", ok: !!(corrFig && featureNodes.length) },
+    { id: "model", title: "What drove it", ok: !!(weightsFig && coefs) },
+    { id: "regime", title: "When it works", ok: !!(regimeFig && spec?.regimeSeries) },
+    { id: "recipe", title: "How it was built", ok: flow.length > 0 },
+  ].filter((c) => c.ok);
+  const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
+
+  // scroll-spy: highlight the chapter currently near the top of the canvas
+  const [active, setActive] = useState<string | undefined>(undefined);
+  const ids = chapters.map((c) => c.id).join(",");
+  useEffect(() => {
+    const list = ids ? ids.split(",") : [];
+    if (!list.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).map((e) => e.target.getAttribute("data-chapter"));
+        const first = list.find((id) => visible.includes(id));
+        if (first) setActive(first);
+      },
+      { rootMargin: "-12% 0px -76% 0px", threshold: 0 },
+    );
+    for (const id of list) {
+      const el = document.getElementById(`ch-${id}`);
+      if (el) obs.observe(el);
+    }
+    return () => obs.disconnect();
+  }, [ids]);
+  const activeId = active && chapters.some((c) => c.id === active) ? active : chapters[0]?.id;
+  const jump = (id: string) => {
+    document.getElementById(`ch-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setActive(id);
+  };
+
+  if (chapters.length === 0) {
+    return (
+      <div className="px-6 py-10 max-w-[680px] mx-auto">
+        <p className="text-body text-muted">{building ? "building the graph…" : "nothing built yet — describe what to build in the conversation."}</p>
+      </div>
+    );
+  }
+
+  const figureCount = [resultEquityFigure(spec ?? ({} as ResultSpec)), corrFig, weightsFig, regimeFig].filter(Boolean).length;
 
   return (
-    <div className="px-6 md:px-8 py-7 max-w-[1080px] mx-auto">
-      {/* finding — leads with a plain-language headline, the visual, human-labelled
-          numbers, a calm trust mark, and the depth (graph / code) one click away */}
-      {result && spec && (
-        <div className="ticks border border-hairline bg-paper mb-9">
-          <div className="px-6 pt-5 pb-4 border-b border-hairline">
-            <p className="eyebrow text-clay">the finding</p>
-            <p className="mt-2 font-serif text-h2 leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
-          </div>
-          <div className="grid md:grid-cols-12">
-            <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
-              <Figure spec={resultEquityFigure(spec)} height={236} />
-              <p className="mt-2 font-mono text-meta text-faint">equity (blue) over drawdown (clay), one calendar · click to inspect</p>
-            </button>
-            <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
-              {Object.entries(spec.metrics).slice(0, 4).map(([k, v], i) => {
-                const lbl = PLAIN_LABEL[k];
-                return (
-                  <div key={k}>
-                    <div className={`font-mono ${i === 0 ? "text-display" : "text-h2"} text-ink tabular-nums leading-none`}>{fmtMetric(k, v)}</div>
-                    <div className="mt-1 text-meta text-muted">
-                      {lbl?.plain ?? METRIC_LABEL[k] ?? k}
-                      {lbl?.jargon && <span className="font-mono text-meta text-faint"> ({lbl.jargon})</span>}
-                    </div>
+    <div className="px-6 md:px-8 py-7 max-w-[1100px] mx-auto">
+      <div className="grid md:grid-cols-[172px_1fr] gap-8 md:gap-10 items-start">
+        <ChapterRail
+          chapters={chapters}
+          active={activeId}
+          onJump={jump}
+          meta={`${chapters.length} chapters · ${figureCount} figure${figureCount === 1 ? "" : "s"}${ok ? " · validated" : ""}`}
+        />
+
+        <div className="min-w-0 space-y-9">
+          {/* ── 01 · THE FINDING (TL;DR) ── */}
+          {result && spec && (
+            <section id="ch-finding" data-chapter="finding" className="scroll-mt-4">
+              <div className="ticks border border-hairline bg-paper">
+                <div className="px-6 pt-5 pb-4 border-b border-hairline">
+                  <p className="eyebrow text-clay">{num("finding")} · the finding</p>
+                  <p className="mt-2 font-serif text-h2 leading-[1.34] text-ink max-w-[62ch]">{plainHeadline(spec)}</p>
+                </div>
+                <div className="grid md:grid-cols-12">
+                  <button onClick={() => onOpenNode(result.id)} className="md:col-span-8 text-left px-6 py-5 border-b md:border-b-0 md:border-r border-hairline hover:bg-paper-2/30 transition-colors">
+                    <Figure spec={resultEquityFigure(spec)} height={236} />
+                    <p className="mt-2 font-mono text-meta text-faint">equity (blue) over drawdown (clay), one calendar · click to inspect</p>
+                  </button>
+                  <div className="md:col-span-4 px-6 py-5 flex flex-col gap-4">
+                    {Object.entries(spec.metrics).slice(0, 4).map(([k, v], i) => {
+                      const lbl = PLAIN_LABEL[k];
+                      return (
+                        <div key={k}>
+                          <div className={`font-mono ${i === 0 ? "text-display" : "text-h2"} text-ink tabular-nums leading-none`}>{fmtMetric(k, v)}</div>
+                          <div className="mt-1 text-meta text-muted">
+                            {lbl?.plain ?? METRIC_LABEL[k] ?? k}
+                            {lbl?.jargon && <span className="font-mono text-meta text-faint"> ({lbl.jargon})</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {spec.nextProposal && (() => {
+                      const np = spec.nextProposal;
+                      return (
+                        <div className="mt-1 pt-3 border-t border-hairline">
+                          <p className="eyebrow text-clay mb-1.5">next move</p>
+                          {np.kind === "none" || !onNextStep ? (
+                            <p className="text-ui leading-relaxed text-ink-2">{np.kind === "none" ? np.reason : np.summary}</p>
+                          ) : (
+                            <button onClick={() => onNextStep(np.summary)} className="group w-full text-left bg-clay text-paper px-3.5 py-2.5 hover:bg-clay-deep transition-colors">
+                              <span className="block text-ui leading-snug">{np.summary}</span>
+                              <span className="mt-1 block font-mono text-meta uppercase tracking-[0.12em] text-paper/70 group-hover:text-paper">run this next →</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
-                );
-              })}
-              {spec.nextProposal && (() => {
-                const np = spec.nextProposal;
-                return (
-                  <div className="mt-1 pt-3 border-t border-hairline">
-                    <p className="eyebrow text-clay mb-1.5">next move</p>
-                    {np.kind === "none" || !onNextStep ? (
-                      <p className="text-ui leading-relaxed text-ink-2">{np.kind === "none" ? np.reason : np.summary}</p>
-                    ) : (
-                      <button
-                        onClick={() => onNextStep(np.summary)}
-                        className="group w-full text-left bg-clay text-paper px-3.5 py-2.5 hover:bg-clay-deep transition-colors"
-                      >
-                        <span className="block text-ui leading-snug">{np.summary}</span>
-                        <span className="mt-1 block font-mono text-meta uppercase tracking-[0.12em] text-paper/70 group-hover:text-paper">run this next →</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-          <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
-            <span className={`font-mono text-meta ${ok ? "text-green" : "text-clay"}`}>{ok ? "validated" : "blocked"}</span>
-            {ok && <><span className="font-mono text-meta text-muted">no look-ahead</span><span className="font-mono text-meta text-muted">reproducible</span></>}
-            {onOpenLens && (
-              <span className="ml-auto flex items-center gap-4">
-                <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>
-                <button onClick={() => onOpenLens("code")} className="font-mono text-meta text-muted hover:text-ink transition-colors">the code ▸</button>
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="space-y-10">
-        {/* what drove it — the model's weights, told as a picture */}
-        {weightsFig && coefs && (
-          <section className="max-w-[680px]">
-            <p className="eyebrow text-clay">what drove it{modelLabel ? ` · ${modelLabel}` : ""}</p>
-            <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[34ch]">{droveHeadline(coefs, labelForFeature)}</h3>
-            <div className="ticks mt-4 border border-hairline bg-paper p-5">
-              <Figure spec={weightsFig} />
-            </div>
-            <p className="mt-2.5 font-mono text-meta text-faint">model weights · positive (blue) adds signal · negative (clay) hedges</p>
-          </section>
-        )}
-
-        {/* when it worked — the regime ribbon */}
-        {regimeFig && spec?.regimeSeries && (
-          <section className="max-w-[680px]">
-            <p className="eyebrow text-clay">when it worked</p>
-            <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[40ch]">{regimeHeadline(spec.regimeSeries)}</h3>
-            <div className="mt-4 border border-hairline bg-paper p-5">
-              <Figure spec={regimeFig} />
-            </div>
-          </section>
-        )}
-
-        {/* how it was built — a compact recipe, not 11 stacked boxes */}
-        <section>
-          <div className="flex items-baseline justify-between gap-3 flex-wrap">
-            <p className="eyebrow text-clay">how it was built</p>
-            {onOpenLens && (
-              <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">full lineage in the Graph lens →</button>
-            )}
-          </div>
-          {flow.length === 0 && !building ? (
-            <p className="mt-3 text-body text-muted">nothing built yet — describe what to build in the conversation.</p>
-          ) : (
-            <>
-              <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug">From data to the finding, in {flow.length} steps.</h3>
-              <div className="mt-4 overflow-x-auto pb-1">
-                <div className="flex items-stretch min-w-min">
-                  {flow.map((n, i) => {
-                    const ds = datasets[n.name];
-                    return (
-                      <Fragment key={n.id}>
-                        <button onClick={() => onOpenNode(n.id)} className={`group shrink-0 w-[150px] text-left border bg-paper px-3 py-2.5 transition-colors ${n.kind === "result" ? "border-clay" : "border-hairline hover:border-ink"}`}>
-                          <div className={`font-mono text-micro uppercase tracking-[0.13em] ${n.kind === "result" ? "text-clay" : "text-faint"}`}>{KIND_TAG[n.kind] ?? n.kind}</div>
-                          <div className="mt-1 text-ui text-ink leading-tight truncate">{labels[n.id] ?? n.name}</div>
-                          <div className="mt-0.5 font-mono text-micro text-faint truncate">{ds ? `${(ds.rows / 1e6).toFixed(1)}M rows` : producerOps[n.id] ?? n.name}</div>
-                        </button>
-                        {i < flow.length - 1 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
-                      </Fragment>
-                    );
-                  })}
-                  {building && (
-                    <>
-                      {flow.length > 0 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
-                      <div className="shrink-0 w-[150px] border border-dashed border-clay/60 bg-paper px-3 py-2.5 animate-pulse">
-                        <div className="font-mono text-micro uppercase tracking-[0.13em] text-clay">building</div>
-                        <div className="mt-1 text-ui text-ink leading-tight truncate">{buildingLabel ?? "…"}</div>
-                        {buildingOp && <div className="mt-0.5 font-mono text-micro text-clay truncate">{buildingOp}</div>}
-                      </div>
-                    </>
-                  )}
+                </div>
+                <div className="px-6 py-3 border-t border-hairline flex items-center gap-4 flex-wrap">
+                  <span className={`font-mono text-meta ${ok ? "text-green" : "text-clay"}`}>{ok ? "validated" : "blocked"}</span>
+                  {ok && <><span className="font-mono text-meta text-muted">no look-ahead</span><span className="font-mono text-meta text-muted">reproducible</span></>}
+                  <span className="ml-auto flex items-center gap-4">
+                    {chapters.some((c) => c.id === "recipe") && <button onClick={() => jump("recipe")} className="font-mono text-meta text-muted hover:text-ink transition-colors">how it was built ▸</button>}
+                    {onOpenLens && <button onClick={() => onOpenLens("code")} className="font-mono text-meta text-muted hover:text-ink transition-colors">the code ▸</button>}
+                  </span>
                 </div>
               </div>
-            </>
+              <Evidence label="all metrics · provenance">
+                <div className="grid grid-cols-2 sm:grid-cols-4 border border-hairline divide-x divide-y divide-hairline">
+                  {Object.entries(spec.metrics).map(([k, v]) => (
+                    <div key={k} className="px-3 py-2.5">
+                      <div className="font-mono text-h3 text-ink tabular-nums">{fmtMetric(k, v)}</div>
+                      <div className="mt-0.5 font-mono text-micro uppercase tracking-[0.1em] text-muted">{METRIC_LABEL[k] ?? k}</div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 font-mono text-meta text-faint">eval {spec.evalWindow.start} → {spec.evalWindow.end}{result.lineageHash ? ` · lineage ${result.lineageHash}` : ""}</p>
+              </Evidence>
+            </section>
           )}
-        </section>
+
+          {/* ── THE FACTORS ── */}
+          {corrFig && featureNodes.length > 0 && (() => {
+            const off = corrFig.data.filter((x) => x.row !== x.col);
+            const top = off.length ? off.reduce((a, b) => (Math.abs(Number(b.v)) > Math.abs(Number(a.v)) ? b : a)) : null;
+            const headline = top
+              ? `${labelForFeature(String(top.row))} and ${labelForFeature(String(top.col))} ${Number(top.v) >= 0 ? "move together" : "pull apart"} — the rest are nearly independent.`
+              : "The signals that feed the model.";
+            return (
+              <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[720px]">
+                <p className="eyebrow text-clay">{num("factors")} · the factors</p>
+                <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[36ch]">{headline}</h2>
+                <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The signals joined into the matrix the model reads. Each is one column on a shared clock; the heatmap below is how they co-move.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {featureNodes.map((n) => (
+                    <button key={n.id} onClick={() => onOpenNode(n.id)} className="group border border-hairline bg-paper px-3 py-2 text-left hover:border-ink transition-colors">
+                      <div className="font-mono text-micro uppercase tracking-[0.12em] text-faint">{KIND_TAG[n.kind] ?? n.kind}</div>
+                      <div className="text-ui text-ink leading-tight">{labels[n.id] ?? n.name}</div>
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-4 border border-hairline bg-paper p-5">
+                  <p className="eyebrow mb-2.5">how the signals move together</p>
+                  <Figure spec={corrFig} />
+                </div>
+              </section>
+            );
+          })()}
+
+          {/* ── WHAT DROVE IT (the model) ── */}
+          {weightsFig && coefs && (
+            <section id="ch-model" data-chapter="model" className="scroll-mt-4 max-w-[720px]">
+              <p className="eyebrow text-clay">{num("model")} · what drove it{modelLabel ? ` · ${modelLabel}` : ""}</p>
+              <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[34ch]">{droveHeadline(coefs, labelForFeature)}</h2>
+              {(modelSpec.kind || modelSpec.alpha != null) && (
+                <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">
+                  A <span className="font-mono text-ink">{modelSpec.kind ?? "linear"}</span> fit{modelSpec.alpha != null ? <> at <span className="font-mono text-ink">α={modelSpec.alpha}</span></> : null} over {Object.keys(coefs).length} correlated factors{modelSpec.target ? <> against <span className="font-mono text-ink">{modelSpec.target}</span></> : null}. The weights are the model's read on which signal earns its place.
+                </p>
+              )}
+              <div className="ticks mt-4 border border-hairline bg-paper p-5">
+                <Figure spec={weightsFig} />
+              </div>
+              <p className="mt-2.5 font-mono text-meta text-faint">model weights · positive (blue) adds signal · negative (clay) hedges</p>
+            </section>
+          )}
+
+          {/* ── WHEN IT WORKS (the regime) ── */}
+          {regimeFig && spec?.regimeSeries && (
+            <section id="ch-regime" data-chapter="regime" className="scroll-mt-4 max-w-[720px]">
+              <p className="eyebrow text-clay">{num("regime")} · when it works</p>
+              <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[40ch]">{regimeHeadline(spec.regimeSeries)}</h2>
+              <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The strategy is regime-dependent by construction: it earns in mean-reverting stretches and bleeds in trends. Read the ribbon against the equity curve up top — the clay weeks are the drawdown.</p>
+              <div className="mt-4 border border-hairline bg-paper p-5">
+                <Figure spec={regimeFig} />
+              </div>
+            </section>
+          )}
+
+          {/* ── HOW IT WAS BUILT (compact recipe) ── */}
+          <section id="ch-recipe" data-chapter="recipe" className="scroll-mt-4">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <p className="eyebrow text-clay">{num("recipe")} · how it was built</p>
+              {onOpenLens && <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">full lineage in the Graph lens →</button>}
+            </div>
+            <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug">From data to the finding, in {flow.length} steps.</h2>
+            <div className="mt-4 overflow-x-auto pb-1">
+              <div className="flex items-stretch min-w-min">
+                {flow.map((n, i) => {
+                  const ds = datasets[n.name];
+                  return (
+                    <Fragment key={n.id}>
+                      <button onClick={() => onOpenNode(n.id)} className={`group shrink-0 w-[150px] text-left border bg-paper px-3 py-2.5 transition-colors ${n.kind === "result" ? "border-clay" : "border-hairline hover:border-ink"}`}>
+                        <div className={`font-mono text-micro uppercase tracking-[0.13em] ${n.kind === "result" ? "text-clay" : "text-faint"}`}>{KIND_TAG[n.kind] ?? n.kind}</div>
+                        <div className="mt-1 text-ui text-ink leading-tight truncate">{labels[n.id] ?? n.name}</div>
+                        <div className="mt-0.5 font-mono text-micro text-faint truncate">{ds ? `${(ds.rows / 1e6).toFixed(1)}M rows` : producerOps[n.id] ?? n.name}</div>
+                      </button>
+                      {i < flow.length - 1 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
+                    </Fragment>
+                  );
+                })}
+                {building && (
+                  <>
+                    {flow.length > 0 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
+                    <div className="shrink-0 w-[150px] border border-dashed border-clay/60 bg-paper px-3 py-2.5 animate-pulse">
+                      <div className="font-mono text-micro uppercase tracking-[0.13em] text-clay">building</div>
+                      <div className="mt-1 text-ui text-ink leading-tight truncate">{buildingLabel ?? "…"}</div>
+                      {buildingOp && <div className="mt-0.5 font-mono text-micro text-clay truncate">{buildingOp}</div>}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   );
 }
-
-const KIND_TAG: Record<string, string> = {
-  dataset: "DATASET", "raw-dataset": "DATASET", feature: "FEATURE", matrix: "MATRIX",
-  target: "TARGET", model: "MODEL", result: "RESULT", strategy: "STRATEGY",
-  universe: "UNIVERSE", figure: "FIGURE",
-};
-

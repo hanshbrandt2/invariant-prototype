@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — the insight as a chaptered research story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF7F1; --paper-2:#F3EEE4; --paper-3:#ECE5D6;
+    --ink:#1C1B18; --ink-2:#4A463D; --muted:#7b7466; --faint:#93897a;
+    --clay:#BE4D2B; --clay-deep:#9C3C20; --clay-wash:#FBF1EC;
+    --data:#1F4E79; --hairline:#E7E1D5; --hairline-2:#D8D0BF; --green:#3B6D11; --sage:#7A8B6F;
+    --serif:'Source Serif 4',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --t-display:2.25rem; --t-hero:2.6rem; --t-h1:1.75rem; --t-h2:1.3rem; --t-h3:1.0625rem;
+    --t-body:0.9rem; --t-ui:0.8125rem; --t-meta:0.6875rem; --t-micro:0.5625rem;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--t-ui);line-height:1.5;}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 28px 120px;}
+  .mono{font-family:var(--mono);} .serif{font-family:var(--serif);}
+  .eyebrow{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  .clay{color:var(--clay);} .muted{color:var(--muted);} .faint{color:var(--faint);}
+  .tnum{font-variant-numeric:tabular-nums;} svg{display:block;}
+
+  .pagehead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;}
+  .pagehead h1{font-family:var(--serif);font-weight:600;font-size:var(--t-h1);margin:0;letter-spacing:-.015em;}
+  .pagehead .sub{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.04em;}
+  .lensbar{display:inline-flex;align-items:stretch;border:1px solid var(--hairline-2);font-family:var(--mono);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 26px;}
+  .lensbar b{background:var(--ink);color:var(--paper);padding:5px 12px;font-weight:500;}
+  .lensbar span{padding:5px 12px;color:var(--muted);}
+  .lensbar i{width:1px;background:var(--hairline-2);}
+
+  .layout{display:grid;grid-template-columns:188px 1fr;gap:40px;align-items:start;}
+  @media(max-width:840px){.layout{grid-template-columns:1fr;} .rail{display:none;}}
+
+  /* chapter rail — the navigable spine of the winding story */
+  .rail{position:sticky;top:24px;}
+  .rail .rt{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:12px;}
+  .rail a{display:flex;gap:9px;align-items:baseline;padding:5px 0;color:var(--muted);text-decoration:none;border-left:2px solid var(--hairline);padding-left:12px;margin-left:-2px;font-size:var(--t-ui);transition:color .15s,border-color .15s;}
+  .rail a .n{font-family:var(--mono);font-size:var(--t-micro);color:var(--faint);width:14px;flex:none;}
+  .rail a:hover{color:var(--ink);}
+  .rail a.active{color:var(--ink);border-left-color:var(--clay);font-weight:500;}
+  .rail a.active .n{color:var(--clay);}
+  .rail .meta{margin-top:18px;font-family:var(--mono);font-size:var(--t-micro);color:var(--faint);line-height:1.7;}
+
+  /* chapters */
+  .chapter{padding:0 0 14px;margin-bottom:30px;border-bottom:1px solid var(--hairline);}
+  .chapter:last-child{border-bottom:0;}
+  .ch-eyebrow{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--clay);}
+  .chapter h2{font-family:var(--serif);font-weight:600;font-size:var(--t-h2);letter-spacing:-.01em;line-height:1.18;margin:6px 0 0;max-width:30ch;}
+  .lede{font-size:var(--t-body);color:var(--ink-2);line-height:1.6;max-width:66ch;margin:10px 0 0;}
+  .lede b{color:var(--ink);font-weight:500;}
+  .vizrow{display:grid;gap:14px;margin-top:16px;}
+  .cols-2{grid-template-columns:1fr 1fr;} @media(max-width:680px){.cols-2{grid-template-columns:1fr;}}
+  .cols-3{grid-template-columns:1fr 1fr 1fr;} @media(max-width:680px){.cols-3{grid-template-columns:1fr;}}
+  .plate{position:relative;border:1px solid var(--hairline);background:var(--paper);padding:14px 16px;}
+  .plate .cap{font-family:var(--mono);font-size:var(--t-meta);color:var(--faint);letter-spacing:.03em;margin:0 0 9px;}
+  .ticks::before{content:"";position:absolute;inset:-1px;pointer-events:none;background-image:linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay)),linear-gradient(var(--clay),var(--clay));background-repeat:no-repeat;background-size:9px 1px,1px 9px,9px 1px,1px 9px,9px 1px,1px 9px,9px 1px,1px 9px;background-position:left top,left top,right top,right top,left bottom,left bottom,right bottom,right bottom;}
+
+  /* TL;DR finding card row */
+  .tldr{display:grid;grid-template-columns:1fr 210px;gap:0;border:1px solid var(--hairline);}
+  @media(max-width:680px){.tldr{grid-template-columns:1fr;}}
+  .tldr .l{padding:16px 18px;border-right:1px solid var(--hairline);}
+  @media(max-width:680px){.tldr .l{border-right:0;border-bottom:1px solid var(--hairline);}}
+  .tldr .r{padding:16px 18px;display:flex;flex-direction:column;gap:11px;}
+  .kpi .v{font-family:var(--mono);font-weight:500;font-size:var(--t-h2);letter-spacing:-.01em;}
+  .kpi .v.big{font-size:var(--t-hero);line-height:.9;}
+  .kpi .v.pos{color:var(--green);} .kpi .v.neg{color:var(--clay);}
+  .kpi .k{font-family:var(--mono);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-top:4px;}
+
+  /* evidence expander */
+  .evidence{margin-top:14px;border-top:1px dashed var(--hairline-2);padding-top:12px;}
+  .ev-toggle{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.04em;color:var(--muted);background:none;border:0;cursor:pointer;padding:0;}
+  .ev-toggle:hover{color:var(--ink);}
+  .ev-open{margin-top:12px;}
+  .statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--hairline);}
+  @media(max-width:680px){.statgrid{grid-template-columns:repeat(2,1fr);}}
+  .statgrid > div{padding:11px 13px;border-right:1px solid var(--hairline);border-bottom:1px solid var(--hairline);}
+  .statgrid .v{font-family:var(--mono);font-size:var(--t-h3);}
+  .statgrid .k{font-family:var(--mono);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:3px;}
+
+  /* feature weights */
+  .fw{display:flex;flex-direction:column;gap:9px;}
+  .fw-row{display:grid;grid-template-columns:120px 1fr 48px;align-items:center;gap:12px;}
+  .fw-row .lab{font-size:var(--t-ui);color:var(--ink-2);text-align:right;}
+  .fw-track{position:relative;height:18px;background:linear-gradient(90deg,transparent calc(50% - .5px),var(--hairline-2) 50%,transparent calc(50% + .5px));}
+  .fw-bar{position:absolute;top:2px;height:14px;}
+  .fw-row .val{font-family:var(--mono);font-size:var(--t-ui);}
+
+  .ribbon{display:flex;height:24px;border:1px solid var(--hairline);overflow:hidden;}
+  .ribbon div{flex:1;}
+  .leg{display:flex;flex-wrap:wrap;gap:14px;margin-top:9px;font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);}
+  .leg span{display:flex;align-items:center;gap:6px;} .sw{width:10px;height:10px;display:inline-block;}
+  .why{margin-top:12px;border-left:2px solid var(--clay);background:var(--clay-wash);padding:10px 14px;font-size:var(--t-ui);color:var(--ink-2);line-height:1.55;}
+  .why b{color:var(--ink);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="pagehead">
+    <h1>The insight, as a research story</h1>
+    <span class="sub">invariant · design study · crude-oil-research</span>
+  </div>
+  <div class="lensbar"><b>insight</b><i></i><span>graph</span><span>code</span><span>concepts</span></div>
+
+  <div class="layout">
+    <!-- ── the chapter rail (navigable, sticky) ── -->
+    <nav class="rail">
+      <div class="rt">the story</div>
+      <a class="active"><span class="n">01</span> The finding</a>
+      <a><span class="n">02</span> The data</a>
+      <a><span class="n">03</span> The factors</a>
+      <a><span class="n">04</span> Does it predict?</a>
+      <a><span class="n">05</span> The thesis</a>
+      <a><span class="n">06</span> The model</a>
+      <a><span class="n">07</span> When it works</a>
+      <div class="meta">~6 min read<br>9 figures · 1 model<br>validated · no-lookahead</div>
+    </nav>
+
+    <div class="story">
+      <!-- 01 · THE FINDING (TL;DR, pinned) -->
+      <section class="chapter">
+        <div class="ch-eyebrow">01 · the finding</div>
+        <h2>Mean-reversion on the crude–gas spread held its edge out-of-sample.</h2>
+        <p class="lede">The TL;DR. A 20-day z-score on the WTI–Henry-Hub spread, 5-day hold, 2024. <b>1.4× return per unit of risk</b>, ~19% a year. The rest of this page is the evidence — read it, or jump a chapter on the left.</p>
+        <div class="tldr ticks" style="margin-top:16px;">
+          <div class="l"><p class="mono" style="font-size:var(--t-meta);color:var(--faint);margin:0 0 8px">cumulative return % · 2024 · authored snapshot</p><svg id="equity" viewBox="0 0 560 150" style="width:100%;height:auto"></svg></div>
+          <div class="r">
+            <div class="kpi"><div class="v big tnum">1.42</div><div class="k">Sharpe</div></div>
+            <div class="kpi"><div class="v pos tnum">+18.7%</div><div class="k">ann. return</div></div>
+            <div class="kpi"><div class="v neg tnum">−8.3%</div><div class="k">max drawdown</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 · THE DATA -->
+      <section class="chapter">
+        <div class="ch-eyebrow">02 · the data</div>
+        <h2>3.8M minutes of crude, stitched to one continuous front-month.</h2>
+        <p class="lede">WTI &amp; Henry Hub at <b>1-minute</b> bars (OHLC candles), rolled under the CL policy. The grid is <b>dense</b> — 0.4% missing, mostly around contract rolls. This is what we're standing on.</p>
+        <div class="vizrow cols-2">
+          <div class="plate"><p class="cap">WTI front-month · sample session (1m candles)</p><svg id="candles" viewBox="0 0 420 150" style="width:100%;height:auto"></svg></div>
+          <div class="plate"><p class="cap">coverage · 2024 trading days · green=full · amber=partial · red=gap</p><svg id="coverage" viewBox="0 0 420 86" style="width:100%;height:auto"></svg><p class="mono" style="font-size:var(--t-micro);color:var(--faint);margin:8px 0 0">3.8M rows · 12 cols · 99.6% complete · gaps at roll dates</p></div>
+        </div>
+      </section>
+
+      <!-- 03 · THE FACTORS -->
+      <section class="chapter">
+        <div class="ch-eyebrow">03 · the factors</div>
+        <h2>One number that mean-reverts: the crude–gas spread, z-scored.</h2>
+        <p class="lede">From price we build the <b>crude–gas spread</b> (a cointegration residual) and standardize it to a <b>20-day z-score</b>. The economic story is physical: crude and gas are tethered through the energy complex, so the spread wanders but returns.</p>
+        <div class="vizrow cols-2">
+          <div class="plate"><p class="cap">crude–gas spread · 2024 · oscillates around its mean</p><svg id="spread" viewBox="0 0 420 140" style="width:100%;height:auto"></svg></div>
+          <div class="plate"><p class="cap">z-score · 20 · the tradable signal · ±2 bands</p><svg id="zscore" viewBox="0 0 420 140" style="width:100%;height:auto"></svg></div>
+        </div>
+        <div class="why"><b>Why these factors?</b> The spread isolates the relationship, not the level (so it's stationary). The z-score makes entries comparable across time. Gas z-score enters as a cross-hedge — it leans against crude-only noise.</div>
+      </section>
+
+      <!-- 04 · DOES IT PREDICT? (the evidence chapter — expanded) -->
+      <section class="chapter">
+        <div class="ch-eyebrow">04 · does it predict?</div>
+        <h2>The edge is real but shallow — and it decays within the day.</h2>
+        <p class="lede">Factor diagnostics. The z-score's <b>information coefficient</b> (rank-corr with the 5-minute forward return) is small but persistently positive — and the <b>marginal IC</b> shows the z-score carries most of it. This is where a quant decides to trust it.</p>
+        <div class="vizrow cols-2">
+          <div class="plate"><p class="cap">rolling IC · z-score → fwd-return · monthly</p><svg id="ic" viewBox="0 0 420 130" style="width:100%;height:auto"></svg></div>
+          <div class="plate"><p class="cap">z-score distribution · ~normal, mean-zero (stationary)</p><svg id="dist" viewBox="0 0 420 130" style="width:100%;height:auto"></svg></div>
+        </div>
+        <div class="evidence">
+          <button class="ev-toggle">the evidence ▾  ·  IC · marginal IC · robustness</button>
+          <div class="ev-open">
+            <div class="statgrid">
+              <div><div class="v tnum">0.041</div><div class="k">mean IC</div></div>
+              <div><div class="v tnum">3.2</div><div class="k">IC t-stat</div></div>
+              <div><div class="v tnum">61%</div><div class="k">IC &gt; 0 months</div></div>
+              <div><div class="v tnum">~35m</div><div class="k">IC half-life</div></div>
+            </div>
+            <p class="cap" style="margin:14px 0 8px">marginal IC · contribution beyond the other factors</p>
+            <div class="fw" id="micic"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 · THE THESIS -->
+      <section class="chapter">
+        <div class="ch-eyebrow">05 · the thesis</div>
+        <h2>Why it should work: physical cointegration, slow to arbitrage.</h2>
+        <p class="lede">Crude and gas are linked by substitution and shared macro drivers, but the link is <b>capital-intensive to arbitrage</b> (storage, transport, contract calendars). So the spread overshoots and reverts on a horizon too short for physical players and too capital-heavy for fast ones — a gap a systematic 5-day trade can sit in.</p>
+        <div class="why" style="border-left-color:var(--data);background:#eef3f8;"><b>The bet, in one line:</b> when the spread is &gt;2σ from its 20-day mean, fade it — the reversion pays more than the carry costs, except when a real trend takes over (Chapter 07).</div>
+      </section>
+
+      <!-- 06 · THE MODEL -->
+      <section class="chapter">
+        <div class="ch-eyebrow">06 · the model</div>
+        <h2>Ridge, deliberately boring — interpretable, no overfit.</h2>
+        <p class="lede">A ridge regression (α=0.1) on three correlated factors. <b>Why ridge?</b> The factors are collinear (the z-score and the spread move together); ridge keeps the weights stable and readable instead of letting a fancier model overfit a six-month window.</p>
+        <div class="plate" style="margin-top:16px;"><p class="cap">learned weights · positive (blue) adds signal · negative (clay) hedges</p><div class="fw" id="weights"></div></div>
+      </section>
+
+      <!-- 07 · WHEN IT WORKS -->
+      <section class="chapter">
+        <div class="ch-eyebrow">07 · when it works</div>
+        <h2>Mean-reversion pays; trends punish. The drawdown names the risk.</h2>
+        <p class="lede"><b>How the regime is computed:</b> a rolling Hurst exponent on the spread (&lt;0.5 = mean-reverting, &gt;0.5 = trending). The strategy is regime-dependent by construction — and every drawdown sits in a trending stretch.</p>
+        <div class="plate" style="margin-top:16px;">
+          <p class="cap">regime over 2024 · classified per week from the rolling Hurst</p>
+          <div class="ribbon" id="ribbon"></div>
+          <div class="leg">
+            <span><i class="sw" style="background:#7A8B6F"></i> mean-reverting (H&lt;0.5)</span>
+            <span><i class="sw" style="background:#1F4E79"></i> trending up</span>
+            <span><i class="sw" style="background:#BE4D2B"></i> trending down</span>
+            <span><i class="sw" style="background:#cbc7bb"></i> no trade</span>
+          </div>
+        </div>
+        <div class="why"><b>How to read it:</b> the clay band in March is the one trending stretch — and it's exactly the drawdown in Chapter 01. The next move (slower z-score) trades fewer of these false reversions.</div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+const C={paper:'#FAF7F1',ink:'#1C1B18',data:'#1F4E79',clay:'#BE4D2B',hair:'#E7E1D5',hair2:'#D8D0BF',faint:'#93897a',muted:'#7b7466',sage:'#7A8B6F',green:'#3B6D11'};
+const MONO="'JetBrains Mono',monospace";
+const T=(x,y,s,a,f,fs)=>`<text x="${x}" y="${y}" text-anchor="${a||'start'}" font-family="${MONO}" font-size="${fs||9}" fill="${f||C.faint}">${s}</text>`;
+function line(id,pts,{stroke=C.data,fill=false,W=420,H=140,pad=22,bands=null,zero=false}={}){
+  const mn=Math.min(...pts),mx=Math.max(...pts);const lo=bands?Math.min(mn,-(bands)) : mn, hi=bands?Math.max(mx,bands):mx;
+  const x=i=>pad+i*(W-pad-8)/(pts.length-1), y=v=>8+(hi-v)/((hi-lo)||1)*(H-26);
+  const d=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  let s='';
+  if(bands){[bands,-bands].forEach(b=>{s+=`<line x1="${pad}" y1="${y(b)}" x2="${W-8}" y2="${y(b)}" stroke="${C.hair2}" stroke-dasharray="3 3"/>`+T(pad-4,y(b)+3,(b>0?'+':'')+b+'σ','end',C.faint,8);});}
+  if(zero||bands){s+=`<line x1="${pad}" y1="${y(0)}" x2="${W-8}" y2="${y(0)}" stroke="${C.hair}"/>`;}
+  if(fill){s+=`<path d="${d} L ${x(pts.length-1)} ${y(zero?0:lo)} L ${x(0)} ${y(zero?0:lo)} Z" fill="${stroke}" fill-opacity="0.09"/>`;}
+  s+=`<path d="${d}" fill="none" stroke="${stroke}" stroke-width="1.5"/>`;
+  document.getElementById(id).innerHTML=s;
+}
+function bars(id,vals,{W=420,H=130,pad=24,pos=C.data,neg=C.clay,fmt=v=>v}={}){
+  const mx=Math.max(...vals.map(Math.abs))||1;const bw=(W-pad-8)/vals.length;
+  const y0=H/2;const x=i=>pad+i*bw;
+  let s=`<line x1="${pad}" y1="${y0}" x2="${W-8}" y2="${y0}" stroke="${C.hair2}"/>`;
+  vals.forEach((v,i)=>{const h=Math.abs(v)/mx*(H/2-12);s+=`<rect x="${x(i)+2}" y="${v>=0?y0-h:y0}" width="${bw-4}" height="${Math.max(h,1)}" fill="${v>=0?pos:neg}"/>`;});
+  document.getElementById(id).innerHTML=s;
+}
+function hist(id,binsArr,{W=420,H=130,pad=20}={}){
+  const mx=Math.max(...binsArr);const bw=(W-pad-8)/binsArr.length;
+  let s=`<line x1="${pad}" y1="${H-16}" x2="${W-8}" y2="${H-16}" stroke="${C.hair}"/>`;
+  binsArr.forEach((v,i)=>{const h=v/mx*(H-30);const tail=i<2||i>=binsArr.length-2;s+=`<rect x="${pad+i*bw+1}" y="${H-16-h}" width="${bw-2}" height="${h}" fill="${tail?C.clay:C.data}" fill-opacity="${tail?0.8:0.85}"/>`;});
+  document.getElementById(id).innerHTML=s;
+}
+function candles(id,ohlc,{W=420,H=150,pad=22}={}){
+  const all=ohlc.flatMap(c=>[c[1],c[2]]);const mn=Math.min(...all),mx=Math.max(...all);
+  const cw=(W-pad-8)/ohlc.length;const x=i=>pad+i*cw+cw/2;const y=v=>8+(mx-v)/((mx-mn)||1)*(H-26);
+  let s='';
+  ohlc.forEach((c,i)=>{const[o,h,l,cl]=c;const up=cl>=o;const col=up?C.data:C.clay;
+    s+=`<line x1="${x(i)}" y1="${y(h)}" x2="${x(i)}" y2="${y(l)}" stroke="${col}" stroke-width="1"/>`;
+    const yt=y(Math.max(o,cl)),hb=Math.max(Math.abs(y(o)-y(cl)),1);
+    s+=`<rect x="${x(i)-cw*0.3}" y="${yt}" width="${cw*0.6}" height="${hb}" fill="${up?'none':col}" stroke="${col}" stroke-width="1"/>`;});
+  document.getElementById(id).innerHTML=s;
+}
+
+/* ── data (authored, illustrative) ── */
+line('equity',[0,1,2.2,3.4,4.6,5.8,6.9,8,7.1,5.4,3.2,1.1,-0.3,1.4,3,4.3,5.5,6.4,7.2,7.9,8.4,8,8.7,9.1,8.8,9.4],{stroke:C.data,fill:true,W:560,H:150,zero:true});
+// candles: a believable 1m session walk
+(function(){let p=78.4;const o=[];for(let i=0;i<34;i++){const dr=(Math.sin(i*0.6)+Math.sin(i*0.21))*0.18; const op=p; const cl=op+dr+ (i%3-1)*0.06; const hi=Math.max(op,cl)+0.12+ (i%2)*0.05; const lo=Math.min(op,cl)-0.12-(i%2)*0.04; o.push([op,hi,lo,cl]); p=cl;} candles('candles',o);})();
+// coverage strip: 60 days, mostly full
+(function(){const days=[];for(let i=0;i<60;i++){let st='full'; if(i===17||i===38) st='gap'; else if(i%11===5) st='partial'; days.push(st);} const col={full:'#7fa15e',partial:'#caa24a',gap:'#BE4D2B'}; const cols=15,rows=4,cw=420/cols,ch=18; let s=''; days.forEach((d,i)=>{const r=Math.floor(i/cols),c=i%cols; s+=`<rect x="${c*cw+1}" y="${r*ch+1}" width="${cw-2}" height="${ch-2}" fill="${col[d]}" fill-opacity="0.85"/>`;}); document.getElementById('coverage').innerHTML=s;})();
+// spread + zscore
+(function(){const sp=[];let v=0;for(let i=0;i<48;i++){v=v*0.82+(Math.sin(i*0.5)*1.4)+((i*7)%5-2)*0.3; sp.push(+v.toFixed(2));} line('spread',sp,{stroke:C.ink,zero:true}); const sd=Math.sqrt(sp.reduce((a,b)=>a+b*b,0)/sp.length); const z=sp.map(x=>+(x/sd).toFixed(2)); line('zscore',z,{stroke:C.data,bands:2});})();
+// rolling IC
+bars('ic',[0.03,0.06,0.05,0.08,0.02,-0.02,0.04,0.07,0.05,-0.01,0.03,0.06,0.04,0.02,0.05,0.07]);
+// z-score distribution (bell-ish)
+hist('dist',[2,4,8,15,26,40,52,58,52,39,25,14,7,3]);
+// marginal IC + weights (HTML diverging bars)
+function fwHTML(id,rows){const mx=Math.max(...rows.map(r=>Math.abs(r.w)));document.getElementById(id).innerHTML=rows.map(r=>{const pct=Math.abs(r.w)/mx*50,pos=r.w>=0;const bar=pos?`left:50%;width:${pct}%;background:${C.data}`:`right:50%;width:${pct}%;background:${C.clay}`;return `<div class="fw-row"><div class="lab">${r.f}</div><div class="fw-track"><div class="fw-bar" style="${bar}"></div></div><div class="val" style="color:${pos?C.data:C.clay}">${pos?'+':''}${r.w.toFixed(3)}</div></div>`;}).join('');}
+fwHTML('micic',[{f:'z-score · 20',w:0.034},{f:'gas z-score',w:0.011},{f:'crude–gas spread',w:0.004}]);
+fwHTML('weights',[{f:'Z-score · 20',w:0.42},{f:'Gas z-score · 20',w:-0.18},{f:'Crude–gas spread',w:0.09}]);
+// regime ribbon
+(function(){const st=['MR','MR','MR','MR','MR','UP','MR','MR','DOWN','DOWN','DOWN','DOWN','DOWN','MR','MR','MR','MR','MR','MR','UP','NO_TRADE','NO_TRADE','MR','MR','MR','MR'];const col={UP:'#1F4E79',DOWN:'#BE4D2B',MR:'#7A8B6F',NO_TRADE:'#cbc7bb'};document.getElementById('ribbon').innerHTML=st.map(s=>`<div title="${s}" style="background:${col[s]}"></div>`).join('');})();
+</script>
+</body>
+</html>

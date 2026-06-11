@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invariant — the insight as a visual story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF7F1; --paper-2:#F3EEE4; --paper-3:#ECE5D6;
+    --ink:#1C1B18; --ink-2:#4A463D; --muted:#7b7466; --faint:#93897a;
+    --clay:#BE4D2B; --clay-deep:#9C3C20; --clay-wash:#FBF1EC;
+    --data:#1F4E79; --hairline:#E7E1D5; --hairline-2:#D8D0BF; --green:#3B6D11; --sage:#7A8B6F;
+    --serif:'Source Serif 4',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+    --t-display:2.25rem; --t-hero:3rem; --t-h1:1.75rem; --t-h2:1.25rem; --t-h3:1.0625rem;
+    --t-body:0.875rem; --t-ui:0.8125rem; --t-meta:0.6875rem; --t-micro:0.5625rem;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--t-ui);line-height:1.45;}
+  .wrap{max-width:980px;margin:0 auto;padding:36px 28px 90px;}
+  .mono{font-family:var(--mono);} .serif{font-family:var(--serif);}
+  .eyebrow{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  .clay{color:var(--clay);} .muted{color:var(--muted);} .faint{color:var(--faint);}
+  .tnum{font-variant-numeric:tabular-nums;}
+  svg{display:block;}
+
+  .pagehead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:6px;}
+  .pagehead h1{font-family:var(--serif);font-weight:600;font-size:var(--t-h1);margin:0;letter-spacing:-.015em;}
+  .pagehead .sub{font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);letter-spacing:.04em;}
+  .lensbar{display:inline-flex;align-items:stretch;border:1px solid var(--hairline-2);font-family:var(--mono);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.1em;margin:14px 0 30px;}
+  .lensbar b{background:var(--ink);color:var(--paper);padding:5px 12px;font-weight:500;}
+  .lensbar span{padding:5px 12px;color:var(--muted);}
+  .lensbar i{width:1px;background:var(--hairline-2);}
+
+  /* a story section: a viz with a point */
+  section{margin:0 0 38px;}
+  .sec-head{margin-bottom:14px;}
+  .sec-head .k{font-family:var(--mono);font-size:var(--t-meta);letter-spacing:.16em;text-transform:uppercase;color:var(--clay);}
+  .sec-head h2{font-family:var(--serif);font-weight:600;font-size:var(--t-h2);letter-spacing:-.01em;margin:5px 0 0;line-height:1.2;max-width:32ch;}
+  .takeaway{font-size:var(--t-body);color:var(--ink-2);line-height:1.55;max-width:64ch;margin:10px 0 0;}
+  .takeaway b{color:var(--ink);font-weight:500;}
+
+  .plate{position:relative;border:1px solid var(--hairline);background:var(--paper);}
+  .tick{position:absolute;width:11px;height:11px;pointer-events:none;}
+  .tick::before{content:"";position:absolute;left:0;top:50%;width:11px;height:1px;background:var(--clay);transform:translateY(-50%);}
+  .tick::after{content:"";position:absolute;top:0;left:50%;width:1px;height:11px;background:var(--clay);transform:translateX(-50%);}
+  .tick.tl{left:-1px;top:-1px}.tick.tr{right:-1px;top:-1px}.tick.bl{left:-1px;bottom:-1px}.tick.br{right:-1px;bottom:-1px}
+
+  /* hero result */
+  .hero{display:grid;grid-template-columns:1fr 250px;gap:0;}
+  @media(max-width:720px){.hero{grid-template-columns:1fr;}}
+  .hero .chartpane{padding:22px 24px;border-right:1px solid var(--hairline);}
+  @media(max-width:720px){.hero .chartpane{border-right:0;border-bottom:1px solid var(--hairline);}}
+  .hero .kpipane{padding:22px 22px;display:flex;flex-direction:column;gap:16px;}
+  .chart-cap{font-family:var(--mono);font-size:var(--t-meta);color:var(--faint);letter-spacing:.03em;margin:0 0 10px;}
+  .kpi-hero .v{font-family:var(--mono);font-weight:500;font-size:var(--t-hero);line-height:.9;letter-spacing:-.02em;}
+  .kpi-hero .k{font-family:var(--mono);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-top:7px;}
+  .kpi .v{font-family:var(--mono);font-size:var(--t-h2);font-weight:500;}
+  .kpi .v.pos{color:var(--green);} .kpi .v.neg{color:var(--clay);}
+  .kpi .k{font-family:var(--mono);font-size:var(--t-meta);text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-top:4px;}
+
+  /* feature weights */
+  .fw{display:flex;flex-direction:column;gap:12px;}
+  .fw-row{display:grid;grid-template-columns:150px 1fr 56px;align-items:center;gap:14px;}
+  .fw-row .lab{font-size:var(--t-ui);color:var(--ink-2);text-align:right;}
+  .fw-row .lab small{display:block;font-family:var(--mono);font-size:var(--t-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.1em;}
+  .fw-track{position:relative;height:22px;background:linear-gradient(90deg,transparent calc(50% - .5px),var(--hairline-2) 50%,transparent calc(50% + .5px));}
+  .fw-bar{position:absolute;top:3px;height:16px;}
+  .fw-row .val{font-family:var(--mono);font-size:var(--t-ui);text-align:left;}
+
+  /* regime ribbon */
+  .ribbon{display:flex;height:26px;border:1px solid var(--hairline);overflow:hidden;}
+  .ribbon div{flex:1;}
+  .leg{display:flex;flex-wrap:wrap;gap:16px;margin-top:10px;font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);}
+  .leg span{display:flex;align-items:center;gap:6px;}
+  .sw{width:11px;height:11px;display:inline-block;}
+
+  /* recipe flow */
+  .recipe{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:4px;}
+  .step{flex:1 0 0;min-width:120px;border:1px solid var(--hairline);background:var(--paper);padding:11px 12px;}
+  .step .k{font-family:var(--mono);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:.12em;color:var(--faint);}
+  .step .n{font-family:var(--serif);font-size:var(--t-ui);color:var(--ink);margin:3px 0 8px;line-height:1.15;}
+  .arrow{display:flex;align-items:center;color:var(--hairline-2);font-family:var(--mono);padding:0 7px;flex:0 0 auto;}
+  .recipe-foot{margin-top:12px;font-family:var(--mono);font-size:var(--t-meta);color:var(--muted);}
+  .recipe-foot a{color:var(--clay);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="pagehead">
+    <h1>The insight, as a visual story</h1>
+    <span class="sub">invariant · design study · crude-oil-research</span>
+  </div>
+  <div class="lensbar"><b>insight</b><i></i><span>graph</span><span>code</span><span>concepts</span></div>
+
+  <!-- ═══ 1 · THE RESULT ═══ -->
+  <section>
+    <div class="sec-head">
+      <div class="k">the finding</div>
+      <h2>Mean-reversion on the crude–gas spread held its edge out-of-sample.</h2>
+      <p class="takeaway">A 20-day z-score on the WTI–Henry-Hub spread, traded with a 5-day hold over 2024. <b>1.4× return per unit of risk</b>, ~19% a year — and it kept working on data it never saw while fitting.</p>
+    </div>
+    <div class="plate hero">
+      <i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i>
+      <div class="chartpane">
+        <p class="chart-cap">cumulative return % over drawdown · one calendar · 2024 · authored snapshot</p>
+        <svg id="equity" viewBox="0 0 620 280" style="width:100%;height:auto"></svg>
+      </div>
+      <div class="kpipane">
+        <div class="kpi-hero"><div class="v tnum">1.42</div><div class="k">Sharpe · risk-adjusted</div></div>
+        <div class="kpi"><div class="v pos tnum">+18.7%</div><div class="k">annual return</div></div>
+        <div class="kpi"><div class="v neg tnum">−8.3%</div><div class="k">worst dip</div></div>
+        <div class="kpi"><div class="v tnum">0.561</div><div class="k">win rate</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 2 · WHAT DROVE IT (which feature / which model, visually) ═══ -->
+  <section>
+    <div class="sec-head">
+      <div class="k">what drove it · ridge model</div>
+      <h2>The 20-day z-score carries the signal — gas leans against it.</h2>
+      <p class="takeaway">The model's weights, learned on 2024: the crude <b>z-score</b> does the work, the <b>gas z-score</b> pulls the other way (a hedge), and the raw spread barely matters. <span class="mono faint">ridge · α=0.1</span></p>
+    </div>
+    <div class="plate" style="padding:20px 22px;">
+      <div class="fw" id="weights"></div>
+    </div>
+  </section>
+
+  <!-- ═══ 3 · WHEN IT WORKED (regime) ═══ -->
+  <section>
+    <div class="sec-head">
+      <div class="k">when it worked</div>
+      <h2>It paid in mean-reverting weeks — and gave it back in one March trend.</h2>
+      <p class="takeaway">Regime over the eval window. The edge is real when the spread oscillates (<b>mean-reverting</b>); the only drawdown lines up exactly with a five-week <b>trending-down</b> stretch in March — the honest risk, named.</p>
+    </div>
+    <div class="plate" style="padding:18px 22px;">
+      <div class="ribbon" id="ribbon"></div>
+      <div class="leg">
+        <span><i class="sw" style="background:#7A8B6F"></i> mean-reverting</span>
+        <span><i class="sw" style="background:#1F4E79"></i> trending up</span>
+        <span><i class="sw" style="background:#BE4D2B"></i> trending down</span>
+        <span><i class="sw" style="background:#cbc7bb"></i> no trade</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 4 · HOW IT WAS BUILT (compact recipe, not 11 boxes) ═══ -->
+  <section>
+    <div class="sec-head">
+      <div class="k">how it was built</div>
+      <h2>From two price feeds to one signal.</h2>
+    </div>
+    <div class="recipe" id="recipe"></div>
+    <p class="recipe-foot">Crude + gas prices → the spread → a z-score signal → a ridge model → the backtest. &nbsp;<a href="#">See every step and its lineage in the Graph lens →</a></p>
+  </section>
+
+</div>
+
+<script>
+const C = { paper:'#FAF7F1', ink:'#1C1B18', data:'#1F4E79', clay:'#BE4D2B', hair:'#E7E1D5', hair2:'#D8D0BF', faint:'#93897a', muted:'#7b7466', sage:'#7A8B6F' };
+
+/* ── equity + drawdown ── */
+(function(){
+  const eq=[0,1,2.2,3.4,4.6,5.8,6.9,8,7.1,5.4,3.2,1.1,-0.3,1.4,3,4.3,5.5,6.4,7.2,7.9,8.4,8,8.7,9.1,8.8,9.4];
+  let m=-1e9;const dd=eq.map(v=>{m=Math.max(m,v);return +(v-m).toFixed(2)});
+  const W=620,ML=44,MR=12,MT=6,topH=176,gap=6,botH=70;
+  const x=i=>ML+i*(W-ML-MR)/(eq.length-1);
+  const yT=v=>MT+(20-v)/20*(topH-MT-16);
+  const ddMin=Math.min(...dd),bTop=topH+gap;
+  const yB=v=>bTop+6+(0-v)/(0-ddMin)*(botH-6-20);
+  const path=p=>p.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ');
+  const eqP=eq.map((v,i)=>[x(i),yT(v)]),ddP=dd.map((v,i)=>[x(i),yB(v)]);
+  let s='';
+  [0,4,8,12].forEach(g=>{const y=yT(g);s+=`<line x1="${ML}" y1="${y}" x2="${W-MR}" y2="${y}" stroke="${C.hair}"/><text x="${ML-7}" y="${y+3}" text-anchor="end" font-family="${"'JetBrains Mono',monospace"}" font-size="9" fill="${C.faint}">${g}</text>`});
+  s+=`<path d="${path(eqP)} L ${x(eq.length-1)} ${yT(0)} L ${x(0)} ${yT(0)} Z" fill="${C.data}" fill-opacity="0.1"/>`;
+  s+=`<path d="${path(eqP)}" fill="none" stroke="${C.data}" stroke-width="1.7"/>`;
+  s+=`<line x1="${ML}" y1="${yB(0)}" x2="${W-MR}" y2="${yB(0)}" stroke="${C.hair2}"/>`;
+  s+=`<path d="${path(ddP)} L ${x(eq.length-1)} ${yB(0)} L ${x(0)} ${yB(0)} Z" fill="${C.clay}" fill-opacity="0.16"/>`;
+  s+=`<path d="${path(ddP)}" fill="none" stroke="${C.clay}" stroke-width="1.1"/>`;
+  s+=`<text x="${ML-7}" y="${yB(ddMin)+3}" text-anchor="end" font-family="${"'JetBrains Mono',monospace"}" font-size="9" fill="${C.faint}">${ddMin.toFixed(0)}</text>`;
+  ['Jan','Mar','May'].forEach((mo,k)=>{const xx=x(k*10);s+=`<text x="${xx}" y="${bTop+botH+1}" text-anchor="middle" font-family="${"'JetBrains Mono',monospace"}" font-size="9" fill="${C.faint}">${mo}</text>`});
+  document.getElementById('equity').innerHTML=s;
+})();
+
+/* ── feature weights (diverging bars) ── */
+(function(){
+  const rows=[{f:'20-day z-score',id:'zscore_20',w:0.42},{f:'crude–gas spread',id:'spread_5d',w:0.09},{f:'gas z-score',id:'gas_z20',w:-0.18}];
+  const max=0.42;
+  document.getElementById('weights').innerHTML=rows.map(r=>{
+    const pct=Math.abs(r.w)/max*50, pos=r.w>=0;
+    const bar=pos?`left:50%;width:${pct}%;background:${C.data}`:`right:50%;width:${pct}%;background:${C.clay}`;
+    return `<div class="fw-row"><div class="lab">${r.f}<small>${r.id}</small></div><div class="fw-track"><div class="fw-bar" style="${bar}"></div></div><div class="val" style="color:${pos?C.data:C.clay}">${pos?'+':''}${r.w.toFixed(2)}</div></div>`;
+  }).join('');
+})();
+
+/* ── regime ribbon ── */
+(function(){
+  const st=['MR','MR','MR','MR','MR','UP','MR','MR','DOWN','DOWN','DOWN','DOWN','DOWN','MR','MR','MR','MR','MR','MR','UP','NO_TRADE','NO_TRADE','MR','MR','MR','MR'];
+  const col={UP:'#1F4E79',DOWN:'#BE4D2B',MR:'#7A8B6F',NO_TRADE:'#cbc7bb'};
+  document.getElementById('ribbon').innerHTML=st.map(s=>`<div title="${s}" style="background:${col[s]}"></div>`).join('');
+})();
+
+/* ── recipe micro-flow ── */
+(function(){
+  const spark=(pts,stroke,fill)=>{const W=116,H=34;const xs=i=>4+i*(W-8)/(pts.length-1);const mn=Math.min(...pts),mx=Math.max(...pts);const ys=v=>H-4-(v-mn)/((mx-mn)||1)*(H-8);const d=pts.map((v,i)=>(i?'L':'M')+xs(i).toFixed(1)+' '+ys(v).toFixed(1)).join(' ');return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:34px">${fill?`<path d="${d} L ${xs(pts.length-1)} ${H} L ${xs(0)} ${H} Z" fill="${stroke}" fill-opacity="0.1"/>`:''}<path d="${d}" fill="none" stroke="${stroke}" stroke-width="1.4"/></svg>`};
+  const bars=(vals)=>{const W=116,H=34,bw=W/vals.length;return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:34px">${vals.map((v,i)=>{const h=Math.abs(v)*26;const y=v>=0?(H/2-h):(H/2);return `<rect x="${i*bw+3}" y="${y}" width="${bw-6}" height="${Math.max(h,1.5)}" fill="${v>=0?C.data:C.clay}"/>`}).join('')}<line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="${C.hair2}"/></svg>`};
+  const steps=[
+    {k:'DATA',n:'Crude + gas prices',v:spark([80,79,81,80,82,81,83],C.muted,false)},
+    {k:'FEATURE',n:'Crude–gas spread',v:spark([0.2,0.6,-0.3,0.4,-0.5,0.3,-0.1],C.ink,false)},
+    {k:'SIGNAL',n:'Z-score · 20',v:spark([0.5,1.8,-0.4,-2.1,0.2,1.5,-1.7],C.data,true)},
+    {k:'MODEL',n:'Ridge · α=0.1',v:bars([0.42,0.09,-0.18])},
+    {k:'RESULT',n:'Backtest → 1.42',v:spark([0,2,1,4,3,7,9.4],C.data,true)},
+  ];
+  document.getElementById('recipe').innerHTML=steps.map((s,i)=>`<div class="step"><div class="k">${s.k}</div><div class="n">${s.n}</div>${s.v}</div>${i<steps.length-1?'<div class="arrow">→</div>':''}`).join('');
+})();
+</script>
+</body>
+</html>
