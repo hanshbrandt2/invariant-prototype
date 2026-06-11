@@ -313,7 +313,7 @@ export function WorkflowNarrative({
               ? `${labelForFeature(String(top.row))} and ${labelForFeature(String(top.col))} ${Number(top.v) >= 0 ? "move together" : "pull apart"} — the rest are nearly independent.`
               : "The signals that feed the model.";
             return (
-              <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[720px]">
+              <section id="ch-factors" data-chapter="factors" className="scroll-mt-4 max-w-[880px]">
                 <p className="eyebrow text-clay">{num("factors")} · the factors</p>
                 <h2 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[36ch]">{headline}</h2>
                 <p className="mt-2.5 text-body leading-relaxed text-ink-2 max-w-[62ch]">The signals joined into the matrix the model reads. Each is one column on a shared clock; the heatmap below is how they co-move.</p>

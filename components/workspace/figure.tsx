@@ -217,36 +217,34 @@ function Heatmap({ data }: { data: FigurePoint[] }) {
   }
   const N = labels.length;
   const idx: Record<string, number> = Object.fromEntries(labels.map((l, i) => [l, i]));
-  const CELL = 46, LG = 76, TG = 16, PAD = 4;
+  const CELL = 104, LG = 152, TG = 30, PAD = 6;
   const W = LG + N * CELL + PAD;
   const H = TG + N * CELL + PAD;
-  const short = (s: string) => (s.length > 9 ? s.slice(0, 8) + "…" : s);
-  const lab = { fontFamily: "var(--font-jetbrains)", fontSize: 8.5, fill: c.muted } as const;
+  const short = (s: string) => (s.length > 13 ? s.slice(0, 12) + "…" : s);
+  const lab = { fontFamily: "var(--font-jetbrains)", fontSize: 12, fill: c.muted } as const;
   return (
-    <div className="overflow-x-auto">
-      <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} className="block max-w-full h-auto" role="img" aria-label="feature correlation heatmap">
-        {labels.map((l, j) => (
-          <text key={"c" + l} x={LG + j * CELL + CELL / 2} y={TG - 5} textAnchor="middle" {...lab}>{short(l)}</text>
-        ))}
-        {labels.map((l, i) => (
-          <text key={"r" + l} x={LG - 8} y={TG + i * CELL + CELL / 2 + 3} textAnchor="end" {...lab}>{short(l)}</text>
-        ))}
-        {data.map((d, k) => {
-          const i = idx[String(d.row)];
-          const j = idx[String(d.col)];
-          const v = Number(d.v);
-          const x = LG + j * CELL;
-          const y = TG + i * CELL;
-          const light = Math.abs(v) < 0.55;
-          return (
-            <g key={k}>
-              <rect x={x + 1} y={y + 1} width={CELL - 2} height={CELL - 2} fill={diverge(v)} />
-              <text x={x + CELL / 2} y={y + CELL / 2 + 3} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="9.5" fill={light ? c.ink : c.paper}>{v.toFixed(2)}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="feature correlation heatmap">
+      {labels.map((l, j) => (
+        <text key={"c" + l} x={LG + j * CELL + CELL / 2} y={TG - 9} textAnchor="middle" {...lab}>{short(l)}</text>
+      ))}
+      {labels.map((l, i) => (
+        <text key={"r" + l} x={LG - 10} y={TG + i * CELL + CELL / 2 + 4} textAnchor="end" {...lab}>{short(l)}</text>
+      ))}
+      {data.map((d, k) => {
+        const i = idx[String(d.row)];
+        const j = idx[String(d.col)];
+        const v = Number(d.v);
+        const x = LG + j * CELL;
+        const y = TG + i * CELL;
+        const light = Math.abs(v) < 0.55;
+        return (
+          <g key={k}>
+            <rect x={x + 1} y={y + 1} width={CELL - 2} height={CELL - 2} fill={diverge(v)} />
+            <text x={x + CELL / 2} y={y + CELL / 2 + 6} textAnchor="middle" fontFamily="var(--font-jetbrains)" fontSize="18" fill={light ? c.ink : c.paper}>{v.toFixed(2)}</text>
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
