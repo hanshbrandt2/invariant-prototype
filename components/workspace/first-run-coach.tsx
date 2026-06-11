@@ -32,8 +32,8 @@ export function FirstRunCoach() {
     <div className="shrink-0 flex items-center gap-4 px-5 py-2 border-b border-hairline bg-paper-2/60">
       <span className="font-mono text-meta uppercase tracking-[0.13em] text-clay shrink-0">new here</span>
       <span className="text-ui text-ink-2 min-w-0">
-        <b className="font-medium text-ink">This is the finding.</b>{" "}
-        Click any node to watch how it was built · the contract keeps every number honest.
+        <b className="font-medium text-ink">This is the insight.</b>{" "}
+        Read it top-to-bottom — the result, what drove it, when it worked. The full lineage lives in the Graph lens.
       </span>
       <button
         onClick={dismiss}

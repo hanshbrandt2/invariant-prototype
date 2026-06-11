@@ -1,11 +1,45 @@
 "use client";
 
-import type { HostedDataset, LineageSubgraph, Node, ResultSpec } from "@/lib/types";
+import { Fragment } from "react";
+import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
-import { PreviewChart } from "@/components/workspace/preview-chart";
 import { Figure } from "@/components/workspace/figure";
-import { resultEquityFigure } from "@/lib/figures";
+import { resultEquityFigure, featureWeightsFigure, regimeFigure } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
+
+/** Read a model spec's learned coefficients (free-form dict) → typed weights. */
+function readCoefficients(spec: unknown): Record<string, number> | null {
+  if (!spec || typeof spec !== "object") return null;
+  const co = (spec as { coefficients?: unknown }).coefficients;
+  if (!co || typeof co !== "object") return null;
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(co)) if (typeof v === "number") out[k] = v;
+  return Object.keys(out).length ? out : null;
+}
+
+/** A plain-language headline for the feature weights — the dominant signal, and
+ *  the one that leans against it. */
+function droveHeadline(coefs: Record<string, number>, labelFor: (k: string) => string): string {
+  const e = Object.entries(coefs).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const top = e[0];
+  const neg = e.find((x) => x[1] < 0);
+  const topL = labelFor(top[0]);
+  return neg && neg[0] !== top[0]
+    ? `${topL} carries the signal — ${labelFor(neg[0])} leans against it.`
+    : `${topL} carries the signal.`;
+}
+
+const REGIME_WORD: Record<string, string> = { MR: "mean-reverting", UP: "trending-up", DOWN: "trending-down", NO_TRADE: "flat" };
+
+/** A plain-language headline for the regime ribbon — what ruled, and the catch. */
+function regimeHeadline(series: { state: string }[]): string {
+  const counts: Record<string, number> = {};
+  for (const r of series) counts[r.state] = (counts[r.state] ?? 0) + 1;
+  const dom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "MR";
+  if (dom === "MR" && series.some((r) => r.state === "DOWN"))
+    return "It paid in mean-reverting weeks — and gave it back when the market trended.";
+  return `${REGIME_WORD[dom] ?? dom} weeks dominated the window.`;
+}
 
 /** Longest-path depth over data edges — chronological build order. */
 function depths(sg: LineageSubgraph): Record<string, number> {
@@ -101,6 +135,17 @@ export function WorkflowNarrative({
   const validator = result && result.kind !== "dataset" && result.kind !== "raw-dataset" ? deriveValidator(result, graph) : undefined;
   const ok = validator ? validatorOk(validator) : false;
 
+  // ── the visual story: what drove it (model weights) · when it worked (regime) ──
+  const modelNode = flow.find((n) => n.kind === "model");
+  const coefs = readCoefficients(modelNode?.spec);
+  const labelForFeature = (key: string) => {
+    const fn = graph.nodes.find((n) => n.name === key);
+    return fn ? labels[fn.id] ?? key : key;
+  };
+  const weightsFig = coefs ? featureWeightsFigure(coefs, labelForFeature) : null;
+  const modelLabel = modelNode ? labels[modelNode.id] ?? modelNode.name : undefined;
+  const regimeFig = spec ? regimeFigure(spec) : null;
+
   return (
     <div className="px-6 md:px-8 py-7 max-w-[1080px] mx-auto">
       {/* finding — leads with a plain-language headline, the visual, human-labelled
@@ -163,47 +208,74 @@ export function WorkflowNarrative({
         </div>
       )}
 
-      <div className="max-w-[680px]">
-      <p className="eyebrow mb-4">how it was built · {workspaceName}{building ? " · building…" : ""} <span className="text-faint normal-case tracking-normal">— or open the Graph lens to see the full lineage</span></p>
-
-      {flow.length === 0 && !building && (
-        <p className="text-body text-muted">nothing built yet — describe what to build in the conversation.</p>
-      )}
-
-      <div className="flex flex-col items-stretch">
-        {flow.map((n, i) => (
-          <div key={n.id}>
-            <NodeCard
-              node={n}
-              label={labels[n.id] ?? n.name}
-              op={producerOps[n.id]}
-              dataset={datasets[n.name]}
-              spec={n.kind === "result" ? resultSpecs[n.id] : undefined}
-              onOpen={() => onOpenNode(n.id)}
-            />
-            {(i < flow.length - 1 || building) && <Connector />}
-          </div>
-        ))}
-
-        {building && (
-          <div className="border border-dashed border-clay/60 bg-paper px-5 py-4 animate-pulse">
-            <div className="flex items-center justify-between">
-              <span className="text-body text-ink">{buildingLabel ?? "building…"}</span>
-              {buildingOp && <span className="font-mono text-meta text-clay">{buildingOp}</span>}
+      <div className="space-y-10">
+        {/* what drove it — the model's weights, told as a picture */}
+        {weightsFig && coefs && (
+          <section className="max-w-[680px]">
+            <p className="eyebrow text-clay">what drove it{modelLabel ? ` · ${modelLabel}` : ""}</p>
+            <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[34ch]">{droveHeadline(coefs, labelForFeature)}</h3>
+            <div className="ticks mt-4 border border-hairline bg-paper p-5">
+              <Figure spec={weightsFig} />
             </div>
-          </div>
+            <p className="mt-2.5 font-mono text-meta text-faint">model weights · positive (blue) adds signal · negative (clay) hedges</p>
+          </section>
         )}
-      </div>
-      </div>
-    </div>
-  );
-}
 
-function Connector() {
-  return (
-    <div className="flex flex-col items-center py-1 text-faint">
-      <span className="h-4 w-px bg-hairline-2" />
-      <span className="text-meta leading-none">▼</span>
+        {/* when it worked — the regime ribbon */}
+        {regimeFig && spec?.regimeSeries && (
+          <section className="max-w-[680px]">
+            <p className="eyebrow text-clay">when it worked</p>
+            <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug max-w-[40ch]">{regimeHeadline(spec.regimeSeries)}</h3>
+            <div className="mt-4 border border-hairline bg-paper p-5">
+              <Figure spec={regimeFig} />
+            </div>
+          </section>
+        )}
+
+        {/* how it was built — a compact recipe, not 11 stacked boxes */}
+        <section>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <p className="eyebrow text-clay">how it was built</p>
+            {onOpenLens && (
+              <button onClick={() => onOpenLens("graph")} className="font-mono text-meta text-muted hover:text-ink transition-colors">full lineage in the Graph lens →</button>
+            )}
+          </div>
+          {flow.length === 0 && !building ? (
+            <p className="mt-3 text-body text-muted">nothing built yet — describe what to build in the conversation.</p>
+          ) : (
+            <>
+              <h3 className="mt-1.5 font-serif text-h2 text-ink leading-snug">From data to the finding, in {flow.length} steps.</h3>
+              <div className="mt-4 overflow-x-auto pb-1">
+                <div className="flex items-stretch min-w-min">
+                  {flow.map((n, i) => {
+                    const ds = datasets[n.name];
+                    return (
+                      <Fragment key={n.id}>
+                        <button onClick={() => onOpenNode(n.id)} className={`group shrink-0 w-[150px] text-left border bg-paper px-3 py-2.5 transition-colors ${n.kind === "result" ? "border-clay" : "border-hairline hover:border-ink"}`}>
+                          <div className={`font-mono text-micro uppercase tracking-[0.13em] ${n.kind === "result" ? "text-clay" : "text-faint"}`}>{KIND_TAG[n.kind] ?? n.kind}</div>
+                          <div className="mt-1 text-ui text-ink leading-tight truncate">{labels[n.id] ?? n.name}</div>
+                          <div className="mt-0.5 font-mono text-micro text-faint truncate">{ds ? `${(ds.rows / 1e6).toFixed(1)}M rows` : producerOps[n.id] ?? n.name}</div>
+                        </button>
+                        {i < flow.length - 1 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
+                      </Fragment>
+                    );
+                  })}
+                  {building && (
+                    <>
+                      {flow.length > 0 && <div className="flex items-center px-1.5 text-hairline-2 font-mono shrink-0">→</div>}
+                      <div className="shrink-0 w-[150px] border border-dashed border-clay/60 bg-paper px-3 py-2.5 animate-pulse">
+                        <div className="font-mono text-micro uppercase tracking-[0.13em] text-clay">building</div>
+                        <div className="mt-1 text-ui text-ink leading-tight truncate">{buildingLabel ?? "…"}</div>
+                        {buildingOp && <div className="mt-0.5 font-mono text-micro text-clay truncate">{buildingOp}</div>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
@@ -214,63 +286,3 @@ const KIND_TAG: Record<string, string> = {
   universe: "UNIVERSE", figure: "FIGURE",
 };
 
-const RESULT_METRIC_KEYS = ["sharpe", "hit_rate", "max_drawdown"];
-
-function NodeCard({
-  node,
-  label,
-  op,
-  dataset,
-  spec,
-  onOpen,
-}: {
-  node: Node;
-  label: string;
-  op?: string;
-  dataset?: HostedDataset;
-  spec?: ResultSpec;
-  onOpen: () => void;
-}) {
-  const isResult = node.kind === "result";
-  const isDataset = node.kind === "dataset" || node.kind === "raw-dataset";
-  return (
-    <button
-      onClick={onOpen}
-      className={`group w-full text-left border bg-paper px-5 py-4 transition-colors hover:bg-paper-2/50 ${
-        isResult ? "border-clay" : "border-hairline hover:border-ink"
-      }`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className={`font-mono text-meta uppercase tracking-[0.16em] ${isResult ? "text-clay" : "text-muted"}`}>
-          {KIND_TAG[node.kind] ?? node.kind}
-        </span>
-        {op && <span className="font-mono text-meta text-faint">{op}</span>}
-      </div>
-      <div className="mt-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-h3 text-ink">{label}</span>
-        <span className="font-mono text-meta text-faint truncate">{node.name}</span>
-      </div>
-
-      {isDataset && dataset && (
-        <div className="mt-3 border border-hairline bg-paper-2/40 p-2">
-          <PreviewChart data={dataset.preview} height={84} />
-          <div className="mt-1.5 flex items-center justify-between font-mono text-meta text-faint">
-            <span>{(dataset.rows / 1e6).toFixed(1)}M rows · {dataset.cols} cols</span>
-            <span>{dataset.missingPct}% missing</span>
-          </div>
-        </div>
-      )}
-
-      {isResult && spec && (
-        <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1">
-          {RESULT_METRIC_KEYS.filter((k) => k in spec.metrics).map((k) => (
-            <span key={k} className="font-mono text-ui text-ink-2">
-              <span className="text-faint">{METRIC_LABEL[k] ?? k} </span>
-              {fmtMetric(k, spec.metrics[k])}
-            </span>
-          ))}
-        </div>
-      )}
-    </button>
-  );
-}

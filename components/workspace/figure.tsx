@@ -43,6 +43,8 @@ export function Figure({ spec, height = 240 }: { spec: ChartSpec | null; height?
         <Heatmap data={spec.data} />
       ) : spec.mark === "regime" ? (
         <Regime data={spec.data} />
+      ) : spec.mark === "weights" ? (
+        <Weights data={spec.data} />
       ) : spec.mark === "bar" ? (
         <Bars spec={spec} height={height} />
       ) : (
@@ -178,6 +180,30 @@ function Regime({ data }: { data: FigurePoint[] }) {
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** Signed feature weights as diverging bars off a center line — positive (data
+ *  blue) reaches right, negative (clay) reaches left, direct value labels. */
+function Weights({ data }: { data: FigurePoint[] }) {
+  const max = Math.max(...data.map((d) => Math.abs(Number(d.value))), 0.001);
+  return (
+    <div className="flex flex-col gap-2.5">
+      {data.map((d, i) => {
+        const v = Number(d.value);
+        const pos = v >= 0;
+        const pct = (Math.abs(v) / max) * 50;
+        return (
+          <div key={i} className="grid items-center gap-3" style={{ gridTemplateColumns: "minmax(84px,34%) 1fr 46px" }}>
+            <div className="text-ui text-ink-2 text-right truncate" title={String(d.label)}>{String(d.label)}</div>
+            <div className="relative h-5" style={{ background: `linear-gradient(90deg, transparent calc(50% - 0.5px), ${c.hairline2} 50%, transparent calc(50% + 0.5px))` }}>
+              <div className="absolute top-[3px] h-[14px]" style={pos ? { left: "50%", width: `${pct}%`, background: c.data } : { right: "50%", width: `${pct}%`, background: c.clay }} />
+            </div>
+            <div className="font-mono text-ui tabular-nums" style={{ color: pos ? c.data : c.clay }}>{pos ? "+" : ""}{v.toFixed(2)}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }

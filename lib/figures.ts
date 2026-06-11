@@ -27,6 +27,24 @@ export function resultEquityFigure(spec: ResultSpec): ChartSpec | null {
   };
 }
 
+/** Feature weights — the model's learned coefficients as signed, diverging bars
+ *  (positive = data blue, negative = clay). Sorted biggest-first so the dominant
+ *  signal reads at the top. Pure read of the model spec's coefficients; no synth. */
+export function featureWeightsFigure(
+  coefficients: Record<string, number>,
+  labelFor: (key: string) => string,
+): ChartSpec | null {
+  const entries = Object.entries(coefficients).filter(([, v]) => typeof v === "number");
+  if (entries.length === 0) return null;
+  entries.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  return {
+    mark: "weights",
+    data: entries.map(([k, v]) => ({ label: labelFor(k), value: +v.toFixed(3) })),
+    x: "label",
+    y: "value",
+  };
+}
+
 /** The regime ribbon (M-J · J4) from the result's AUTHORED regime snapshot —
  *  which regime ruled each step over the eval window. Returns null if none. */
 export function regimeFigure(spec: ResultSpec): ChartSpec | null {

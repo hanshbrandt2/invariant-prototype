@@ -65,10 +65,10 @@ export function WorkspaceTopBar({
           <div className="inline-flex shrink-0 items-stretch border border-hairline-2 overflow-hidden font-mono text-meta uppercase tracking-[0.1em]">
             <button
               onClick={() => onLens("result")}
-              title="the finding, in plain language"
+              title="the insight — the finding as a visual story"
               className={`px-3 py-1 transition-colors ${lens === "result" ? "bg-ink text-paper" : "text-ink hover:bg-paper"}`}
             >
-              finding
+              insight
             </button>
             <span className="w-px self-stretch bg-hairline-2" aria-hidden />
             {(["graph", "code", "concepts"] as const).map((l) => (

@@ -244,7 +244,7 @@ export interface ResultSpec {
    its compiler renders the SAME spec behind the unchanged seam. In the prototype
    the binding is an inline authored snapshot (the stand-in for a query/dataRef) —
    honest because it's fixed and labeled, never fabricated at render time. */
-export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "heatmap" | "regime";
+export type FigureMark = "line" | "area" | "bar" | "equity-drawdown" | "heatmap" | "regime" | "weights";
 export interface FigurePoint {
   [key: string]: number | string;
 }
