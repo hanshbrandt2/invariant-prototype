@@ -25,11 +25,12 @@ export function LoginModal() {
             <span className="font-serif text-h2 font-semibold">Invariant</span>
           </div>
           <p className="mt-4 font-serif text-h2 leading-snug text-ink">
-            Sign in to start building.
+            Sign in to start a session.
           </p>
           <p className="mt-2 text-ui leading-relaxed text-muted">
             Browsing stays open. An account begins when you build — so every
-            result is yours, traceable, and reproducible.
+            result is yours, traceable, and reproducible. Your sessions,
+            pinboards and credits travel with you.
           </p>
         </div>
 

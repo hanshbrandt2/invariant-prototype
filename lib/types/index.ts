@@ -270,6 +270,62 @@ export interface ChartSpec {
   focus?: number; // a focused index (the dived point) for marks that highlight a window
 }
 
+/* ── The research session (Phase 3 · ADR-0001) ─────────────────────
+   The workspace is a long-running session, and the trail it leaves is a TREE,
+   not a stack: each node is one coherent answer — a (query, scope, view) tuple
+   (ADR D1/D9). `continue` appends a child; `fork` appends a sibling and is
+   NON-DESTRUCTIVE (the abandoned path stays in `nodes`, reachable). The dive
+   (a number → the space underneath) is the SAME tree at fine grain — a dive
+   level is a child whose `view.dive` descends a representational space. One
+   model powers both. Persisted to localStorage now; a backend session service
+   later, behind the unchanged seam. */
+
+/** The dive's representational spaces — a return point opens into the signal
+ *  that made it, the signal into the spread underneath, down to the raw bars. */
+export type DiveSpace = "return" | "signal" | "spread" | "raw";
+
+/** The four ways one node's answer is told (mirrors the component `Lens`). */
+export type SessionLens = "result" | "graph" | "code" | "concepts";
+
+/** One slice constraint. `origin` records WHICH viz/node the brush/chip came
+ *  from — scope without provenance becomes sludge (ADR D9 corollary). */
+export interface ScopeChip {
+  field: string; // the knob/dimension — z-window, regime, eval-horizon, leg
+  value: string | number;
+  origin?: string; // the node/figure this constraint was drawn from
+}
+export type ScopeQuery = ScopeChip[];
+
+/** How a node's answer is shown: which lens, an inspected artifact, a dive. */
+export interface SessionView {
+  lens: SessionLens;
+  focusNodeId?: string;
+  dive?: { space: DiveSpace; index: number };
+}
+
+export type SessionActor = "user" | "agent"; // one tree, two drivers (ADR D7)
+
+/** A point in the research session — one coherent answer. */
+export interface SessionNode {
+  id: string;
+  parentId: string | null; // null = the root
+  actor: SessionActor;
+  delta: string; // a one-line label — the question, or "signal · point 12"
+  query: string; // the question text (echoes delta for question nodes)
+  scope: ScopeQuery;
+  view: SessionView;
+  createdAt: string;
+  pinned?: boolean; // a pin → the curated deliverable (ADR D5)
+  annotation?: string; // the pin's memo line
+}
+
+/** The whole session as a tree, with a cursor at the node you're standing on. */
+export interface SessionTree {
+  rootId: string;
+  currentId: string;
+  nodes: Record<string, SessionNode>;
+}
+
 /* ── Variations / forking ──────────────────────────────────────────
    A variant group is a set of sibling artifacts that differ in ONE typed
    parameter (the operator's knob). The graph draws ONE node with a `⑂×N`
@@ -293,7 +349,7 @@ export interface VariantGroup {
    artifact-catalog: shapes a live backend can fill, mocked now.
    ───────────────────────────────────────────────────────────────── */
 
-/** A pin's enforcement state on the contract rail.
+/** A pin's enforcement state (shown in the audit panel).
  *  structural = axiom, locked on · active = in force, togglable ·
  *  off = available, pinnable · designed = roadmap, never pinnable. */
 export type PinState = "structural" | "active" | "off" | "designed";
@@ -301,7 +357,7 @@ export type PinState = "structural" | "active" | "off" | "designed";
 /** What kind of law a pin is (drives grouping + the drawer copy). */
 export type PinKind = "structural" | "invariant" | "policy" | "designed";
 
-/** One law on the contract rail — an invariant every build on this canvas must
+/** One law on this canvas (surfaced in the audit panel) — an invariant every build must
  *  satisfy. Each maps to a real backend mechanism (the `adr` + `mechanism`). */
 export interface Pin {
   id: string; // stable slug, e.g. "no_lookahead"

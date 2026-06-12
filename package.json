@@ -9,7 +9,9 @@
     "lint": "eslint",
     "check:typescale": "node scripts/check-typescale.mjs",
     "check:charts": "node scripts/check-charts.mjs",
-    "check": "node scripts/check-typescale.mjs && node scripts/check-charts.mjs"
+    "check:seams": "node scripts/check-seams.mjs",
+    "check:session": "node --experimental-strip-types scripts/verify-session-tree.ts",
+    "check": "node scripts/check-typescale.mjs && node scripts/check-charts.mjs && node scripts/check-seams.mjs && node --experimental-strip-types scripts/verify-session-tree.ts"
   },
   "dependencies": {
     "next": "16.2.7",

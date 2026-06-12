@@ -4,7 +4,7 @@ import { validatorOk, VALIDATOR_CAVEAT } from "@/lib/validator";
 export type TrustZoom = "chat" | "node" | "inspector";
 
 /** Each validator facet maps to the pin it enforces — clicking a RED facet
- *  scrolls the contract rail and flashes that pin (wired by the rail). */
+ *  opens the audit panel and flashes that pin (wired via flashPin). */
 export const FACET_PIN: Record<string, string> = {
   p1: "no_lookahead",
   p2: "no_lookahead",
@@ -29,7 +29,7 @@ function adaptednessHolds(v: Validator): boolean {
  *  - inspector: the full P1/P2/P3 + reproducibility breakdown, with the honest
  *               "what this can't prove" panel (clay left-rule).
  * Clicking a red facet calls `onFlashPin(pinId)`; a chat/node badge fires
- * `onClick` (e.g. open the inspector, or flash the violated pin on the rail).
+ * `onClick` (e.g. open the inspector, or flash the violated pin in the audit panel).
  */
 export function TrustBadge({
   validator,

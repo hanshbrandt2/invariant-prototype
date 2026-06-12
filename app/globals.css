@@ -172,19 +172,21 @@ body {
 
 .rise {
   opacity: 0;
-  animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-/* In-flight build: the node currently materialising pulses a clay halo until
-   the BuildEvent settles. */
+/* In-flight build: the node currently materialising pulses clay until the
+   BuildEvent settles — a flat outline pulse (no glow), per the no-shadow system. */
 @keyframes buildPulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(190, 77, 43, 0);
+    outline: 1px solid var(--color-clay);
+    outline-offset: 0;
     border-color: var(--color-clay);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(190, 77, 43, 0.18);
+    outline: 2px solid var(--color-clay-deep);
+    outline-offset: 1px;
     border-color: var(--color-clay-deep);
   }
 }
@@ -246,6 +248,17 @@ body {
   animation: nodeFlash 0.6s ease-in-out 2;
 }
 
+/* Canvas TRAVEL morph (ADR-0001 · D2): moving the viewport between session nodes
+   morphs — it doesn't teleport. A brief object-constancy fade-up, not a hard cut.
+   Reduced-motion users get an instant swap (below). */
+@keyframes canvasTravel {
+  from { opacity: 0.5; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.canvas-travel {
+  animation: canvasTravel 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Reveal-on-scroll (driven by Reveal component) */
 .reveal {
   opacity: 0;
@@ -258,6 +271,17 @@ body {
   transform: translateY(0);
 }
 
+/* The one button-press vocabulary — calm ease-out on the visual props AND on the
+   transform, so the press eases in and out (not snaps), plus a tactile depress.
+   Apply to every primary control so interaction feels designed, not templated. */
+.btn-press {
+  transition: color 0.15s ease-out, background-color 0.15s ease-out,
+    border-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.15s ease-out;
+}
+.btn-press:active {
+  transform: scale(0.97);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rise,
   .reveal,
@@ -266,12 +290,14 @@ body {
   .seal-pulse,
   .node-snap,
   .drawer-in,
-  .node-flash {
+  .node-flash,
+  .canvas-travel {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
   }
+  .btn-press:active { transform: none; }
 }
 
 /* ── Accessibility ───────────────────────────────────────────── */
@@ -279,7 +305,6 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-clay);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 /* Mouse clicks shouldn't show the ring. */
 :focus:not(:focus-visible) {

@@ -12,11 +12,12 @@ export interface WorkspaceBundle {
   nodes: Record<string, Node>;
   datasets: Record<string, HostedDataset>;
   resultSpecs: Record<string, ResultSpec>;
+  starterPrompts?: string[]; // example questions for the empty canvas (one-click starts)
   code: Record<string, string>; // reproducible Python per node id (Code lens)
   concepts: Record<string, Concept>; // by NodeKind (Concepts lens)
   variants: Record<string, VariantGroup>; // by node id (forks / ⑂×N)
   sweep?: Sweep; // the workspace's parameter sweep (sibling results in one lane)
-  invariants: Pin[]; // the contract rail's pins (the laws on this canvas)
+  invariants: Pin[]; // the pins (the laws on this canvas) — surfaced in the audit panel
   consequences: Consequence[]; // what the pinned laws DO to a build
   vintages: Vintage[]; // the As-of pin's revision-bearing series
   recipe?: Recipe; // this workspace crystallised as a recipe (the Promote panel)
@@ -32,6 +33,7 @@ export interface WorkspaceBundle {
   initialDrawer?: InspectTarget; // deep-link the inspector drawer
   initialDrawerTab?: "overview" | "spec" | "contract" | "checks" | "code" | "lineage"; // deep-link the drawer tab
   initialFork?: string; // deep-link the fork dialog (node id)
+  initialNode?: string; // deep-link a session-tree node — restores the exact node (deep-link > localStorage > bundle)
   initialRevise?: string; // deep-link: mark this node changed → downstream stale (reactive demo)
   initialFinding?: string; // deep-link: open the read-only published finding (consumer view)
   initialPublish?: boolean; // deep-link: open the publish panel in author mode (shows the seal gate)

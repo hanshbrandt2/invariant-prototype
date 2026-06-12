@@ -2,8 +2,35 @@
 // <Figure> seam renders. No fabrication: charts are built from AUTHORED snapshot
 // data (or honest derivations of it), the same discipline metric.tsx gives numbers.
 
-import type { ChartSpec, ResultSpec, VariantMember } from "@/lib/types";
+import type { ChartSpec, ResultSpec, VariantMember, DiveSpace } from "@/lib/types";
 import { editorial } from "@/lib/theme/editorial";
+
+/**
+ * The "underneath" resolver (M-R) — the single source of truth for the dive
+ * chain, replacing the hardcoded signal→spread→raw checks scattered in the
+ * narrative. Given the space you're in, it returns the space beneath it, IFF the
+ * result carries an authored snapshot for that space (honest by construction —
+ * no synthesized descent). This is what makes drill-to-raw the universal trust
+ * surface (ADR-0001 · D4): every figure point CAN trace down; a mark is drillable
+ * exactly when authored depth exists beneath it, and honestly terminal otherwise.
+ *
+ *   return → signal → spread → raw → ∅
+ *
+ * Invariant has the lineage internally to make any figure drillable; in the
+ * prototype only the equity finding carries the authored snapshots, so the other
+ * charts are honestly terminal (no false affordance) until their depth is authored.
+ */
+const DIVE_CHAIN: DiveSpace[] = ["return", "signal", "spread", "raw"];
+export function drillUnderneath(space: DiveSpace, spec: ResultSpec): DiveSpace | null {
+  const i = DIVE_CHAIN.indexOf(space);
+  if (i < 0 || i >= DIVE_CHAIN.length - 1) return null; // unknown, or raw = the floor
+  const next = DIVE_CHAIN[i + 1];
+  const authored =
+    next === "signal" ? !!spec.signalSeries :
+    next === "spread" ? !!spec.spreadSeries :
+    next === "raw" ? !!spec.rawCandles : false;
+  return authored ? next : null;
+}
 
 /** The result's equity + drawdown figure, from its AUTHORED equity snapshot.
  *  Drawdown is derived honestly (equity − running max) so the two panels are

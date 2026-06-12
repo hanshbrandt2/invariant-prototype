@@ -1,11 +1,13 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import type { HostedDataset, LineageSubgraph, ResultSpec } from "@/lib/types";
+import type { HostedDataset, LineageSubgraph, ResultSpec, SessionNode, SessionTree, DiveSpace } from "@/lib/types";
 import type { Lens } from "@/components/workspace/types";
 import { Figure } from "@/components/workspace/figure";
-import { resultHeroFigure, signalFigure, spreadFigure, candleFigure, featureWeightsFigure, regimeFigure, correlationFigure } from "@/lib/figures";
+import { resultHeroFigure, signalFigure, spreadFigure, candleFigure, featureWeightsFigure, regimeFigure, correlationFigure, drillUnderneath } from "@/lib/figures";
 import { deriveValidator, validatorOk } from "@/lib/data";
+import { pathTo, childrenOf, questionAncestor } from "@/lib/session-tree";
+import { StarIcon } from "@/components/workspace/icons";
 
 /** Read a model spec's learned coefficients (free-form dict) → typed weights. */
 function readCoefficients(spec: unknown): Record<string, number> | null {
@@ -27,6 +29,38 @@ function droveHeadline(coefs: Record<string, number>, labelFor: (k: string) => s
   return neg && neg[0] !== top[0]
     ? `${topL} carries the signal — ${labelFor(neg[0])} leans against it.`
     : `${topL} carries the signal.`;
+}
+
+/** A month label that degrades to the raw timestamp on a non-date `t` — matching
+ *  the guard the figure axes already use, so captions never read "Invalid Date". */
+function monthLabel(t: string): string {
+  const d = new Date(t);
+  return Number.isNaN(d.getTime()) ? t : d.toLocaleString("en-US", { month: "long" });
+}
+
+/** The series a dive space reads. `raw` is a zoomed-in session, not part of the
+ *  aligned-by-date family, so it has no entry here. */
+function seriesFor(spec: ResultSpec, space: DiveSpace): { t: string }[] | undefined {
+  return space === "return" ? spec.equitySeries : space === "signal" ? spec.signalSeries : space === "spread" ? spec.spreadSeries : undefined;
+}
+/** Nearest index in `series` to timestamp `t` (clamped, NaN-safe). */
+function nearestIdxByT(series: { t: string }[] | undefined, t?: string): number {
+  if (!series?.length || !t) return 0;
+  const target = new Date(t).getTime();
+  if (Number.isNaN(target)) return 0;
+  let best = 0, bestD = Infinity;
+  series.forEach((p, k) => { const d = Math.abs(new Date(p.t).getTime() - target); if (d < bestD) { bestD = d; best = k; } });
+  return best;
+}
+/** Translate a dive index from one space's series to the next BY TIMESTAMP — the
+ *  equity / signal / spread series needn't share length or dates, so reusing the
+ *  raw integer index would drill to the wrong bar (bug fix). `raw` isn't
+ *  date-aligned (it's one zoomed session), so it keeps the index untranslated. */
+function mapDiveIndex(spec: ResultSpec, from: DiveSpace, fromIdx: number, to: DiveSpace): number {
+  if (to === "raw") return fromIdx;
+  const src = seriesFor(spec, from);
+  const i = src ? Math.max(0, Math.min(src.length - 1, fromIdx)) : fromIdx;
+  return nearestIdxByT(seriesFor(spec, to), src?.[i]?.t);
 }
 
 const REGIME_WORD: Record<string, string> = { MR: "mean-reverting", UP: "trending-up", DOWN: "trending-down", NO_TRADE: "flat" };
@@ -72,9 +106,9 @@ const METRIC_LABEL: Record<string, string> = {
   ann_vol: "Ann. vol", vol_of_vol: "Vol of vol", max_20d: "Max 20d",
 };
 function fmtMetric(k: string, v: number) {
-  if (k === "max_drawdown" || k === "ann_return" || k === "ann_vol" || k === "max_20d" || k === "share_pct") return `${(v * 100).toFixed(1)}%`;
+  if (k === "max_drawdown" || k === "ann_return" || k === "ann_vol" || k === "max_20d" || k === "share_pct" || k === "hit_rate") return `${(v * 100).toFixed(1)}%`;
   if (k === "flagged") return String(v);
-  return v.toFixed(k === "hit_rate" ? 3 : 2);
+  return v.toFixed(2);
 }
 
 /** A plain-language one-liner from the result's numbers — what a newcomer reads first. */
@@ -89,9 +123,9 @@ function plainHeadline(spec: ResultSpec): string {
 
 type ChapterDef = { id: string; title: string; ok: boolean };
 
-// the dive: a stack of spaces you've fallen through (return → signal → spread → raw)
-type DiveSpace = "signal" | "spread" | "raw";
-type DiveLevel = { space: DiveSpace; index: number };
+// the dive: a PATH down the session tree — a return point opens into the signal
+// that made it, that into the spread underneath, down to the raw bars (ADR D1/D4).
+// Backtracking then diving elsewhere forks (the old branch is kept), never amputates.
 const SPACE_LABEL: Record<string, string> = { return: "return", signal: "signal space", spread: "spread space", raw: "raw bars" };
 const DIVE_NUM = ["①", "②", "③", "④", "⑤"];
 
@@ -100,7 +134,7 @@ const DIVE_NUM = ["①", "②", "③", "④", "⑤"];
 function ChapterRail({ chapters, active, onJump, meta }: { chapters: ChapterDef[]; active?: string; onJump: (id: string) => void; meta?: string }) {
   return (
     <nav className="hidden md:block sticky top-2 self-start">
-      <p className="font-mono text-meta uppercase tracking-[0.16em] text-faint mb-3">the story</p>
+      <p className="font-mono text-meta uppercase tracking-[0.16em] text-faint mb-3">contents</p>
       <div className="flex flex-col">
         {chapters.map((c, i) => {
           const on = active === c.id;
@@ -159,6 +193,10 @@ export function WorkflowNarrative({
   onOpenNode,
   onOpenLens,
   onNextStep,
+  diveTree,
+  onDive,
+  onNavigateDive,
+  onPin,
 }: {
   graph: LineageSubgraph;
   labels: Record<string, string>;
@@ -172,6 +210,12 @@ export function WorkflowNarrative({
   onOpenNode: (id: string) => void;
   onOpenLens?: (l: Lens) => void;
   onNextStep?: (prompt: string) => void;
+  // the dive-as-tree (M-P): the session tree (root = the finding), and the
+  // dispatchers that fork/navigate it. Absent ⇒ dive affordances are inert.
+  diveTree?: SessionTree | null;
+  onDive?: (parentId: string, space: DiveSpace, index: number) => void;
+  onNavigateDive?: (nodeId: string) => void;
+  onPin?: (nodeId: string, annotation?: string) => void;
 }) {
   const d = depths(graph);
   const flow = graph.nodes.filter((n) => n.kind !== "policy").sort((a, b) => (d[a.id] ?? 0) - (d[b.id] ?? 0));
@@ -209,9 +253,20 @@ export function WorkflowNarrative({
   ].filter((c) => c.ok);
   const num = (id: string) => String(chapters.findIndex((c) => c.id === id) + 1).padStart(2, "0");
 
-  // dive: a return point opens into the signal that made it, and that into the
-  // spread underneath — a stack of spaces (empty = not diving).
-  const [diveStack, setDiveStack] = useState<DiveLevel[]>([]);
+  // dive: the active path down the session tree — root (the finding) → signal →
+  // spread → raw. `divePath` drops the root, so each entry is one dive level with
+  // a `view.dive` of {space,index}. Empty ⇒ not diving. (Forks live in the tree;
+  // backtracking is non-destructive — the abandoned branch stays reachable.)
+  const canDive = !!(diveTree && onDive);
+  // dives hang beneath the QUESTION you're in (the trunk node), not the tree root —
+  // so a follow-up question gets its own fresh dive space.
+  const qRootId = diveTree ? questionAncestor(diveTree, diveTree.currentId) : undefined;
+  const fullPath: SessionNode[] = diveTree ? pathTo(diveTree, diveTree.currentId) : [];
+  const qIdx = qRootId ? fullPath.findIndex((n) => n.id === qRootId) : -1;
+  const divePath: SessionNode[] = qIdx >= 0 ? fullPath.slice(qIdx + 1) : [];
+  // the space beneath the finding itself — what the hero's points dive into
+  // (resolver-driven, so the chain lives in one place — M-R).
+  const heroBelow: DiveSpace | null = spec ? drillUnderneath("return", spec) : null;
   // scroll-spy: highlight the chapter currently near the top of the canvas
   const [active, setActive] = useState<string | undefined>(undefined);
   const ids = chapters.map((c) => c.id).join(",");
@@ -248,24 +303,26 @@ export function WorkflowNarrative({
 
   const figureCount = [heroFig, corrFig, weightsFig, regimeFig].filter(Boolean).length;
 
-  // the dive cascade: each stack level → its space's figure + a derived caption.
-  const diveViews = diveStack.map((lvl) => {
-    if (lvl.space === "signal" && spec && spec.signalSeries) {
+  // the dive cascade: each path node → its space's figure + a derived caption.
+  const diveViews = divePath.map((node) => {
+    const space = node.view.dive?.space;
+    const index = node.view.dive?.index ?? 0;
+    if (space === "signal" && spec && spec.signalSeries) {
       const sig = spec.signalSeries;
-      const fi = Math.max(0, Math.min(sig.length - 1, lvl.index));
-      const month = new Date(sig[fi].t).toLocaleString("en-US", { month: "long" });
+      const fi = Math.max(0, Math.min(sig.length - 1, index));
+      const month = monthLabel(sig[fi].t);
       const win = sig.slice(Math.max(0, fi - 3), fi + 4);
       const avgZ = win.reduce((a, b) => a + b.z, 0) / (win.length || 1);
       const extended = Math.abs(avgZ) > 1.8;
       const msg = extended
         ? `Around ${month}, the z-score sat at ${avgZ >= 0 ? "+" : ""}${avgZ.toFixed(1)}σ — pinned past its band. The z-score is just the spread standardized; underneath is the spread itself.`
         : `Around ${month}, the z-score held inside ±2σ. Underneath is the spread it standardizes.`;
-      return { fig: signalFigure(spec, fi), where: `inside the ${month} point`, msg, below: spec.spreadSeries ? ("spread" as DiveSpace) : null };
+      return { fig: signalFigure(spec, fi), where: `inside the ${month} point`, msg, below: drillUnderneath("signal", spec) };
     }
-    if (lvl.space === "spread" && spec && spec.spreadSeries) {
+    if (space === "spread" && spec && spec.spreadSeries) {
       const sp = spec.spreadSeries;
-      const fi = Math.max(0, Math.min(sp.length - 1, lvl.index));
-      const month = new Date(sp[fi].t).toLocaleString("en-US", { month: "long" });
+      const fi = Math.max(0, Math.min(sp.length - 1, index));
+      const month = monthLabel(sp[fi].t);
       const w = sp.slice(Math.max(0, fi - 4), fi + 1).map((p) => p.spread);
       const mean = w.reduce((a, b) => a + b, 0) / (w.length || 1);
       const dev = sp[fi].spread - mean;
@@ -273,14 +330,14 @@ export function WorkflowNarrative({
       const msg = far
         ? `Around ${month}, the spread sat ${dev >= 0 ? "+" : ""}${dev.toFixed(1)} from its mean — it trended away instead of reverting. Underneath: the raw WTI bars its crude leg is built from.`
         : `Around ${month}, the spread hugged its mean. Underneath: the raw WTI bars.`;
-      return { fig: spreadFigure(spec, fi), where: `inside the ${month} point`, msg, below: spec.rawCandles ? ("raw" as DiveSpace) : null };
+      return { fig: spreadFigure(spec, fi), where: `inside the ${month} point`, msg, below: drillUnderneath("spread", spec) };
     }
-    if (lvl.space === "raw" && spec && spec.rawCandles) {
+    if (space === "raw" && spec && spec.rawCandles) {
       return {
         fig: candleFigure(spec),
         where: "the Mar 14 session",
         msg: "The raw 1-minute bars — crude_oil_1m, ~3.8M rows. This is the floor: everything above was built from here. (The gas leg traces down the same way.)",
-        below: null as DiveSpace | null,
+        below: drillUnderneath("raw", spec),
       };
     }
     return null;
@@ -305,33 +362,48 @@ export function WorkflowNarrative({
                   <p className="eyebrow text-clay">{num("finding")} · the finding</p>
                   <h2 className="mt-1.5 font-serif text-h3 font-medium text-ink-2 leading-snug">{plainHeadline(spec)}</h2>
                 </div>
-                <div className="flex items-end gap-7 shrink-0">
+                <div className="flex items-baseline gap-7 shrink-0">
                   {typeof spec.metrics.sharpe === "number" && <Kpi v={fmtMetric("sharpe", spec.metrics.sharpe)} k="Sharpe" big />}
-                  {typeof spec.metrics.ann_return === "number" && <Kpi v={fmtMetric("ann_return", spec.metrics.ann_return)} k="ann." tone="pos" />}
+                  {typeof spec.metrics.ann_return === "number" && <Kpi v={fmtMetric("ann_return", spec.metrics.ann_return)} k="ann." />}
                   {typeof spec.metrics.max_drawdown === "number" && <Kpi v={fmtMetric("max_drawdown", spec.metrics.max_drawdown)} k="max dd" tone="neg" />}
                   {typeof spec.metrics.hit_rate === "number" && <Kpi v={fmtMetric("hit_rate", spec.metrics.hit_rate)} k="win" />}
                 </div>
               </div>
               <div className="ticks border border-hairline bg-paper p-4">
-                <div className="flex items-baseline justify-between gap-3 px-1 mb-1.5 font-mono text-meta text-faint">
-                  <span>{heroFig?.caption ?? ""}</span>
-                  <button onClick={() => onOpenNode(result.id)} className="hover:text-clay transition-colors">inspect ▸</button>
+                <div className="flex items-center justify-between gap-3 px-1 mb-1.5 font-mono text-meta text-faint">
+                  <span className="min-w-0 truncate">{heroFig?.caption ?? ""}</span>
+                  <span className="flex items-center gap-3 shrink-0">
+                    {onPin && qRootId && (
+                      <button
+                        onClick={() => onPin(qRootId, plainHeadline(spec))}
+                        title="pin this finding to the pinboard — your deliverable (bottom-right of the workspace)"
+                        className={`btn-press inline-flex items-center gap-1.5 font-mono text-meta uppercase tracking-[0.1em] border px-2 py-0.5 ${diveTree?.nodes[qRootId]?.pinned ? "border-clay text-clay bg-clay-wash" : "border-clay/55 text-clay hover:bg-clay hover:text-paper"}`}
+                      >
+                        {diveTree?.nodes[qRootId]?.pinned ? <>pinned <StarIcon filled className="h-3 w-3" /></> : <>pin <StarIcon className="h-3 w-3" /></>}
+                      </button>
+                    )}
+                    <button onClick={() => onOpenNode(result.id)} className="hover:text-clay transition-colors">inspect ▸</button>
+                  </span>
                 </div>
                 <Figure
                   spec={heroFig ? { ...heroFig, caption: undefined } : null}
-                  onPick={spec.signalSeries ? (i) => setDiveStack([{ space: "signal", index: i }]) : undefined}
-                  selected={diveStack[0]?.index}
+                  onPick={canDive && heroBelow && qRootId ? (i) => onDive!(qRootId, heroBelow, mapDiveIndex(spec, "return", i, heroBelow)) : undefined}
+                  selected={divePath[0]?.view.dive?.index}
                 />
-                {spec.signalSeries && (
-                  <p className="mt-2 px-1 font-mono text-meta text-faint">↑ click any point to dive into the signal that made it</p>
+                {canDive && heroBelow && (
+                  <p className="mt-2 px-1 font-mono text-meta text-faint">↑ click any point to trace it down — {heroBelow} → spread → the raw 1-minute bars. Nothing is hidden.</p>
                 )}
               </div>
               {diveViews.map((v, depth) => {
                 if (!v) return null;
-                const path = ["return", ...diveStack.slice(0, depth + 1).map((l) => l.space)];
+                const node = divePath[depth];
+                const path = ["return", ...divePath.slice(0, depth + 1).map((n) => n.view.dive?.space ?? "return")];
                 const below = v.below;
+                // sibling branches at this fork point (same parent) — backtracking
+                // and diving elsewhere keeps the old one, so >1 means a fork.
+                const siblings = diveTree && node.parentId ? childrenOf(diveTree, node.parentId) : [];
                 return (
-                  <div key={depth} className="rise mt-2 border border-hairline border-l-2 border-l-clay bg-paper p-4">
+                  <div key={node.id} className="rise mt-2 border border-hairline border-l-2 border-l-clay bg-paper p-4">
                     <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
                       <p className="font-mono text-meta uppercase tracking-[0.12em]">
                         {path.map((sp, k) => (
@@ -342,14 +414,31 @@ export function WorkflowNarrative({
                         ))}
                         <span className="text-faint normal-case tracking-normal"> · {v.where}</span>
                       </p>
-                      <button onClick={() => setDiveStack((s) => s.slice(0, depth))} className="font-mono text-meta text-muted hover:text-ink transition-colors">↑ back</button>
+                      <button onClick={() => onNavigateDive?.(node.parentId!)} className="font-mono text-meta text-muted hover:text-ink transition-colors">↑ back</button>
                     </div>
+                    {siblings.length > 1 && (
+                      <div className="flex items-center gap-1.5 mb-2.5 flex-wrap">
+                        <span className="font-mono text-micro uppercase tracking-[0.12em] text-faint">⑂ {siblings.length} branches</span>
+                        {siblings.map((sib) => {
+                          const on = sib.id === node.id;
+                          return (
+                            <button
+                              key={sib.id}
+                              onClick={() => onNavigateDive?.(sib.id)}
+                              className={`font-mono text-micro px-1.5 py-0.5 border transition-colors ${on ? "border-clay text-clay bg-clay-wash" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
+                            >
+                              {SPACE_LABEL[sib.view.dive?.space ?? "return"]} · {sib.view.dive?.index ?? 0}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                     <Figure
                       spec={v.fig}
-                      onPick={below ? (j) => setDiveStack((s) => [...s.slice(0, depth + 1), { space: below, index: j }]) : undefined}
-                      selected={diveStack[depth + 1]?.index}
+                      onPick={below && canDive ? (j) => onDive!(node.id, below, mapDiveIndex(spec, node.view.dive?.space ?? "return", j, below)) : undefined}
+                      selected={divePath[depth + 1]?.view.dive?.index}
                     />
-                    {below && <p className="mt-2 px-1 font-mono text-meta text-faint">↑ click a point to dive into the {below} underneath</p>}
+                    {below && canDive && <p className="mt-2 px-1 font-mono text-meta text-faint">↑ click a point to dive into the {below} underneath{siblings.length > 1 ? " — forks a new branch, keeps this one" : ""}</p>}
                     <p className="mt-2.5 text-ui leading-snug text-ink-2 max-w-[66ch]">{v.msg}</p>
                   </div>
                 );

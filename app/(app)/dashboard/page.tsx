@@ -16,6 +16,7 @@ import { WorkspaceViews } from "@/components/dashboard/workspace-views";
 import { StarterStrip } from "@/components/dashboard/starter-strip";
 import { RecipesShelf } from "@/components/dashboard/recipes-shelf";
 import { FindingsShelf } from "@/components/dashboard/findings-shelf";
+import { ReturningOnly, NewcomerOnly } from "@/components/dashboard/first-run-gate";
 
 type View = "recent" | "all" | "starred";
 
@@ -77,37 +78,41 @@ export default async function DashboardPage({
         </div>
       </section>
 
-      {/* ── your workspaces (Recent / All / Starred) ──────────────── */}
-      {!newUser && <WorkspaceViews workspaces={workspaces} initial={initialView} />}
+      {/* ── RETURNING users: their library (sessions · recipes · findings).
+            Hidden for newcomers so they're never confused by demo work that
+            reads as "yours" (gated client-side on a real session/finding). ── */}
+      <ReturningOnly>
+        <WorkspaceViews workspaces={workspaces} initial={initialView} />
 
-      {/* ── recipes: validated workflows · manual → agentic ───────── */}
-      {!newUser && recipes.length > 0 && (
-        <section className="mt-12">
-          <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-h2 font-semibold">Recipes <span className="font-mono text-meta text-faint">[{recipes.length}]</span></h2>
-            <span className="eyebrow">saved workflows you can re-run</span>
-          </div>
-          <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
-        </section>
-      )}
+        {recipes.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="font-serif text-h2 font-semibold">Recipes <span className="font-mono text-meta text-faint">[{recipes.length}]</span></h2>
+              <span className="eyebrow">saved workflows you can re-run</span>
+            </div>
+            <RecipesShelf recipes={recipes} pinLabels={pinLabels} runsByRecipe={runsByRecipe} />
+          </section>
+        )}
 
-      {/* ── findings: published, read-only, sealed results ────────── */}
-      {!newUser && findings.length > 0 && (
-        <section className="mt-12">
-          <div className="flex items-baseline justify-between mb-3">
-            <h2 className="font-serif text-h2 font-semibold">Findings <span className="font-mono text-meta text-faint">[{findings.length}]</span></h2>
-            <span className="eyebrow">published results · verified</span>
-          </div>
-          <FindingsShelf seeded={findings} />
-        </section>
-      )}
+        {findings.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="font-serif text-h2 font-semibold">Findings <span className="font-mono text-meta text-faint">[{findings.length}]</span></h2>
+              <span className="eyebrow">published results · verified</span>
+            </div>
+            <FindingsShelf seeded={findings} />
+          </section>
+        )}
+      </ReturningOnly>
 
-      {newUser && (
-        <p className="mt-10 text-body text-muted">
-          no workspaces yet — pick a dataset above or describe an idea, and your
-          first research thread builds itself.
+      {/* ── NEWCOMERS: a focused orientation + a few honest EXAMPLES to open. ── */}
+      <NewcomerOnly>
+        <p className="mt-10 text-body leading-relaxed text-muted max-w-[64ch]">
+          New here? You don&rsquo;t have any sessions yet — describe what you want
+          to test above, or open an example below.
         </p>
-      )}
+        {workspaces.length > 0 && <WorkspaceViews workspaces={workspaces} mode="examples" />}
+      </NewcomerOnly>
 
       {/* ── start here strip ──────────────────────────────────────── */}
       <section id="community" className="mt-14 scroll-mt-20">

@@ -5,18 +5,24 @@ import { STAGE_LANES } from "@/lib/types";
 
 const fmt = (n: number) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : `${(n / 1e3).toFixed(0)}K`);
 
-/** Empty canvas = the promise, not the blank page. The contract rail above
- *  already shows the two locked laws; here the faint stage-lane guides show
- *  where it will build, and one move — start with data — gets it going. */
+/** The empty canvas = the newcomer's first screen (landing → here). Lead with the
+ *  QUESTION, not the blank page: one-click example questions that build on the
+ *  spot, then "or start from data". The contract is the engine now (one click away
+ *  in audit) — no rail to point at. */
 export function EmptyCanvas({
   datasets,
   onPickData,
+  onPrompt,
+  starterPrompts,
 }: {
   datasets: HostedDataset[];
   onPickData: (id: string, label: string) => void;
+  onPrompt?: (prompt: string) => void;
+  starterPrompts?: string[];
 }) {
+  const prompts = onPrompt ? (starterPrompts ?? []).slice(0, 3) : [];
   return (
-    <div className="relative h-full flex items-center justify-center p-8">
+    <div className="relative h-full flex items-center justify-center p-8 overflow-y-auto">
       {/* faint stage-lane guides — where the build will land */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex">
         {STAGE_LANES.map((s) => (
@@ -25,16 +31,33 @@ export function EmptyCanvas({
           </div>
         ))}
       </div>
-      <div className="relative w-full max-w-[560px]">
-        <p className="eyebrow text-clay text-center">start with data</p>
+      <div className="relative w-full max-w-[600px] py-6">
+        <p className="eyebrow text-clay text-center">start a session</p>
         <h2 className="mt-3 text-center font-serif text-h1 font-semibold leading-tight">
-          Pick a dataset, and watch it build.
+          What do you want to test?
         </h2>
         <p className="mt-2 text-center text-body text-muted">
-          or describe an idea in the conversation — it compiles to a build.
+          Type it in the chat on the left — or start from one of these.
         </p>
 
-        <div className="mt-7 border border-hairline bg-paper divide-y divide-hairline">
+        {/* one-click example questions — build on the spot, no typing needed */}
+        {prompts.length > 0 && (
+          <div className="mt-7 space-y-2">
+            {prompts.map((p) => (
+              <button
+                key={p}
+                onClick={() => onPrompt?.(p)}
+                className="group w-full flex items-center gap-3 border border-hairline bg-paper px-4 py-3 text-left hover:border-clay transition-colors"
+              >
+                <span className="min-w-0 flex-1 text-body text-ink">{p}</span>
+                <span className="font-mono text-body text-faint group-hover:text-clay transition-colors shrink-0">build →</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <p className="mt-8 mb-2.5 text-center eyebrow">or start from data</p>
+        <div className="border border-hairline bg-paper divide-y divide-hairline">
           {datasets.map((d) => (
             <button
               key={d.id}
@@ -54,7 +77,7 @@ export function EmptyCanvas({
         </div>
 
         <p className="mt-6 text-center font-mono text-meta text-faint">
-          Whatever you build here obeys the two locked laws above — <span className="text-muted">no look-ahead</span> · <span className="text-muted">reproducible</span>.
+          Every result here is <span className="text-muted">point-in-time</span> and <span className="text-muted">reproducible</span> by construction — the proof is one click away in audit.
         </p>
       </div>
     </div>

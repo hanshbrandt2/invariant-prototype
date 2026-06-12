@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AccountMenu } from "@/components/app/account-menu";
 
 type Item = { label: string; href: string; icon: React.ReactNode; soon?: boolean };
@@ -47,7 +48,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
           }`;
           const inner = (
             <>
-              <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 {it.icon}
               </svg>
               <span>{it.label}</span>
@@ -76,22 +77,14 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
             href="/dashboard#workspaces"
             className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
-            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               {I.work}
             </svg>
             <span>Workspaces</span>
           </Link>
-          <div className="ml-[30px] mt-0.5 flex flex-col">
-            {WORKSPACE_VIEWS.map((v) => (
-              <Link
-                key={v.view}
-                href={`/dashboard?view=${v.view}#workspaces`}
-                className="px-3 py-1 rounded-md text-ui text-muted hover:text-ink hover:bg-paper-2 transition-colors"
-              >
-                {v.label}
-              </Link>
-            ))}
-          </div>
+          <Suspense fallback={<ViewLinks activeView={null} />}>
+            <ActiveViewLinks />
+          </Suspense>
         </div>
 
         {/* Recents — quick jump back into recent threads */}
@@ -115,7 +108,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
             href="/learn"
             className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
-            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 5.5 10 3l7 2.5L10 8 3 5.5Z" /><path d="M6 8v4c0 1 2 2 4 2s4-1 4-2V8" />
             </svg>
             <span>Learn</span>
@@ -124,7 +117,7 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
             href="/community"
             className="group flex items-center gap-3 px-3 py-2 rounded-lg text-ui text-ink-2 hover:bg-paper-2 transition-colors"
           >
-            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               {I.community}
             </svg>
             <span>Community</span>
@@ -133,4 +126,28 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
       </nav>
     </aside>
   );
+}
+
+/** The Recent/All/Starred links, with an active marker tied to ?view=. Isolated
+ *  so the useSearchParams CSR-bailout stays inside one Suspense boundary. */
+function ViewLinks({ activeView }: { activeView: string | null }) {
+  return (
+    <div className="ml-[30px] mt-0.5 flex flex-col">
+      {WORKSPACE_VIEWS.map((v) => (
+        <Link
+          key={v.view}
+          href={`/dashboard?view=${v.view}#workspaces`}
+          className={`px-3 py-1 -ml-px border-l-2 text-ui transition-colors ${activeView === v.view ? "border-clay text-ink" : "border-transparent text-muted hover:text-ink hover:bg-paper-2"}`}
+        >
+          {v.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function ActiveViewLinks() {
+  const pathname = usePathname();
+  const view = useSearchParams().get("view");
+  return <ViewLinks activeView={pathname === "/dashboard" ? view ?? "recent" : null} />;
 }

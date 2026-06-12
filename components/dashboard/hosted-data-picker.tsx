@@ -23,12 +23,17 @@ export function HostedDataPicker({ datasets }: { datasets: HostedDataset[] }) {
           href={`/workspace/new?data=${d.id}`}
           className="group flex items-center gap-4 px-4 py-3 hover:bg-paper-2 transition-colors"
         >
-          <span className="font-mono text-meta uppercase tracking-[0.12em] text-muted w-16 shrink-0">
+          <span className="font-mono text-meta uppercase tracking-[0.12em] text-muted w-20 shrink-0">
             {ASSET_LABEL[d.assetClass]}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-body text-ink">{d.name}</span>
-            <span className="block font-mono text-meta text-faint truncate">{d.id} · {d.schema}</span>
+            {/* the id stays whole (it's the identifier); only the variable schema ellipsizes */}
+            <span className="flex items-baseline gap-1 font-mono text-meta text-faint min-w-0">
+              <span className="shrink-0">{d.id}</span>
+              <span className="text-hairline-2 shrink-0">·</span>
+              <span className="truncate">{d.schema}</span>
+            </span>
           </span>
           <span className="font-mono text-meta text-muted tabular-nums shrink-0">{fmt(d.rows)} rows</span>
           <span className="font-mono text-body text-faint group-hover:text-clay transition-colors">→</span>

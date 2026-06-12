@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landing Fig.1 — redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FAF7F1;--paper2:#F3EEE4;--ink:#1C1B18;--ink2:#3b3833;--muted:#6b665c;--faint:#93897a;--clay:#BE4D2B;--clay-deep:#9c3d20;--hair:#E7E1D5;--hair2:#d8d0bf;--green:#3B6D11;--data:#1F4E79;--sage:#7A8B6F;}
+*{box-sizing:border-box}body{margin:0;background:var(--paper2);color:var(--ink);font-family:Inter,sans-serif;-webkit-font-smoothing:antialiased;padding:40px}
+.serif{font-family:"Source Serif 4",serif}.mono{font-family:"JetBrains Mono",monospace}
+.wrap{max-width:1180px;margin:0 auto}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.cap{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px}
+/* card */
+.ticks{position:relative}
+.ticks::before,.ticks::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--clay);opacity:.55}
+.ticks::before{top:-1px;left:-1px;border-top:1.5px solid;border-left:1.5px solid}
+.ticks::after{top:-1px;right:-1px;border-top:1.5px solid;border-right:1.5px solid}
+.card{background:var(--paper);border:1px solid var(--hair);padding:26px 30px 22px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap;margin-bottom:6px}
+.title{font-family:"Source Serif 4",serif;font-size:21px;font-weight:600;color:var(--ink2);line-height:1.3;max-width:30ch}
+.kpis{display:flex;gap:30px;align-items:flex-end}
+.kpi .v{font-family:"JetBrains Mono",monospace;font-size:34px;line-height:1;letter-spacing:-.02em;font-feature-settings:"tnum"}
+.kpi .v.pos{color:var(--green)}.kpi .v.neg{color:var(--clay)}
+.kpi .k{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:7px}
+.subcap{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint);margin:14px 0 6px}
+.viz{display:grid;grid-template-columns:1fr 264px;gap:0;align-items:stretch}
+.inset{border-left:1px dashed var(--hair2);padding-left:22px;margin-left:22px;display:flex;flex-direction:column;justify-content:center}
+.inset .lab{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--clay);margin-bottom:2px}
+.inset .sub{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--faint);margin-top:8px;line-height:1.5}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;border-top:1px solid var(--hair);padding-top:12px}
+.foot .l{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--faint)}
+.foot .r{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--muted)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:9px;background:var(--clay);vertical-align:middle;margin-right:5px}
+.note{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--clay);margin-bottom:18px}
+.leg{display:inline-flex;align-items:center;gap:6px;margin-right:18px}.leg i{width:11px;height:11px;display:inline-block}
+</style></head>
+<body><div class="wrap">
+<div class="note">▸ REDESIGN — landing Fig.1: ONE confident hero (the finding + the trace to raw), replacing the 3 cramped panels. Big · clean · generous · trustworthy.</div>
+
+<div class="cap">
+  <span class="eyebrow">Fig. 1 — The answer is a figure you can fall through</span>
+  <span class="eyebrow">Finding · live</span>
+</div>
+
+<div class="card ticks">
+  <div class="head">
+    <div class="title">WTI front-month mean-reversion · 2024 — about 1.4&times; return per unit of risk.</div>
+    <div class="kpis">
+      <div class="kpi"><div class="v">1.42</div><div class="k">Sharpe</div></div>
+      <div class="kpi"><div class="v pos">18.7%</div><div class="k">ann. return</div></div>
+      <div class="kpi"><div class="v neg">&minus;8.3%</div><div class="k">max drawdown</div></div>
+    </div>
+  </div>
+  <div class="subcap">cumulative return % · 2024-01-02 → 2024-06-28 · authored snapshot</div>
+
+  <div class="viz">
+    <!-- the equity hero — big, clean, one subtle regime band, refined annotations -->
+    <svg viewBox="0 0 760 300" style="display:block;width:100%;height:auto" role="img" aria-label="cumulative return with a traceable point">
+      <!-- one subtle regime band: the trending drawdown stretch only -->
+      <rect x="232" y="14" width="150" height="214" fill="rgba(190,77,43,.06)"/>
+      <text x="307" y="28" text-anchor="middle" class="mono" font-size="9" fill="rgba(190,77,43,.6)" letter-spacing="1">TRENDING</text>
+      <!-- gridlines -->
+      <g stroke="var(--hair)">
+        <line x1="40" y1="40" x2="724" y2="40"/><line x1="40" y1="110" x2="724" y2="110"/><line x1="40" y1="180" x2="724" y2="180"/>
+      </g>
+      <text x="32" y="44" text-anchor="end" class="mono" font-size="9.5" fill="var(--faint)">8%</text>
+      <text x="32" y="114" text-anchor="end" class="mono" font-size="9.5" fill="var(--faint)">4%</text>
+      <text x="32" y="184" text-anchor="end" class="mono" font-size="9.5" fill="var(--faint)">0%</text>
+      <!-- equity area + line -->
+      <path d="M40 178 L232 52 L320 200 L470 96 L560 70 L640 56 L724 30 L724 226 L40 226 Z" fill="#1F4E79" fill-opacity=".08"/>
+      <path d="M40 178 L232 52 L320 200 L470 96 L560 70 L640 56 L724 30" fill="none" stroke="#1F4E79" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+      <!-- peak → trough story, quiet -->
+      <circle cx="232" cy="52" r="3.4" fill="#1F4E79"/>
+      <text x="232" y="42" text-anchor="middle" class="mono" font-size="10.5" font-weight="500" fill="var(--ink)">peak +8.0%</text>
+      <line x1="232" y1="52" x2="320" y2="52" stroke="var(--clay)" stroke-dasharray="2 3" stroke-opacity=".7"/>
+      <line x1="320" y1="52" x2="320" y2="200" stroke="var(--clay)" stroke-width="1.3" stroke-opacity=".8"/>
+      <circle cx="320" cy="200" r="3.4" fill="var(--clay)"/>
+      <text x="328" y="135" class="mono" font-size="11.5" font-weight="600" fill="var(--clay)">&minus;8.3%</text>
+      <!-- end value -->
+      <circle cx="724" cy="30" r="3.4" fill="#1F4E79"/>
+      <text x="716" y="24" text-anchor="end" class="mono" font-size="13" font-weight="600" fill="var(--ink)">+9.4%</text>
+      <!-- THE TRACE POINT — one lit clay point, ringed, with a soft halo -->
+      <circle cx="470" cy="96" r="11" fill="rgba(190,77,43,.10)"/>
+      <circle cx="470" cy="96" r="6.5" fill="none" stroke="var(--clay)" stroke-width="1.6"/>
+      <circle cx="470" cy="96" r="3.2" fill="var(--clay)"/>
+      <!-- connector out to the inset (rightward), drawn as a gentle elbow -->
+      <path d="M476 96 C 560 96, 600 150, 724 150" fill="none" stroke="var(--clay)" stroke-width="1.2" stroke-dasharray="3 3" stroke-opacity=".7"/>
+      <text x="486" y="88" class="mono" font-size="9.5" fill="var(--clay)">trace ↓</text>
+      <!-- month axis -->
+      <g class="mono" font-size="9" fill="var(--faint)">
+        <text x="72" y="248" text-anchor="middle">Jan</text><text x="232" y="248" text-anchor="middle">Feb</text>
+        <text x="320" y="248" text-anchor="middle">Mar</text><text x="470" y="248" text-anchor="middle">Apr</text>
+        <text x="600" y="248" text-anchor="middle">May</text><text x="700" y="248" text-anchor="middle">Jun</text>
+      </g>
+      <!-- legend -->
+      <g class="mono" font-size="9" fill="var(--muted)">
+        <rect x="40" y="270" width="10" height="10" fill="rgba(190,77,43,.18)" stroke="var(--clay)" stroke-opacity=".5"/>
+        <text x="56" y="279">trending regime — where it gave back</text>
+        <circle cx="320" cy="275" r="3.2" fill="var(--clay)"/><text x="330" y="279">click any point to trace it to the raw tick</text>
+      </g>
+    </svg>
+
+    <!-- the inset: the SAME point at 1-minute resolution (the trace target) -->
+    <div class="inset">
+      <div class="lab"><span class="dot"></span>traced to the raw bars</div>
+      <svg viewBox="0 0 240 150" style="display:block;width:100%;height:auto" role="img" aria-label="1-minute candles">
+        <g stroke="var(--hair)"><line x1="6" y1="30" x2="234" y2="30"/><line x1="6" y1="80" x2="234" y2="80"/><line x1="6" y1="130" x2="234" y2="130"/></g>
+        <!-- candlesticks, alternating up(blue hollow)/down(clay) -->
+        <g>
+          <!-- up -->
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="24" y1="40" x2="24" y2="96"/></g><rect x="19" y="58" width="10" height="26" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="48" y1="34" x2="48" y2="78"/></g><rect x="43" y="44" width="10" height="22" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <!-- down -->
+          <g stroke="var(--clay)" stroke-width="1.4"><line x1="72" y1="40" x2="72" y2="92"/></g><rect x="67" y="50" width="10" height="30" fill="var(--clay)"/>
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="96" y1="46" x2="96" y2="100"/></g><rect x="91" y="62" width="10" height="24" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="120" y1="30" x2="120" y2="74"/></g><rect x="115" y="40" width="10" height="22" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <g stroke="var(--clay)" stroke-width="1.4"><line x1="144" y1="42" x2="144" y2="96"/></g><rect x="139" y="54" width="10" height="28" fill="var(--clay)"/>
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="168" y1="38" x2="168" y2="86"/></g><rect x="163" y="50" width="10" height="22" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <g stroke="#1F4E79" stroke-width="1.4"><line x1="192" y1="28" x2="192" y2="70"/></g><rect x="187" y="36" width="10" height="20" fill="var(--paper)" stroke="#1F4E79" stroke-width="1.4"/>
+          <g stroke="var(--clay)" stroke-width="1.4"><line x1="216" y1="34" x2="216" y2="82"/></g><rect x="211" y="44" width="10" height="22" fill="var(--clay)"/>
+        </g>
+      </svg>
+      <div class="sub">WTI front-month · 1-minute OHLC<br>crude_oil_1m · the source. Nothing is hidden.</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="l"><span class="dot" style="background:var(--green)"></span>validated · no look-ahead · reproducible</span>
+    <span class="r">return → signal → spread → raw · one click each</span>
+  </div>
+</div>
+</div></body></html>

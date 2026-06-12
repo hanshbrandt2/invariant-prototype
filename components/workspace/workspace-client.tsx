@@ -13,18 +13,23 @@ import type {
   VariantGroup,
   Pin,
   AgenticConfig,
+  SessionTree,
+  DiveSpace,
 } from "@/lib/types";
 import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
-import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk, publishFinding } from "@/lib/data";
+import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk, publishFinding, loadSession, saveSession } from "@/lib/data";
+import { initSessionTree, diveTo, navigate as navigateTree, addChild, addChildKeepCursor, questionAncestor, pin as pinNode, unpin as unpinNode } from "@/lib/session-tree";
 import { buildProject } from "@/lib/code-project";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
 import { Conversation } from "@/components/workspace/conversation";
 import { Canvas } from "@/components/workspace/canvas";
 import { CodeView } from "@/components/workspace/code-view";
-import { ContractRail } from "@/components/workspace/contract-rail";
+import { AuditPanel } from "@/components/workspace/audit-panel";
+import { SessionMap } from "@/components/workspace/session-map";
+import { Pinboard } from "@/components/workspace/pinboard";
 import { PromotePanel } from "@/components/workspace/promote-panel";
 import { PublishPanel } from "@/components/workspace/publish-panel";
 import { RunStrip } from "@/components/workspace/run-strip";
@@ -75,7 +80,7 @@ interface Run {
 
 export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const { debit } = useCredits();
-  const { requireAuth } = useAuth();
+  const { requireAuth, ready: authReady } = useAuth();
   const [turns, setTurns] = useState<Turn[]>(bundle.initialTurns);
 
   // the LIVE workspace graph — grows node-by-node as builds stream.
@@ -88,11 +93,17 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const [forkNode, setForkNode] = useState<string | null>(bundle.initialFork ?? null);
   const [chatOpen, setChatOpen] = useState(true);
 
-  // the contract rail's pins — structural ones are locked; invariants/policies
+  // the pins (shown in the audit panel) — structural ones are locked; invariants/policies
   // can be toggled in/out of force, which the consequences strip reacts to.
   const [pins, setPins] = useState<Pin[]>(bundle.invariants);
   const [flashedPin, setFlashedPin] = useState<string | null>(null);
-  const [openPin, setOpenPin] = useState<string | null>(null); // the expanded contract-rail pin
+  const [openPin, setOpenPin] = useState<string | null>(null); // the expanded pin (in the audit panel)
+  // the contract/honesty machinery is the ENGINE now, surfaced on demand behind a
+  // quiet "audit" affordance — not an always-on rail over the canvas (ADR-0001 · D3).
+  const [auditOpen, setAuditOpen] = useState(false);
+  // flash a pin: open the audit panel on that pin and pulse it — used by the
+  // agentic halt and a chat trust-badge click (where the rail used to flash).
+  const flashPin = useCallback((id: string) => { setFlashedPin(id); setOpenPin(id); setDrawer(null); setAuditOpen(true); }, []);
   // the active lens — one analysis told four ways. A newcomer lands on the
   // finding-led Result (plain language); Graph/Code/Concepts are one click away.
   // A deep-linked ?lens= or legacy ?view=code overrides the default.
@@ -113,6 +124,38 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const viewResultSpecs = activeRun ? activeRun.resultSpecs : resultSpecs;
   const togglePin = useCallback((id: string) => {
     setPins((ps) => ps.map((p) => (p.id === id && (p.kind === "invariant" || p.kind === "policy") ? { ...p, state: p.state === "active" ? "off" : "active" } : p)));
+  }, []);
+
+  // the research session as a TREE (Phase 3 · M-P) — root = the finding; the dive
+  // (a number → the space underneath) forks/navigates it non-destructively. Lives
+  // here (not in the narrative) so it survives lens switch + persists to storage.
+  const [sessionTree, setSessionTree] = useState<SessionTree | null>(null);
+  // dive into a representational space from a node — forks if it's a new point,
+  // navigates if that point was already opened (the old branch is always kept).
+  const onDive = useCallback((parentId: string, space: DiveSpace, index: number) => {
+    setSessionTree((t) => (t ? diveTo(t, parentId, space, index, { actor: "user", delta: `${space} · point ${index}`, query: "", scope: [], createdAt: new Date().toISOString(), view: {} }) : t));
+  }, []);
+  // move the dive cursor (back / branch-switch) — never removes a branch.
+  const onNavigateDive = useCallback((nodeId: string) => {
+    setSessionTree((t) => (t ? navigateTree(t, nodeId) : t));
+  }, []);
+  // travel the canvas to a node in the session map — move the cursor; the canvas
+  // morphs to it (it doesn't teleport — ADR D2).
+  const onTravel = useCallback((nodeId: string) => {
+    setSessionTree((t) => {
+      const node = t?.nodes[nodeId];
+      if (!t || !node) return t ?? null;
+      return navigateTree(t, nodeId);
+    });
+  }, []);
+  // pin a node onto the pinboard — the curated deliverable (ADR D5). Pins ride
+  // inside the session tree, so they persist with the session for free. Pinning
+  // is orthogonal to publishing a finding (a pin bookmarks an explorable state).
+  const onPin = useCallback((nodeId: string, annotation?: string) => {
+    setSessionTree((t) => (t ? pinNode(t, nodeId, annotation) : t));
+  }, []);
+  const onUnpin = useCallback((nodeId: string) => {
+    setSessionTree((t) => (t ? unpinNode(t, nodeId) : t));
   }, []);
 
   const [building, setBuilding] = useState(false);
@@ -141,6 +184,62 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   useEffect(() => { viewRef.current = { graph: viewGraph, resultSpecs: viewResultSpecs }; }, [viewGraph, viewResultSpecs]);
   const idRef = useRef(0);
   const uid = (p: string) => `${p}-${++idRef.current}`;
+
+  // ── the session tree: restore from storage, else seed the ROOT (M-P). ──
+  // Precedence: restored localStorage session > (new workspace) the user's FIRST
+  // prompt/dataset as the root — NOT the machine-named finding, so the question
+  // survives in the tree > (existing/demo workspace) the finding once it exists.
+  // Client-only (localStorage).
+  useEffect(() => {
+    if (sessionTree) return;
+    const now = new Date().toISOString();
+    const seedRoot = (label: string) =>
+      initSessionTree({ actor: "user", delta: label, query: label, scope: [], view: { lens: "result" }, createdAt: now });
+
+    const restored = bundle.isNew ? null : loadSession(bundle.workspaceId);
+    if (restored) {
+      setSessionTree(bundle.initialNode && restored.nodes[bundle.initialNode] ? navigateTree(restored, bundle.initialNode) : restored);
+      return;
+    }
+    if (bundle.isNew) {
+      // seed eagerly from the queued prompt/dataset (before the build streams), so
+      // submit()/fork always have a non-null tree and the first question is the root.
+      const seed = bundle.initialBuildPrompt ?? (bundle.initialDataId ? bundle.datasets[bundle.initialDataId]?.name ?? bundle.initialDataId : null);
+      if (seed) setSessionTree(seedRoot(seed));
+      return; // an empty /workspace/new seeds on the first submit() instead
+    }
+    const result = graph.nodes.find((n) => n.kind === "result");
+    if (!result) return;
+    const spec = resultSpecs[result.id];
+    let tree = seedRoot(spec?.friendlyName ?? result.name);
+    if (bundle.initialNode && tree.nodes[bundle.initialNode]) tree = navigateTree(tree, bundle.initialNode);
+    setSessionTree(tree);
+  }, [sessionTree, graph, resultSpecs, bundle]);
+
+  // persist a REAL session — close the laptop, resume at the exact node — and keep
+  // ?node= in sync. Guards: never under the shared 'new' route key (no stable id
+  // yet); only once the tree has grown past the seed (a passive demo view must not
+  // flip a newcomer to "returning"); strip consumed one-shot deep-link params so
+  // the address bar stays honest. Synchronous save (light payload) → no unmount hole.
+  useEffect(() => {
+    if (!sessionTree || bundle.isNew) return;
+    const tree = sessionTree;
+    const meaningful = Object.keys(tree.nodes).length > 1 || Object.values(tree.nodes).some((n) => n.pinned);
+    if (!meaningful) return;
+    saveSession(bundle.workspaceId, tree);
+    try {
+      const url = new URL(window.location.href);
+      ["finding", "revise", "agentic", "publish", "build", "data", "promote", "fork", "inspect", "compare"].forEach((k) => url.searchParams.delete(k));
+      url.searchParams.set("node", tree.currentId);
+      window.history.replaceState(null, "", url);
+    } catch { /* SSR / no history */ }
+  }, [sessionTree, bundle.workspaceId, bundle.isNew]);
+
+  // below lg the chat is a full-screen overlay — start it CLOSED so a phone/tablet
+  // visitor lands on the canvas (the topbar 'show chat' opens it). Runs once on
+  // mount; SSR + first paint default to open, so no hydration mismatch.
+  /* eslint-disable-next-line react-hooks/set-state-in-effect */
+  useEffect(() => { if (window.innerWidth < 1024) setChatOpen(false); }, []);
 
   const addTurn = useCallback((t: Turn) => setTurns((prev) => [...prev, t]), []);
 
@@ -272,8 +371,20 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   );
 
   const submit = useCallback(
-    (prompt: string) => {
+    (prompt: string, opts?: { fork?: boolean }) => {
       addTurn({ id: uid("u"), role: "user", text: prompt });
+      // grow the session spine: a question is a node. continue = a child of the
+      // question you're in; fork = a sibling (an alternative line). The old line
+      // is never lost (ADR D1). The build then accretes the answer as before.
+      const node = { actor: "user" as const, delta: prompt, query: prompt, scope: [], view: { lens: "result" as const }, createdAt: new Date().toISOString() };
+      setSessionTree((t) => {
+        // no tree yet (the first question on an empty /workspace/new) → seed the
+        // ROOT from this prompt, so the first inquiry is never dropped.
+        if (!t) return initSessionTree(node);
+        const curQ = questionAncestor(t, t.currentId);
+        const parentId = opts?.fork ? t.nodes[curQ]?.parentId ?? t.rootId : curQ;
+        return addChild(t, parentId, node);
+      });
       void begin(prompt);
     },
     [addTurn, begin]
@@ -333,6 +444,13 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           setRuns((rs) => rs.map((r) => (r.id === runId ? { ...r, outcome: "validated" } : r)));
           setDrawer({ type: "node", id: ev.producedId });
           setOpenPin(null);
+          // one state, two drivers (ADR D7): the agent's run lands as an `agent`
+          // node on the SAME session tree the user navigates — a fork the map
+          // shows as "where the agent took me", with its provenance.
+          // land the agent node WITHOUT advancing the cursor — the user is parked
+          // on the run view; moving currentId would rewrite ?node=, fire the canvas
+          // morph over the run, and misland them on reload (runs aren't persisted).
+          setSessionTree((t) => (t ? addChildKeepCursor(t, questionAncestor(t, t.currentId), { actor: "agent", delta: `agent · re-ran the recipe on 2025-Q1 — validated`, query: "agentic re-run", scope: [], view: { lens: "result" }, createdAt: new Date().toISOString() }) : t));
           addTurn({
             id: uid("ag"),
             role: "system",
@@ -352,17 +470,17 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             text: `⛔ HALTED at “${ev.step.label}” — violates pinned invariant ‘${pinLabel}’. ${ev.reason} The run stopped instead of shipping a wrong number (it's logged as a halted run).`,
             actions: ev.step.node ? [{ type: "push_node", ref: ev.step.node.id }] : undefined,
           });
-          setFlashedPin(ev.pinId);
+          flashPin(ev.pinId);
           return;
         }
       }
     },
-    [bundle.recipe, addTurn, materializeRun, debit, pins]
+    [bundle.recipe, addTurn, materializeRun, debit, pins, flashPin]
   );
 
   // ── the slide-over inspector: opening any node (from chat or the graph) slides
   // it in from the right while the graph stays put behind it. ──────────────────
-  // opening a node/edge/compare closes any expanded contract-rail pin (and vice
+  // opening a node/edge/compare closes any expanded audit-panel pin (and vice
   // versa) — the two detail surfaces are mutually exclusive, never cramped.
   const openNode = useCallback((nodeId: string) => { setDrawer({ type: "node", id: nodeId }); setOpenPin(null); }, []);
   const inspectNode = useCallback((id: string) => { setDrawer({ type: "node", id }); setOpenPin(null); }, []);
@@ -554,11 +672,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     [openNode, submit]
   );
 
-  // fire the queued intent (resume-by-URL) once on mount
+  // fire the queued intent (resume-by-URL) once on mount — but only AFTER the
+  // AuthProvider has hydrated, so an already-authed user arriving via a ?build=
+  // link doesn't hit the login gate (and have their build stranded) on a stale
+  // authed=false. Re-runs once when `authReady` flips; the ref keeps it once-only.
   const fired = useRef(false);
   /* eslint-disable react-hooks/set-state-in-effect -- fire the queued intent (resume-by-URL) exactly once on mount */
   useEffect(() => {
-    if (fired.current) return;
+    if (!authReady || fired.current) return;
     fired.current = true;
     if (bundle.isNew && bundle.initialBuildPrompt) {
       addTurn({ id: "u-init", role: "user", text: bundle.initialBuildPrompt });
@@ -573,17 +694,23 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     if (bundle.initialFinding) { setPublished(true); setPublishOpen(true); } // deep-link: the read-only published finding
     else if (bundle.initialPublish) setPublishOpen(true); // deep-link: the publish panel (author mode, shows the gate)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authReady]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const live = canvas.phase === "live";
   const selectedNodeId = drawer?.type === "node" ? drawer.id : drawer?.type === "compare" ? drawer.nodeId : undefined;
   // the integrity seal's verdict — the terminal result's harness verdict, honest.
   // A stale graph can't be reproducible-by-construction, so the seal drops too.
-  const resultNode = viewGraph.nodes.find((n) => n.kind === "result");
+  // A ?finding=<resultId> deep-link opens the panel on THAT specific result, not
+  // just whatever happens to be terminal (matters once a workspace has >1 result).
+  const resultNode =
+    (bundle.initialFinding && viewGraph.nodes.find((n) => n.id === bundle.initialFinding)) ||
+    viewGraph.nodes.find((n) => n.kind === "result");
   // staleness applies to the exploration only (runs are immutable executions).
   const staleActive = !activeRun && stale.size > 0;
   const sealOk = staleActive ? false : resultNode ? validatorOk(deriveValidator(resultNode, viewGraph)) : true;
+  // pins in force — shown on the quiet audit affordance in the top bar.
+  const inForce = pins.filter((p) => p.state === "structural" || p.state === "active").length;
   // why publish is gated, if it is — staleness first (actionable), else the harness.
   const publishBlockedReason = staleActive
     ? `${stale.size} downstream ${stale.size === 1 ? "artifact is" : "artifacts are"} stale — rebuild first`
@@ -593,7 +720,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     <div className="flex h-screen bg-paper">
       <WorkspaceRail />
       {chatOpen && (
-        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} validatorFor={validatorFor} onFlashPin={setFlashedPin} />
+        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} validatorFor={validatorFor} onFlashPin={flashPin} />
       )}
       <div className="flex-1 min-w-0 flex flex-col">
         <WorkspaceTopBar
@@ -611,21 +738,14 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onPublish={() => setPublishOpen(true)}
           lens={lens}
           onLens={setLens}
+          auditOpen={auditOpen}
+          onToggleAudit={() => setAuditOpen((o) => !o)}
+          sealOk={sealOk}
+          inForce={inForce}
         />
         {runs.length > 0 && (
           <RunStrip runs={runs.map((r) => ({ id: r.id, label: r.label, outcome: r.outcome }))} activeRunId={activeRunId} onSelect={onSelectRun} />
         )}
-        <ContractRail
-          pins={pins}
-          consequences={bundle.consequences}
-          vintages={bundle.vintages}
-          sealOk={sealOk}
-          onToggle={togglePin}
-          openId={openPin}
-          onOpen={onOpenPin}
-          flashedPin={flashedPin}
-          onFlashHandled={() => setFlashedPin(null)}
-        />
         {live && <FirstRunCoach />}
         {staleActive && (
           <div className="shrink-0 flex items-center justify-between gap-3 px-5 py-2 border-b border-clay/40 bg-clay-wash">
@@ -650,7 +770,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             lens={lens}
             staleIds={activeRun ? undefined : stale}
             workspaceName={bundle.workspaceName}
-            onFlashPin={setFlashedPin}
+            onFlashPin={flashPin}
             onOpenCode={() => setLens("code")}
             onOpenLens={setLens}
             graph={viewGraph}
@@ -664,6 +784,8 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             inFlightId={inFlightId}
             selectedNodeId={selectedNodeId}
             onPickData={pickData}
+            onPrompt={(p) => submit(p)}
+            starterPrompts={bundle.starterPrompts}
             drawer={drawer}
             drawerTab={bundle.initialDrawerTab}
             onInspectNode={inspectNode}
@@ -673,9 +795,35 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
             onPromote={activeRun ? () => {} : promote}
             onFork={activeRun ? () => {} : openFork}
             onNextStep={activeRun ? undefined : (prompt) => { setChatOpen(true); submit(prompt); }}
+            diveTree={activeRun ? null : sessionTree}
+            onDive={activeRun ? undefined : onDive}
+            onNavigateDive={activeRun ? undefined : onNavigateDive}
+            onPin={activeRun ? undefined : onPin}
+            morphKey={sessionTree?.currentId}
           />
         )}
+        {/* the session strip — the new meta-chrome where the contract rail used to
+            sit (ADR-0001 · D8). Exploration-only; a run is an immutable execution. */}
+        {live && !activeRun && (
+          <div className="shrink-0 hidden lg:flex border-t border-hairline bg-paper-2/40">
+            <SessionMap tree={sessionTree} onTravel={onTravel} onPin={onPin} onUnpin={onUnpin} />
+            <Pinboard tree={sessionTree} onTravel={onTravel} onUnpin={onUnpin} />
+          </div>
+        )}
       </div>
+      {auditOpen && (
+        <AuditPanel
+          pins={pins}
+          vintages={bundle.vintages}
+          sealOk={sealOk}
+          openPinId={openPin}
+          onOpenPin={onOpenPin}
+          onToggle={togglePin}
+          flashedPin={flashedPin}
+          onFlashHandled={() => setFlashedPin(null)}
+          onClose={() => setAuditOpen(false)}
+        />
+      )}
       {publishOpen && resultNode && (
         <PublishPanel
           result={resultNode}

@@ -20,7 +20,7 @@ function fmt(v: number, f: MetricFormat): string {
 /**
  * The anti-fabrication gate. A number reaches the canvas ONLY if it arrives
  * with a lineage hash AND a validator verdict; otherwise it refuses to render
- * the value and shows a placeholder. This makes the contract rail's promise —
+ * the value and shows a placeholder. This makes the audit promise —
  * "no metric reaches this canvas without a lineage_hash" — true by construction,
  * not by decoration. Wire every result/metric render through it.
  */

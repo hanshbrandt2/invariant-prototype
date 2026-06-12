@@ -22,11 +22,32 @@ const byRecency = (a: Workspace, b: Workspace) => (a.updatedAt < b.updatedAt ? 1
 export function WorkspaceViews({
   workspaces,
   initial = "recent",
+  mode = "library",
 }: {
   workspaces: Workspace[];
   initial?: View;
+  mode?: "library" | "examples";
 }) {
   const [view, setView] = useState<View>(initial);
+
+  // examples mode (newcomers): these seeded workspaces aren't "yours" — they're
+  // finished sessions to open and learn from. No tabs, no "+ new", honest heading.
+  if (mode === "examples") {
+    const shown = [...workspaces].sort(byRecency).slice(0, 3);
+    return (
+      <section id="examples" className="mt-6 scroll-mt-20">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="font-serif text-h2 font-semibold">Example sessions</h2>
+          <span className="eyebrow">open one to see a finished research session</span>
+        </div>
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {shown.map((ws) => (
+            <WorkspaceCard key={ws.id} ws={ws} />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   const set =
     view === "starred"

@@ -1,6 +1,7 @@
 "use client";
 
-import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, VariantGroup } from "@/lib/types";
+import { useEffect, useRef, useState } from "react";
+import type { Concept, HostedDataset, LineageEdge, LineageSubgraph, ResultSpec, VariantGroup, SessionTree, DiveSpace } from "@/lib/types";
 import type { CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
 import { EmptyCanvas } from "@/components/workspace/empty-canvas";
 import { WorkflowGraph } from "@/components/workspace/workflow-graph";
@@ -32,6 +33,8 @@ export function Canvas({
   inFlightId,
   selectedNodeId,
   onPickData,
+  onPrompt,
+  starterPrompts,
   drawer,
   drawerTab,
   onInspectNode,
@@ -44,6 +47,11 @@ export function Canvas({
   onOpenCode,
   onOpenLens,
   onNextStep,
+  diveTree,
+  onDive,
+  onNavigateDive,
+  onPin,
+  morphKey,
 }: {
   canvas: CanvasState;
   lens: "result" | "graph" | "concepts";
@@ -60,6 +68,8 @@ export function Canvas({
   inFlightId?: string | null;
   selectedNodeId?: string;
   onPickData: (id: string, label: string) => void;
+  onPrompt?: (prompt: string) => void;
+  starterPrompts?: string[];
   drawer: InspectTarget | null;
   drawerTab?: "overview" | "spec" | "contract" | "checks" | "code" | "lineage";
   onInspectNode: (id: string) => void;
@@ -72,8 +82,25 @@ export function Canvas({
   onOpenCode?: () => void;
   onOpenLens?: (l: Lens) => void;
   onNextStep?: (prompt: string) => void;
+  diveTree?: SessionTree | null;
+  onDive?: (parentId: string, space: DiveSpace, index: number) => void;
+  onNavigateDive?: (nodeId: string) => void;
+  onPin?: (nodeId: string, annotation?: string) => void;
+  morphKey?: string; // the current session node — changing it morphs the viewport
 }) {
   const datasetList: HostedDataset[] = Array.from(new Map(Object.values(datasets).map((d) => [d.id, d])).values());
+
+  // travel morph (ADR D2): when the current node changes, briefly play the
+  // object-constancy fade-up — same DOM, so scroll/state survive (no teleport).
+  const [traveling, setTraveling] = useState(false);
+  const prevKey = useRef(morphKey);
+  useEffect(() => {
+    if (prevKey.current === morphKey) return;
+    prevKey.current = morphKey;
+    setTraveling(true);
+    const t = setTimeout(() => setTraveling(false), 280);
+    return () => clearTimeout(t);
+  }, [morphKey]);
 
   // the live analysis told through the chosen lens (Graph / Result / Concepts)
   const liveContent =
@@ -93,6 +120,10 @@ export function Canvas({
         onOpenNode={onInspectNode}
         onOpenLens={onOpenLens}
         onNextStep={onNextStep}
+        diveTree={diveTree}
+        onDive={onDive}
+        onNavigateDive={onNavigateDive}
+        onPin={onPin}
       />
     ) : lens === "concepts" ? (
       (() => {
@@ -135,13 +166,13 @@ export function Canvas({
       />
     );
 
-  const content = canvas.phase === "empty" ? <EmptyCanvas datasets={datasetList} onPickData={onPickData} /> : liveContent;
+  const content = canvas.phase === "empty" ? <EmptyCanvas datasets={datasetList} onPickData={onPickData} onPrompt={onPrompt} starterPrompts={starterPrompts} /> : liveContent;
   // the graph manages its own pan/zoom; the scrollable narrative/concepts need overflow
   const scroll = canvas.phase === "live" && lens !== "graph";
 
   return (
     <div className="rise flex-1 min-w-0 relative mx-3 mb-3 mt-0.5 rounded-lg border border-hairline bg-white  overflow-hidden" style={{ animationDelay: "110ms" }}>
-      <div className={`absolute inset-0 ${scroll ? "overflow-y-auto" : "overflow-hidden"}`}>{content}</div>
+      <div className={`absolute inset-0 ${scroll ? "overflow-y-auto" : "overflow-hidden"} ${traveling ? "canvas-travel" : ""}`}>{content}</div>
       {drawer && (
         <InspectorDrawer
           key={JSON.stringify(drawer)}

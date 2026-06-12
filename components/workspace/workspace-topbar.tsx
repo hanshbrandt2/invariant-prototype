@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCredits } from "@/components/app/credits-context";
 import { ExportMenu } from "@/components/workspace/export-menu";
+import { CogIcon, ShareIcon, CheckIcon } from "@/components/workspace/icons";
 import type { Lens } from "@/components/workspace/types";
 
 /**
@@ -26,6 +27,10 @@ export function WorkspaceTopBar({
   onPublish,
   lens,
   onLens,
+  auditOpen,
+  onToggleAudit,
+  sealOk,
+  inForce,
 }: {
   workspaceName: string;
   live: boolean;
@@ -41,11 +46,19 @@ export function WorkspaceTopBar({
   onPublish?: () => void;
   lens?: Lens;
   onLens?: (l: Lens) => void;
+  auditOpen?: boolean;
+  onToggleAudit?: () => void;
+  sealOk?: boolean;
+  inForce?: number;
 }) {
   const { balance } = useCredits();
+  // the iteration bound is credits, not a timer (ADR-0001 · D6): surface how many
+  // more questions the balance buys, at a rough avg cost per question.
+  const low = balance < 10;
+  const questionsLeft = Math.max(0, Math.floor(balance / 1.5));
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between gap-4 pl-2 pr-5">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-4 px-4">
       <div className="flex items-center gap-4 min-w-0">
         {!chatOpen && (
           <button onClick={onToggleChat} title="show chat" className="grid h-9 w-9 place-items-center rounded-lg text-muted hover:bg-paper hover:text-ink  transition-all">
@@ -66,7 +79,7 @@ export function WorkspaceTopBar({
             <button
               onClick={() => onLens("result")}
               title="the insight — the finding as a visual story"
-              className={`px-3 py-1 transition-colors ${lens === "result" ? "bg-ink text-paper" : "text-ink hover:bg-paper"}`}
+              className={`px-3 py-1 transition-colors ${lens === "result" ? "bg-ink text-paper" : "text-muted hover:text-ink"}`}
             >
               insight
             </button>
@@ -90,24 +103,36 @@ export function WorkspaceTopBar({
           <button
             onClick={onPromote}
             title="crystallise this validated workflow as a recipe — then make it agentic"
-            className="font-mono text-meta uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper transition-colors"
+            className="btn-press inline-flex items-center gap-1.5 font-mono text-meta uppercase tracking-[0.1em] border border-clay text-clay px-3 py-1.5 hover:bg-clay hover:text-paper"
           >
-            promote ⚙
+            promote <CogIcon className="h-[13px] w-[13px]" />
           </button>
         )}
         {canPublish && onPublish && (
           <button
             onClick={onPublish}
             title="pin this finding as a read-only, citable artifact — sealed & shareable"
-            className={`font-mono text-meta uppercase tracking-[0.1em] border px-3 py-1.5 transition-colors ${published ? "border-[#3B6D11] text-[#3B6D11] hover:bg-[#3B6D11] hover:text-paper" : "border-ink text-ink hover:bg-ink hover:text-paper"}`}
+            className={`btn-press inline-flex items-center gap-1.5 font-mono text-meta uppercase tracking-[0.1em] border px-3 py-1.5 ${published ? "border-[#3B6D11] text-[#3B6D11] hover:bg-[#3B6D11] hover:text-paper" : "border-ink text-ink hover:bg-ink hover:text-paper"}`}
           >
-            {published ? "published ✓" : "publish ⤴"}
+            {published ? <>published <CheckIcon className="h-[13px] w-[13px]" /></> : <>publish <ShareIcon className="h-[13px] w-[13px]" /></>}
+          </button>
+        )}
+        {live && onToggleAudit && (
+          <button
+            onClick={onToggleAudit}
+            title="audit · the contract and lineage underneath this canvas — the engine that lets a figure be trusted"
+            className={`btn-press flex items-center gap-1.5 font-mono text-meta uppercase tracking-[0.1em] border px-2.5 py-1.5 ${auditOpen ? "border-ink text-ink bg-paper" : "border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
+          >
+            <span className={`h-2 w-2 rounded-full ${sealOk === false ? "bg-clay" : "bg-green ring-2 ring-green/20"}`} />
+            audit
+            {typeof inForce === "number" && <span className="text-faint normal-case tracking-normal">· {inForce}</span>}
           </button>
         )}
         {live && <ExportMenu workspaceName={workspaceName} getScript={getScript} getConversation={getConversation} getProject={getProject} />}
-        <div className="flex items-center gap-2 rounded-lg border border-hairline bg-paper px-3 py-1.5 " title="credit balance — ticks down as you build">
-          <span className="eyebrow">credits</span>
-          <span className={`font-mono text-ui tabular-nums transition-colors ${balance < 10 ? "text-clay" : "text-ink"}`}>{balance.toFixed(1)}</span>
+        <div className="flex items-center gap-2 border border-hairline-2 bg-paper px-3 py-1.5" title="iteration budget — credits remaining ≈ the questions you can still ask (the bound is compute, not a timer)">
+          <span className="eyebrow">budget</span>
+          <span className={`font-mono text-ui tabular-nums transition-colors ${low ? "text-clay" : "text-ink"}`}>{balance.toFixed(0)} cr</span>
+          <span className="font-mono text-meta text-faint">· ~{questionsLeft} q</span>
         </div>
       </div>
     </header>

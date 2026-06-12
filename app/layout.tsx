@@ -22,9 +22,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Invariant — A workspace for quantitative research",
+  title: "Invariant — A research session for quantitative work",
   description:
-    "Invariant is a workspace where data, features, models and results live in one connected graph — each artifact carrying its lineage, its content hash, and the policies it must obey. Point-in-time by construction.",
+    "Ask a question and Invariant builds a figure that is the answer — and you can fall through any number to the raw tick. Iterate for hours, fork any idea, pin the memo. Lineage, no-lookahead and reproducibility run underneath. Honest by construction.",
 };
 
 export default function RootLayout({

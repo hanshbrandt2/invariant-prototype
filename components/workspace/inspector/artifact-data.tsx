@@ -212,7 +212,7 @@ export function ArtifactData({ node, op, graph, producerOps }: { node: Node; op?
       )}
 
       <p className="mt-2 font-mono text-meta text-faint">
-        {valueFields.length} value column{valueFields.length === 1 ? "" : "s"} · representative point-in-time sample, not the full series.
+        {valueFields.length} value column{valueFields.length === 1 ? "" : "s"} · illustrative — shaped by the operator, not real backend output.
         {d.note && <span className="text-green"> {d.note}</span>}
       </p>
     </div>

@@ -64,7 +64,7 @@ export function Figure({ spec, height = 240, onPick, selected }: { spec: ChartSp
 }
 
 const REGIME_FILL: Record<string, string> = {
-  MR: "rgba(122,139,111,0.15)", UP: "rgba(31,78,121,0.07)", DOWN: "rgba(190,77,43,0.11)", NO_TRADE: "rgba(170,162,148,0.10)",
+  MR: "rgba(122,139,111,0.11)", UP: "rgba(31,78,121,0.06)", DOWN: "rgba(190,77,43,0.085)", NO_TRADE: "rgba(170,162,148,0.08)",
 };
 const monthAbbr = (t: string) => {
   const dt = new Date(t);
@@ -75,27 +75,24 @@ const tk = { fontFamily: "var(--font-jetbrains)", fontSize: 11, fill: c.faint } 
 // cascade reads as one coherent system, and stays proportioned as it gets deep.
 const DV = { W: 1000, ML: 44, MR: 16, MT: 14, plotH: 152 };
 
-/** The HERO equity chart — big, annotated, with the regime shaded under the
- *  curve, so it tells "the result + when it worked + the risk" in one picture and
- *  the prose becomes optional. Peak / drawdown / end are computed from the data. */
+/** The HERO equity chart — big, annotated, regime shaded under the curve. ONE
+ *  drawdown encoding (the peak→trough annotation, no redundant sub-panel); the
+ *  line carries the curve over clean bands (no muddy area fill). Hovering reads
+ *  out the exact value, like the Recharts panels. (Design audit · #8/#10.) */
 function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: (i: number) => void; selected?: number }) {
   const [hover, setHover] = useState<number | null>(null);
   const eq = data.map((d) => Number(d.equity));
   const dd = data.map((d) => Number(d.drawdown));
   const n = eq.length;
   if (n < 2) return null;
-  const W = 1000, ML = 48, MR = 120, MT = 20, topH = 296, gap = 10, botH = 76;
-  const H = MT + topH + gap + botH + 24;
+  const W = 1000, ML = 48, MR = 120, MT = 22, plotH = 376;
+  const H = MT + plotH + 30;
   const x = (i: number) => ML + (i * (W - ML - MR)) / (n - 1);
   const eqLo = Math.min(0, ...eq) - 1;
   const eqHi = Math.max(...eq) + 1.8;
-  const yT = (v: number) => MT + ((eqHi - v) / (eqHi - eqLo)) * (topH - MT - 22);
-  const ddMin = Math.min(...dd, -0.001);
-  const bTop = MT + topH + gap;
-  const yB = (v: number) => bTop + 6 + ((0 - v) / (0 - ddMin)) * (botH - 6 - 20);
+  const yT = (v: number) => MT + ((eqHi - v) / (eqHi - eqLo)) * (plotH - MT - 22);
   const path = (pts: number[][]) => pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" ");
   const eqP = eq.map((v, i) => [x(i), yT(v)]);
-  const ddP = dd.map((v, i) => [x(i), yB(v)]);
   // the drawdown story: the trough (deepest drawdown) and the RUNNING peak before
   // it — not the global max, which is often just the endpoint.
   let tr = 0; for (let i = 1; i < n; i++) if (dd[i] < dd[tr]) tr = i;
@@ -110,13 +107,13 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
   const midY = (yT(eq[pk]) + yT(eq[tr])) / 2;
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="equity, drawdown and market regime">
+      <svg viewBox={`0 0 ${W} ${H}`} className="block w-full h-auto" role="img" aria-label="cumulative return with market regime">
         {/* regime shading under the curve */}
         {data.map((d, i) => {
           const x0 = i === 0 ? ML : (x(i - 1) + x(i)) / 2;
           const x1 = i === n - 1 ? W - MR : (x(i) + x(i + 1)) / 2;
           const fill = REGIME_FILL[String(d.regime)];
-          return fill ? <rect key={i} x={x0} y={MT} width={x1 - x0} height={topH - MT} fill={fill} /> : null;
+          return fill ? <rect key={i} x={x0} y={MT} width={x1 - x0} height={plotH - MT} fill={fill} /> : null;
         })}
         {gy.map((g) => (
           <g key={g}>
@@ -124,9 +121,8 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
             <text x={ML - 8} y={yT(g) + 4} textAnchor="end" {...tk}>{g}%</text>
           </g>
         ))}
-        <path d={`${path(eqP)} L ${x(n - 1)} ${yT(0)} L ${x(0)} ${yT(0)} Z`} fill={c.data} fillOpacity={0.1} />
-        <path d={path(eqP)} fill="none" stroke={c.data} strokeWidth={2.4} />
-        {/* the peak → drawdown story (only when there's a real drawdown) */}
+        <path d={path(eqP)} fill="none" stroke={c.data} strokeWidth={2.6} strokeLinejoin="round" strokeLinecap="round" />
+        {/* the peak → drawdown story (the ONE drawdown encoding) */}
         {hasDD && (
           <>
             <circle cx={x(pk)} cy={yT(eq[pk])} r={3.5} fill={c.data} />
@@ -135,27 +131,29 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
             <line x1={x(tr)} y1={yT(eq[pk])} x2={x(tr)} y2={yT(eq[tr])} stroke={c.clay} strokeWidth={1.4} />
             <circle cx={x(tr)} cy={yT(eq[tr])} r={3.5} fill={c.clay} />
             <text x={x(tr) + 8} y={midY} fontFamily="var(--font-jetbrains)" fontSize={13} fontWeight={600} fill={c.clay}>{dd[tr].toFixed(1)}%</text>
-            <text x={x(tr) + 8} y={midY + 14} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.clay}>{monthAbbr(String(data[tr].t))} trend</text>
+            <text x={x(tr) + 8} y={midY + 14} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.clay}>{monthAbbr(String(data[tr].t))} drawdown</text>
           </>
         )}
         {/* end value */}
         <circle cx={x(n - 1)} cy={yT(eq[n - 1])} r={3.5} fill={c.data} />
         <text x={x(n - 1) + 9} y={yT(eq[n - 1]) + 4} fontFamily="var(--font-jetbrains)" fontSize={14} fontWeight={600} fill={c.ink}>+{eq[n - 1].toFixed(1)}%</text>
-        {/* drawdown panel */}
-        <line x1={ML} y1={yB(0)} x2={W - MR} y2={yB(0)} stroke={c.hairline2} />
-        <path d={`${path(ddP)} L ${x(n - 1)} ${yB(0)} L ${x(0)} ${yB(0)} Z`} fill={c.clay} fillOpacity={0.16} />
-        <path d={path(ddP)} fill="none" stroke={c.clay} strokeWidth={1.4} />
-        <text x={ML - 8} y={yB(ddMin) + 4} textAnchor="end" fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.faint}>{ddMin.toFixed(0)}%</text>
-        <text x={W - MR + 8} y={yB(0) + 4} fontFamily="var(--font-jetbrains)" fontSize={10} fill={c.faint}>drawdown</text>
         {/* month ticks */}
-        {ticks.map((t) => <text key={t.i} x={x(t.i)} y={bTop + botH + 4} textAnchor="middle" {...tk}>{t.m}</text>)}
-        {/* hover affordance — a value is a point you can dive into */}
-        {onPick && hover !== null && (
-          <g pointerEvents="none">
-            <line x1={x(hover)} y1={MT} x2={x(hover)} y2={MT + topH} stroke={c.hairline2} />
-            <circle cx={x(hover)} cy={yT(eq[hover])} r={4} fill={c.paper} stroke={c.data} strokeWidth={1.5} />
-          </g>
-        )}
+        {ticks.map((t) => <text key={t.i} x={x(t.i)} y={MT + plotH + 6} textAnchor="middle" {...tk}>{t.m}</text>)}
+        {/* hover affordance — guide, dot, and a value readout chip */}
+        {onPick && hover !== null && (() => {
+          const vx = x(hover), vy = yT(eq[hover]);
+          const label = `+${eq[hover].toFixed(1)}% · ${monthAbbr(String(data[hover].t))}`;
+          const w = label.length * 6.7 + 16;
+          const left = vx + w + 12 > W - MR ? vx - w - 12 : vx + 12;
+          return (
+            <g pointerEvents="none">
+              <line x1={vx} y1={MT} x2={vx} y2={MT + plotH} stroke={c.hairline2} />
+              <rect x={left} y={vy - 12} width={w} height={22} fill={c.paper} stroke={c.ink} />
+              <text x={left + 8} y={vy + 3} fontFamily="var(--font-jetbrains)" fontSize={11} fill={c.ink}>{label}</text>
+              <circle cx={vx} cy={vy} r={4} fill={c.paper} stroke={c.data} strokeWidth={1.5} />
+            </g>
+          );
+        })()}
         {/* the dived point */}
         {selected != null && selected >= 0 && selected < n && (
           <g pointerEvents="none">
@@ -168,7 +166,7 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
           const x0 = i === 0 ? ML : (x(i - 1) + x(i)) / 2;
           const x1 = i === n - 1 ? W - MR : (x(i) + x(i + 1)) / 2;
           return (
-            <rect key={"hit" + i} x={x0} y={MT} width={x1 - x0} height={topH} fill="transparent" style={{ cursor: "pointer" }}
+            <rect key={"hit" + i} x={x0} y={MT} width={x1 - x0} height={plotH} fill="transparent" style={{ cursor: "pointer" }}
               onClick={() => onPick(i)} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover((h) => (h === i ? null : h))} />
           );
         })}
@@ -185,9 +183,9 @@ function EquityHero({ data, onPick, selected }: { data: FigurePoint[]; onPick?: 
 
 // Shared interaction layer for the dive charts: hover guide + the dived-from
 // marker + per-point hit bands. A point is something you can fall into.
-function HitLayer({ x, n, top, bottom, py, onPick, selected, W, ML, MR }: {
+function HitLayer({ x, n, top, bottom, py, onPick, selected, W, ML, MR, valueAt }: {
   x: (i: number) => number; n: number; top: number; bottom: number; py: (i: number) => number;
-  onPick?: (i: number) => void; selected?: number; W: number; ML: number; MR: number;
+  onPick?: (i: number) => void; selected?: number; W: number; ML: number; MR: number; valueAt?: (i: number) => string;
 }) {
   const [hover, setHover] = useState<number | null>(null);
   return (
@@ -195,6 +193,12 @@ function HitLayer({ x, n, top, bottom, py, onPick, selected, W, ML, MR }: {
       {onPick && hover !== null && hover < n && (
         <g pointerEvents="none">
           <line x1={x(hover)} y1={top} x2={x(hover)} y2={bottom} stroke={c.hairline2} />
+          {valueAt && (() => {
+            const vx = x(hover), vy = py(hover), label = valueAt(hover);
+            const w = label.length * 6.5 + 16;
+            const left = vx + w + 12 > W - MR ? vx - w - 12 : vx + 12;
+            return (<><rect x={left} y={vy - 12} width={w} height={22} fill={c.paper} stroke={c.ink} /><text x={left + 8} y={vy + 3} fontFamily="var(--font-jetbrains)" fontSize={11} fill={c.ink}>{label}</text></>);
+          })()}
           <circle cx={x(hover)} cy={py(hover)} r={4} fill={c.paper} stroke={c.data} strokeWidth={1.5} />
         </g>
       )}
@@ -248,7 +252,7 @@ function Signal({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?
         </g>
       )}
       {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
-      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(z[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} />
+      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(z[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} valueAt={(i) => `${z[i] >= 0 ? "+" : ""}${z[i].toFixed(2)}σ · ${monthAbbr(String(data[i].t))}`} />
     </svg>
   );
 }
@@ -285,7 +289,7 @@ function Spread({ data, focus, onPick, selected }: { data: FigurePoint[]; focus?
         </g>
       )}
       {ticks.map((t) => <text key={t.i} x={x(t.i)} y={H - 5} textAnchor="middle" {...tk}>{t.m}</text>)}
-      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(sp[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} />
+      <HitLayer x={x} n={n} top={MT} bottom={BOT} py={(i) => y(sp[i])} onPick={onPick} selected={selected} W={W} ML={ML} MR={MR} valueAt={(i) => `${sp[i].toFixed(2)} · ${monthAbbr(String(data[i].t))}`} />
     </svg>
   );
 }
@@ -467,14 +471,17 @@ function Weights({ data }: { data: FigurePoint[] }) {
       {data.map((d, i) => {
         const v = Number(d.value);
         const pos = v >= 0;
-        const pct = (Math.abs(v) / max) * 50;
+        const pct = (Math.abs(v) / max) * 40; // cap so the tip-label always fits
         return (
-          <div key={i} className="grid items-center gap-3" style={{ gridTemplateColumns: "minmax(84px,34%) 1fr 46px" }}>
+          <div key={i} className="grid items-center gap-3" style={{ gridTemplateColumns: "minmax(84px,32%) 1fr" }}>
             <div className="text-ui text-ink-2 text-right truncate" title={String(d.label)}>{String(d.label)}</div>
-            <div className="relative h-5" style={{ background: `linear-gradient(90deg, transparent calc(50% - 0.5px), ${c.hairline2} 50%, transparent calc(50% + 0.5px))` }}>
+            <div className="relative h-5">
+              {/* crisp 1px center rule (not a fuzzy gradient) */}
+              <div className="absolute top-0 bottom-0" style={{ left: "50%", width: "1px", background: c.hairline2 }} />
               <div className="absolute top-[3px] h-[14px]" style={pos ? { left: "50%", width: `${pct}%`, background: c.data } : { right: "50%", width: `${pct}%`, background: c.clay }} />
+              {/* the value, direct-labeled at the bar tip (mirrors Correlation) */}
+              <div className="absolute top-1/2 -translate-y-1/2 font-mono text-meta tabular-nums whitespace-nowrap" style={pos ? { left: `calc(50% + ${pct}% + 7px)`, color: c.data } : { right: `calc(50% + ${pct}% + 7px)`, color: c.clay }}>{pos ? "+" : ""}{v.toFixed(2)}</div>
             </div>
-            <div className="font-mono text-ui tabular-nums" style={{ color: pos ? c.data : c.clay }}>{pos ? "+" : ""}{v.toFixed(2)}</div>
           </div>
         );
       })}

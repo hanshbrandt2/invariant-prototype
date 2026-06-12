@@ -20,7 +20,7 @@ export function Conversation({
 }: {
   turns: Turn[];
   building: boolean;
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string, opts?: { fork?: boolean }) => void;
   onAction: (a: NextAction) => void;
   onApprovePlan: (turnId: string) => void;
   onScopePlan: (turnId: string, years: number) => void;
@@ -30,31 +30,47 @@ export function Conversation({
 }) {
   const [value, setValue] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, building]);
 
-  const send = () => {
+  // the input grows with what you type (line by line) instead of scrolling inside
+  // a fixed box — so the chat bar feels smooth, not jumpy. Capped, then it scrolls.
+  const autosize = () => {
+    const el = taRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  };
+
+  // continue ↳ grows the current line; fork ⑂ branches an alternative — the
+  // abandoned line is never lost (ADR D1). Default (Enter / build) = continue.
+  const send = (fork = false) => {
     const p = value.trim();
     if (!p) return;
     setValue("");
-    onSubmit(p);
+    requestAnimationFrame(autosize); // shrink the bar back after it clears
+    onSubmit(p, fork ? { fork: true } : undefined);
+    // mobile: the chat is a full-screen overlay — close it on send so the canvas
+    // and the streaming build are revealed (on lg it stays the inline panel).
+    if (typeof window !== "undefined" && window.innerWidth < 1024) onCollapse();
   };
 
   return (
-    <div className="rise hidden lg:flex flex-col w-[330px] shrink-0 bg-paper-2">
+    <div className="rise flex flex-col bg-paper-2 fixed inset-0 z-50 w-full lg:static lg:z-auto lg:w-[336px] lg:shrink-0 lg:border-r lg:border-hairline">
       <div className="flex items-center justify-between h-16 px-5">
         <span className="text-ui font-medium text-muted">Chat</span>
         <button onClick={onCollapse} title="hide chat" className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:bg-paper hover:text-ink transition-all text-ui leading-none">‹‹</button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth px-5 pb-4 space-y-5">
         {turns.map((t) => (
           <div key={t.id}>
             {t.role === "user" ? (
-              <p className="text-body leading-[1.55] text-ink bg-white border border-hairline  rounded-lg rounded-tr-md px-3.5 py-2.5">{t.text}</p>
+              <p className="text-ui leading-[1.55] text-ink bg-white border border-hairline rounded-lg rounded-tr-md px-3.5 py-2.5">{t.text}</p>
             ) : (
-              <p className="text-body leading-[1.62] text-ink-2">{t.text}</p>
+              <p className="text-ui leading-[1.6] text-ink-2">{t.text}</p>
             )}
 
             {t.plan && <PlanChecklist plan={t.plan} onApprove={() => onApprovePlan(t.id)} onScope={(y) => onScopePlan(t.id, y)} />}
@@ -81,31 +97,45 @@ export function Conversation({
             )}
           </div>
         ))}
-        <div ref={endRef} />
+        <div ref={endRef} className="scroll-mt-4 h-px" />
       </div>
 
       <div className="p-3">
-        <div className="rounded-lg border border-hairline bg-white  focus-within:border-hairline-2 transition-colors">
+        <div className="rounded-lg border border-hairline bg-white transition-[border-color,box-shadow] duration-200 ease-out focus-within:border-clay/40 focus-within:ring-1 focus-within:ring-clay/15">
           <textarea
+            ref={taRef}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => { setValue(e.target.value); autosize(); }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 send();
               }
             }}
-            rows={2}
-            placeholder="describe what to build…"
-            className="w-full resize-none bg-transparent px-3.5 py-2.5 text-body outline-none placeholder:text-faint"
+            rows={1}
+            placeholder="ask the next question…"
+            className="w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-ui leading-relaxed outline-none placeholder:text-faint min-h-[2.6rem] max-h-[168px] overflow-y-auto transition-[height] duration-150 ease-out"
           />
-          <div className="flex justify-end px-2.5 pb-2.5">
-            <button
-              onClick={send}
-              className="font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper rounded-lg px-3.5 py-1.5 hover:bg-clay transition-colors"
-            >
-              build →
-            </button>
+          <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
+            <span className="font-mono text-micro text-faint/80 pl-1 hidden sm:block">↵ send · ⇧↵ newline</span>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => send(true)}
+                disabled={!value.trim()}
+                title="fork ⑂ — explore this separately; the current line is kept, reachable in the session map"
+                className="btn-press font-mono text-meta uppercase tracking-[0.12em] border border-hairline-2 text-muted rounded-lg px-2.5 py-1.5 hover:border-ink hover:text-ink disabled:opacity-40 disabled:pointer-events-none"
+              >
+                fork ⑂
+              </button>
+              <button
+                onClick={() => send(false)}
+                disabled={!value.trim()}
+                title="continue ↳ — grow the current line of inquiry"
+                className="btn-press font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper rounded-lg px-3.5 py-1.5 hover:bg-clay disabled:opacity-40 disabled:pointer-events-none"
+              >
+                continue ↳
+              </button>
+            </div>
           </div>
         </div>
       </div>

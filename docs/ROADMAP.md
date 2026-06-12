@@ -158,6 +158,85 @@ Ordered by impact × dependency. **M-I + M-J are the foundation** (resolve "too 
 
 ---
 
+## Phase 3 — the research session (branch `v1.4-dev`)
+
+Phase 2 made the workspace beautiful and legible. Phase 3 changes its **shape**:
+from "build one answer on a canvas under an always-on contract rail" to a
+long-running **research session** — the visualization is the hero, every number
+falls through to the raw data underneath it, the trail is a **tree you fork
+freely** (nothing lost), the curated subset is a **pinboard deliverable**, and
+the honesty machinery retreats from a persistent bar to a quiet **audit**
+affordance. The decisions are recorded in `docs/adr/0001-the-research-session.md`;
+the rendered target is `docs/session-model-direction.html`.
+
+> **The reframe in one line:** the contract is the *engine* (kept, wired,
+> on-demand), not the *chrome*; trust is something you **do** (trace a number to
+> its source), not something you read (a hash); and history is a **tree**, not a
+> stack — the same model powers the micro-dive and the macro-session, deleting
+> the `slice(0, d)` amputation bug.
+
+Sequenced by impact × dependency. M-O is the lowest-risk, highest-payoff declutter
+and unblocks the audit surface; M-P/M-Q stand up the tree model and its map;
+M-R/M-S make the viz the universal trust surface and give the session a
+destination; M-T reframes the bound and hardens.
+
+**Cross-cutting decisions & risks (from the Phase-3 scoping sweep — apply across all milestones):**
+- **A node is ONE coherent answer; the 5 narrative chapters stay *inside* it.** `finding · factors · model · regime · recipe` (`workflow-narrative.tsx`) are a node's *internal* scroll-spy structure, **not** separate session nodes — otherwise every build explodes the trunk into 5 nodes and the map is unreadable.
+- **One tree model, committed early.** The dive is a *subtree* of session nodes, not a parallel structure — `dive` and `session` share `lib/session`. Two models forfeits "one state, two drivers" and doubles the persistence surface.
+- **`ScopeQuery` carries origin.** A brushed range / chip remembers *which viz* it came from (two filters on the same field from different views are different objects) — "scope without provenance becomes sludge" (design-principles §7). The scope vocabulary is drawn from the **real fixture knobs** (`knobForOp`, sweeps: z-window, regime, eval-horizon, leg), never an empty abstraction.
+- **Three distinct motions, three meanings.** *Travel* (node→node) **morphs** the canvas (~250ms object constancy, never teleports); *trace* drills **down** within a node (the dive cascade's `rise`); *lens-switch* retells the **same** node four ways (instant). All respect `prefers-reduced-motion` (instant when reduced).
+- **As-of slot now, lit later.** The type + a "frozen vs live diverged" badge slot exist now (faked on authored snapshots); the backend lights up live re-execution + the disagreement badge.
+- **Runs / agentic / promote / publish stay orthogonal.** The SessionTree is exploration-only; runs are immutable executions (hide map detail when `activeRunId !== null`); promote/publish keep working untouched.
+- **Risks to verify before shipping each milestone:** (a) hoisting dive/session state must use a context/memo boundary so a dive doesn't re-render the whole client; (b) localStorage quota over a 100+-node session → **delta-store** + debounce saves (losing hours of work is the exact betrayal the model prevents); (c) the canvas morph is make-or-break craft — bad morph = teleport = "where am I?"; (d) stripping the rail must keep the **engine** wired — verify `?agentic=halt` still halts and publish still gates on stale/`sealOk`; (e) collapsible map/pinboard so the **viz stays the hero**, not squeezed by its own meta-chrome.
+
+### M-O · Strip the rail → audit affordance + the session-map / pinboard *shell* — DONE ✓
+The cheapest, highest-leverage move: demote the always-on contract bar to one quiet **audit** control, and stand up the session map + pinboard as **inert chrome** so the workspace *looks* like the session model before any data-model change. Zero data-model risk; the engine stays intact.
+- **O1 — Remove the rail from the canvas chrome.** Drop `<ContractRail>` from the workspace header stack (`workspace-client.tsx`). The canvas gains vertical room; the viz leads.
+- **O2 — The audit affordance.** Add a quiet **audit** button to `workspace-topbar.tsx` carrying the seal dot (green `sealOk` / clay blocked) + `N invariants` count. Clicking opens an **Audit panel** (right slide-over, sibling of `PublishPanel`) that hosts the existing pins / `IntegritySeal` / `PinDrawer` (holds · enforce · scope · mechanism · can't-prove) / validator. Extract those bodies into `audit-panel.tsx`; relocate, don't rewrite.
+- **O3 — Keep the engine wired.** `sealOk`, `deriveValidator`/`validatorOk`, the publish gate (`publishBlockedReason`), the agentic **halt** (`flashedPin` → now flashes inside the audit panel), and `togglePin` are untouched — only their *surface* moves. The stale bar stays (it's actionable, not chrome).
+- **O4 — Retire the dead chrome.** Remove the consequences toggle strip and the `VintageSlider` interactive widget (vintages become a read-only "pinned as-of" line inside audit); collapse-state logic goes with the rail; `PinChip` drops the lock/gate/"designed" decorators to label-only.
+- **O5 — The session strip (inert shell).** New `session-map.tsx` (a small SVG tree) + `pinboard.tsx` in a bottom strip on the main column (exploration-only; hidden when `activeRunId !== null`). For M-O it reads the **existing `turns`** as a trunk-only tree (no branches yet) and shows an empty pinboard with its copy ("Exploration is free; only pins become the answer"). No wiring — that's M-Q/M-S.
+- **O6 — Budget-as-bound (presentational).** Reframe the topbar credit pill as the iteration bound — a thin bar + `N cr · ~M questions` (balance ÷ rolling avg cost). `useCredits()` unchanged; presentation only (full reframe in M-T).
+- **DoD:** the canvas shows no contract bar; audit is one click from the top bar and reveals pins/validator/lineage; the bottom strip shows a trunk-only session map + empty pinboard; the credit pill reads as a bound; publishing a blocked/stale result is still gated; `?agentic=halt` still surfaces its violated pin (now in audit); no regression in result/graph/code/concepts, runs, stale rebuild, fork, promote; `pnpm check` + build clean.
+
+### M-P · History is a tree — the session model (`lib/session`) — DONE ✓ (deep-link `?node=` lands in M-T)
+Replace the dive stack with one tree model, hoisted and persisted; fork is lossless.
+- **P1 — The model.** New `lib/session/tree.ts`: `SessionNode = { id, parentId, query, scope, view, kind, createdAt }`, `SessionTree = { nodes, rootId, currentId }`, pure reducers `continueWith` / `fork` / `navigate`, and `pathTo(current)`. A `dive` is a node whose `view` is a `(space,index)` descent; a session question is a node whose `view` is a lens+focus.
+- **P2 — Kill `slice(0, d)`.** Reimplement the Insight dive (`workflow-narrative.tsx`) over the tree: backtrack-then-pick **forks** (sibling), the abandoned branch is preserved and reachable, never amputated.
+- **P3 — Hoist + persist.** Lift dive/session state from `workflow-narrative` to `workspace-client` (survives lens switch / drawer); a `lib/session/store.ts` auto-saves to `localStorage[invariant.session:{workspaceId}]` (debounced) and restores on mount; deep-link `?node=` encodes the current path (short delta; full tree in storage).
+- **DoD:** equity→signal→spread→raw dives; backtrack + pick a different point creates a *branch* (old branch still there); reload restores the tree at the same node; lens switch doesn't lose the dive.
+
+### M-Q · The session map — the new meta-chrome — DONE ✓ (agent-drives-tree → M-T)
+Surface the tree where the rail used to be.
+- **Q1 — `session-map.tsx`.** ✓ A compact navigable tree: trunk of question nodes + fork branches (scent chips) + **current** node (clay ring) + per-node dive-depth ("↓ traced N levels"). Reads `SessionTree`; clicking a node *travels* the canvas (the viewport morphs via `.canvas-travel`, object constancy — it never splits).
+- **Q2 — Continue vs fork verbs.** ✓ Explicit `continue ↳` (grow the line) and `fork ⑂` (a sibling line, the old one kept) in the conversation; `submit` appends a question node (continue = child of the current question, fork = sibling).
+- **Q3 — One state, two drivers.** The `actor: 'user' | 'agent'` field is plumbed and the map renders agent provenance; the full *agent forks the same tree* wiring (`lib/sim`) lands in **M-T** (it was P-G in the scoping sweep — kept there to not corrupt the immutable-runs boundary).
+- **DoD:** the map renders the live tree in the rail's old slot; clicking travels the canvas (morph, no teleport); forking shows a branch; abandoned branches stay reachable via scent chips; dive depth shows per node. ✓
+
+### M-R · Universal drill-to-raw — the viz is the trust surface — DONE ✓
+Make the dive a universal, resolver-driven mechanism (not a hardcoded chain), honest by construction.
+- **R2 — The "underneath" resolver.** ✓ `lib/figures.ts` `drillUnderneath(space, spec) → DiveSpace | null` is the single source of the chain (`return → signal → spread → raw → ∅`); a space is drillable IFF the result carries an authored snapshot beneath it. The narrative's hero entry + every cascade `below` now read the resolver (the hardcoded `spec.spreadSeries ? …` checks are gone).
+- **R1 — Uniform `onPick`/`selected`.** ✓ The `<Figure>` seam accepts `onPick`/`selected` for any mark and the chain marks (`equity-hero`/`signal`/`spread`) drive `HitLayer`; terminal marks no-op (zero regressions). The mechanism is uniform — any mark lights up the instant authored depth is added beneath it.
+- **R3 — Honest affordance + honest terminal.** ✓ The "↑ trace it down" hint stamps **only** where `drillUnderneath` has a target; `raw` is the labeled floor; marks with no authored underneath (weights / regime / correlation) are honestly terminal — no false affordance, no synthesized descent. (Invariant has the lineage internally to make any chart drillable; the prototype authors the equity finding's depth and leaves the rest terminal — exactly the "it CAN, it needn't surface" stance.)
+- **DoD:** the dive is resolver-driven and single-sourced; every drillable point traces down recursively to raw; non-drillable marks carry no false affordance; chart-honesty lint passes; tsc + build clean. ✓ (More authored descents — regime→spread, the gas leg — are data-authoring follow-ups, not mechanism work.)
+
+### M-S · The pinboard — the curated deliverable — DONE ✓ (session-compare → follow-up)
+Two planes: free exploration vs the report assembling itself.
+- **S1 — Pins ride inside the SessionTree.** ✓ `pin`/`unpin`/`pinnedNodes` on the tree (a pin = `node.pinned` + `annotation`), so pins persist with the session for free — no separate store, one save/load (the synthesis' reconciliation).
+- **S2 — Pin from the canvas + the map.** ✓ A quiet "pin ★" in the finding header (pins the current question node with the finding headline as its memo line) and a ★ toggle on every session-map node. **Orthogonal to publish** — publish seals a read-only citable finding; a pin bookmarks an explorable session state.
+- **S3 — The pinboard surface.** ✓ The right rail of the session strip renders `pinnedNodes` in trunk order ("the memo, assembling itself"), each click **travels** the canvas to that node; unpin on hover; live pin count. "Exploration is free; only pins become the answer."
+- **DoD:** pin a finding (or a map node) → it appears on the pinboard in order; clicking a pin travels there; pins persist across reload (in the session tree); pins are visibly distinct from published findings. ✓
+- **Follow-up (not blocking):** a deliberate two-branch **compare** mode (side-by-side node viewports) and an optional dashboard "saved views" shelf — the existing variant-compare drawer already gives side-by-side for forked variants; session-level compare is a larger build deferred past the v1.4 sweep.
+
+### M-T · Budget-as-bound + hardening — DONE ✓
+- **T1 — The honest bound.** ✓ The topbar credit pill reads as the iteration budget — `N cr · ~M q` (remaining ÷ avg cost); no timer, no hard cap — compute is the ceiling (ADR D6).
+- **T2 — Guardrails extend.** ✓ `pnpm check` now also runs **`check:seams`** (components read through `@/lib/data`, never a store/fixture directly) and **`check:session`** (the SessionTree fork/round-trip proven by execution, `node --experimental-strip-types`). Typescale + chart-honesty still green.
+- **T3 — Deep-link + agent + a11y + mobile + perf.** ✓ `?node=` restores the exact node (precedence deep-link > localStorage > bundle) and the URL stays in sync (`replaceState`); the agentic run lands an `actor:'agent'` node on the same tree (one state, two drivers); the canvas morph is `prefers-reduced-motion`-safe, the audit panel has ESC, map/pin controls are keyboard-reachable; the session strip collapses below `lg` (canvas stays the hero on phones); saves are debounced (light over a long session); the empty/first-run coach teaches trace/continue/fork/pin/audit; the 5 chapters render **inside one node** (a node is one answer — ADR D9).
+- **T3 — Sweep.** ✓ tsc + `pnpm check` + production build clean; runtime sweep of 8 routes/states (default · `?lens=graph` · `?node=` · `?agentic=halt` · new · dashboard · landing · settings) all HTTP 200 with no error boundary and no genuine SSR errors. (No Playwright in the repo; verified via SSR + dev-log + the on-disk client chunk. The `[browser]` Fast-Refresh errors during edits were stale already-open tabs — cl:hard-reload clears them.)
+- **DoD:** the budget reads as the bound; guardrails cover Phase 3; the route/state sweep is error-free; build is clean. ✓
+
+---
+
 ## Out of scope (until there's a need)
 Team/org switching, member management, a Connectors/Resources page, real OAuth, a real compute/credit backend, multi-user collaboration. Add when collaborators or real infra demand it.
 

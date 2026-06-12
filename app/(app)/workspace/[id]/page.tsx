@@ -5,6 +5,7 @@ import {
   getFig1Lineage,
   getGraphPresentation,
   listHostedDatasets,
+  listStarterPrompts,
   getResultSpec,
   getCodeMap,
   getConcepts,
@@ -28,7 +29,7 @@ export default async function WorkspacePage({
   searchParams: Promise<{ build?: string; data?: string; view?: string; lens?: string; focus?: string; inspect?: string; compare?: string; fork?: string }>;
 }) {
   const { id } = await params;
-  const { build, data, view, lens, focus, inspect, compare, fork, drawertab, promote, agentic, revise, finding, publish } = (await searchParams) as Record<string, string | undefined>;
+  const { build, data, view, lens, focus, inspect, compare, fork, drawertab, promote, agentic, revise, finding, publish, node } = (await searchParams) as Record<string, string | undefined>;
   const LENSES = ["result", "graph", "code", "concepts"] as const;
   const initialLens = (LENSES as readonly string[]).includes(lens ?? "")
     ? (lens as (typeof LENSES)[number])
@@ -102,6 +103,7 @@ export default async function WorkspacePage({
     nodes,
     datasets,
     resultSpecs,
+    starterPrompts: listStarterPrompts().slice(0, 3).map((p) => p.text),
     code,
     concepts,
     variants: variantsAll,
@@ -127,6 +129,7 @@ export default async function WorkspacePage({
           ? { type: "node", id: inspect }
           : undefined,
     initialFork: fork,
+    initialNode: node, // deep-link a session-tree node (resolves against the persisted session)
     initialRevise: revise,
     initialFinding: finding,
     initialPublish: publish === "1",

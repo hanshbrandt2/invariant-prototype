@@ -54,15 +54,6 @@ export async function getFig1Lineage(): Promise<LineageSubgraph> {
   return fig1Lineage;
 }
 
-/** Graph + its presentational sidecars (labels, operator verbs). */
-export async function getFig1(): Promise<{
-  subgraph: LineageSubgraph;
-  labels: Record<string, string>;
-  producerOps: Record<string, string>;
-}> {
-  return { subgraph: fig1Lineage, labels: crudeOilLabels, producerOps: crudeOilProducerOps };
-}
-
 /** Presentational label/op maps for the crude-oil graph (used by the
  *  workspace lineage hero). Empty maps are fine for other graphs. */
 export async function getGraphPresentation(ref: string): Promise<{
@@ -250,6 +241,10 @@ export function listFindings() {
   return seededFindings;
 }
 export { loadLocalFindings, publishFinding } from "@/lib/findings-store";
+
+/** The research session (Phase 3) — the tree's persistence seam. Components read
+ *  the session through here, never the store directly. */
+export { loadSession, saveSession, clearSession } from "@/lib/session-store";
 
 /** Fork helpers (typed knobs, current value, generated metrics) — re-exported
  *  through the seam so components never import fixtures directly. */

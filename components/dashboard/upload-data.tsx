@@ -72,7 +72,7 @@ export function UploadData() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-xl border border-dashed border-hairline-2 px-3.5 py-2 text-ui text-muted hover:border-ink hover:text-ink transition-colors"
+        className="btn-press flex items-center gap-2 rounded-sm border border-dashed border-hairline-2 px-3.5 py-2 text-ui text-muted hover:border-ink hover:text-ink"
       >
         <span className="font-mono text-ui text-clay">↑</span>
         Bring your own data

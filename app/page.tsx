@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Reveal } from "@/components/landing/reveal";
-import { Fig1 } from "@/components/landing/fig1";
+import { FindingShowcase } from "@/components/landing/finding-showcase";
 import { listStarterPrompts } from "@/lib/data";
 
 export default function Home() {
@@ -36,9 +36,9 @@ function SiteNav() {
           </a>
           <nav className="hidden md:flex items-center gap-8">
             {[
+              ["How it works", "#how"],
+              ["Findings", "#finding"],
               ["Provenance", "#provenance"],
-              ["Lineage", "#lineage"],
-              ["Policies", "#policies"],
               ["Learn", "/learn"],
               ["Community", "/community"],
             ].map(([label, href]) => (
@@ -52,7 +52,7 @@ function SiteNav() {
             ))}
           </nav>
           <a
-            href="/dashboard"
+            href="/workspace/new"
             className="font-mono text-[0.72rem] uppercase tracking-[0.14em] border border-ink px-3.5 py-2 hover:bg-ink hover:text-paper transition-colors"
           >
             Enter workspace
@@ -69,9 +69,9 @@ function Dateline() {
     <div className="border-b border-hairline bg-paper">
       <div className="mx-auto max-w-[1180px] px-6 md:px-10">
         <div className="flex items-center justify-between py-2 eyebrow">
-          <span>A workspace for quantitative research</span>
-          <span className="hidden sm:inline">Point-in-time by construction</span>
-          <span>Vol. 01 · No. 1</span>
+          <span>A research session for quantitative work</span>
+          <span className="hidden sm:inline">Honest by construction</span>
+          <span>Vol. 01 · No. 2</span>
         </div>
       </div>
     </div>
@@ -88,7 +88,7 @@ function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-10 lg:gap-x-14 pt-16 md:pt-24 pb-14">
           <div className="lg:col-span-7">
             <p className="eyebrow rise" style={{ animationDelay: "0ms" }}>
-              The research graph, made honest
+              Quant research, made honest
             </p>
             <h1
               className="rise mt-6 font-serif font-semibold text-ink leading-[0.98] tracking-[-0.02em] text-[2.9rem] sm:text-[3.9rem] lg:text-[4.4rem]"
@@ -106,33 +106,34 @@ function Hero() {
               className="rise dropcap font-serif text-[1.18rem] leading-[1.62] text-ink-2"
               style={{ animationDelay: "180ms" }}
             >
-              Invariant is a workspace where data, features, models and results
-              live in one connected graph — each artifact carrying its lineage,
-              its content hash, and the policies it must obey.
+              Ask a question. Invariant builds a figure that <em>is</em> the
+              answer — and you can fall through any number on it, down to the raw
+              1-minute tick. Iterate for hours; fork any idea; lose nothing.
             </p>
             <p
               className="rise mt-5 text-[0.95rem] leading-[1.7] text-muted"
               style={{ animationDelay: "260ms" }}
             >
-              No lookahead. No silent roll. No result you can&rsquo;t reproduce.
-              The invariant is the part you can&rsquo;t afford to get wrong — so
-              the workspace enforces it.
+              The lineage, the no-lookahead rule, the reproducibility — they run
+              <em> underneath</em>, so you never ship a number you can&rsquo;t
+              defend. Trust isn&rsquo;t a hash you read; it&rsquo;s a number you
+              can trace.
             </p>
             <div
               className="rise mt-7 flex flex-wrap items-center gap-3"
               style={{ animationDelay: "340ms" }}
             >
               <a
-                href="/dashboard"
-                className="font-mono text-[0.74rem] uppercase tracking-[0.14em] bg-ink text-paper px-5 py-3 hover:bg-clay transition-colors"
+                href="/workspace/new"
+                className="btn-press inline-block font-mono text-[0.74rem] uppercase tracking-[0.14em] bg-ink text-paper px-5 py-3 hover:bg-clay"
               >
                 Enter the workspace
               </a>
               <a
-                href="#lineage"
+                href="#finding"
                 className="font-mono text-[0.74rem] uppercase tracking-[0.14em] text-ink-2 px-2 py-3 underline decoration-hairline-2 underline-offset-[6px] hover:text-clay hover:decoration-clay transition-colors"
               >
-                See how it&rsquo;s built
+                See a finding
               </a>
             </div>
           </div>
@@ -142,14 +143,15 @@ function Hero() {
         <PopularStarts />
       </div>
 
-      {/* the graph, full-bleed-ish, on a faint paper panel */}
-      <div id="lineage" className="border-t border-hairline bg-paper-2">
+      {/* fig.1 — the PRODUCT (a finding you can fall through + the session), on a
+          faint paper panel. The lineage DAG is the engine underneath, not the pitch. */}
+      <div id="finding" className="border-t border-hairline bg-paper-2 scroll-mt-16">
         <div className="mx-auto max-w-[1180px] px-6 md:px-10 py-10 md:py-14">
           <div className="flex items-baseline justify-between mb-7">
-            <span className="eyebrow">Fig. 1 — One connected graph, not a folder of notebooks</span>
-            <span className="eyebrow hidden sm:inline">Lineage · live</span>
+            <span className="eyebrow">Fig. 1 — The answer is a figure you can fall through</span>
+            <span className="eyebrow hidden sm:inline">Finding · live</span>
           </div>
-          <Fig1 />
+          <FindingShowcase />
         </div>
       </div>
     </section>
@@ -185,24 +187,24 @@ function PopularStarts() {
 const PILLARS = [
   {
     n: "§ 01",
-    id: "provenance",
-    title: "Provenance, not faith",
-    body: "Every artifact carries a content hash and a lineage hash. “How was this built?” is never a guess and never an archaeology project — it is one click down the graph, all the way to raw data.",
-    foot: "content_hash · lineage_hash",
+    id: "how",
+    title: "The visualization is the answer",
+    body: "You read a figure, not a hash. Ask a question and the agent builds the chart that settles it — annotated, regime-aware, the prose optional. The graph and the code are there when you want them, one rung down.",
+    foot: "chart · table · lineage — visual first",
   },
   {
     n: "§ 02",
-    id: "policies",
-    title: "Invariants as policy",
-    body: "Roll conventions, point-in-time knowledge, universe construction — the assumptions that quietly break backtests. Written once as policy, attached to the graph, enforced on every build.",
-    foot: "policy:roll_stitch_cl_calendar_panama · live",
+    id: "provenance",
+    title: "Fall through any number",
+    body: "Every point traces to the layer beneath it — equity → the signal that made it → the spread underneath → the raw 1-minute bars. Trust isn’t asserted with a seal; it’s something you do. The lineage that makes this possible runs underneath, one click away in audit.",
+    foot: "return → signal → spread → raw",
   },
   {
     n: "§ 03",
-    id: "build",
-    title: "Built, not asserted",
-    body: "Builds stream step by step: you watch the graph come alive, metered in credits, with an estimate and a gate before anything expensive. The canvas leads with the result — chart, table, lineage.",
-    foot: "estimate → confirm → stream",
+    id: "session",
+    title: "A session, not a notebook",
+    body: "Iterate for hours. Continue a line of inquiry or fork a side-track — the abandoned path is never lost, just dimmed on the map. Pin what matters and the deliverable writes itself. Bounded by credits, not a timer.",
+    foot: "continue ↳ · fork ⑂ · pin ★",
   },
 ];
 
@@ -212,7 +214,7 @@ function Pillars() {
       <div className="mx-auto max-w-[1180px] px-6 md:px-10 py-16 md:py-20">
         <Reveal>
           <h2 className="font-serif text-[1.9rem] md:text-[2.3rem] font-semibold tracking-[-0.01em] leading-tight max-w-[20ch]">
-            Three things a research workspace owes you.
+            Three things a research session owes you.
           </h2>
         </Reveal>
         <div className="mt-12 grid grid-cols-1 md:grid-cols-3">
@@ -254,14 +256,15 @@ function Specimen() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-8 lg:gap-x-14">
           <div className="lg:col-span-4">
             <Reveal>
-              <span className="eyebrow">Exhibit A — A result, in full</span>
+              <span className="eyebrow">Exhibit A — A result, and the trail beneath it</span>
               <h2 className="mt-4 font-serif text-[1.9rem] md:text-[2.3rem] font-semibold tracking-[-0.01em] leading-tight">
-                Open any node and read its whole story.
+                The answer, and everything under it.
               </h2>
               <p className="mt-4 text-[0.95rem] leading-[1.7] text-ink-2">
-                The inspector is polymorphic — it shows a face built for each
-                kind. A result leads with what it found, then exactly what it
-                was made of, then what to try next.
+                A finding leads with what it found. Then, on demand, exactly
+                what it was made of, the policies it obeyed, and the hash that
+                makes it reproducible. The proof sits one click away in audit —
+                it never crowds the answer.
               </p>
             </Reveal>
           </div>
@@ -375,10 +378,10 @@ function FactSheet() {
 /* The arc — empty → rich                                           */
 /* ────────────────────────────────────────────────────────────── */
 const ARC = [
-  ["01", "Hosted data", "Start from a catalog of real datasets — crude, gas, FX, equities — already typed and point-in-time."],
-  ["02", "Compose", "Chain operators into features, matrices, targets. The graph grows one honest node at a time."],
-  ["03", "Build", "Sign in at the moment it matters. Estimate the cost, confirm, and let the build stream."],
-  ["04", "Alive", "The canvas fills with the result; the conversation drives it; lineage is one click away."],
+  ["01", "Real data", "Start from a catalog of real datasets — crude, gas, FX, equities — already typed and point-in-time."],
+  ["02", "Ask", "Describe what you want to know. The agent composes the features, models and backtest and streams the build, metered in credits."],
+  ["03", "See it, trace it", "The answer lands as a figure. Fall through any number — signal, spread, the raw bars — until you trust it."],
+  ["04", "Fork, pin, ship", "Branch a side-track without losing the main line; pin what matters; the pinboard becomes the memo."],
 ];
 
 function Arc() {
@@ -426,18 +429,18 @@ function CtaBand() {
   return (
     <section id="enter" className="bg-ink text-paper scroll-mt-16">
       <div className="mx-auto max-w-[1180px] px-6 md:px-10 py-20 md:py-28">
-        <div className="max-w-[24ch]">
+        <div className="max-w-[34ch]">
           <p className="font-mono text-[0.72rem] uppercase tracking-[0.18em] text-clay">
             Enter the workspace
           </p>
-          <h2 className="mt-6 font-serif text-[2.6rem] md:text-[3.6rem] font-semibold leading-[1.02] tracking-[-0.02em]">
+          <h2 className="mt-6 font-serif text-[2.6rem] md:text-[3.6rem] font-semibold leading-[1.02] tracking-[-0.02em] text-balance">
             Get the assumptions right before the money does.
           </h2>
         </div>
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <a
-            href="/dashboard"
-            className="font-mono text-[0.76rem] uppercase tracking-[0.14em] bg-clay text-paper px-6 py-3.5 hover:bg-paper hover:text-ink transition-colors"
+            href="/workspace/new"
+            className="btn-press inline-block font-mono text-[0.76rem] uppercase tracking-[0.14em] bg-clay text-paper px-6 py-3.5 hover:bg-paper hover:text-ink"
           >
             Open the prototype
           </a>
@@ -466,15 +469,15 @@ function Colophon() {
               </span>
             </div>
             <p className="mt-4 text-[0.9rem] leading-[1.7] text-muted max-w-[42ch]">
-              An interface prototype for a quantitative research workspace.
+              An interface prototype for a quantitative research session.
               Frontend only — the dynamics are simulated, the data is fake, and
               both are typed to the real backend contracts.
             </p>
           </div>
           <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-8">
             {[
-              ["Workspace", ["Canvas", "Conversation", "Inspector", "Lineage"]],
-              ["Concepts", ["Provenance", "Policies", "Point-in-time", "Credits"]],
+              ["Workspace", ["Canvas", "Conversation", "Session map", "Pinboard"]],
+              ["Concepts", ["Trace to raw", "Fork & continue", "Provenance", "Credits"]],
               ["Colophon", ["Source Serif 4", "Inter", "JetBrains Mono"]],
             ].map(([head, items]) => (
               <div key={head as string}>

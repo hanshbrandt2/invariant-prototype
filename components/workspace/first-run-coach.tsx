@@ -33,7 +33,7 @@ export function FirstRunCoach() {
       <span className="font-mono text-meta uppercase tracking-[0.13em] text-clay shrink-0">new here</span>
       <span className="text-ui text-ink-2 min-w-0">
         <b className="font-medium text-ink">This is the insight.</b>{" "}
-        Read it top-to-bottom — the result, what drove it, when it worked. The full lineage lives in the Graph lens.
+        Click any point to <b className="font-medium text-ink">trace it to the raw data</b>; <b className="font-medium text-ink">continue</b> or <b className="font-medium text-ink">fork&nbsp;⑂</b> a question (nothing is lost); <b className="font-medium text-ink">pin&nbsp;★</b> what matters to the deliverable. The contract is one click away in <b className="font-medium text-ink">audit</b>.
       </span>
       <button
         onClick={dismiss}
