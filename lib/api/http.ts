@@ -9,6 +9,8 @@ const ARTIFACT_CATALOG_URL =
   process.env.ARTIFACT_CATALOG_URL ?? "http://localhost:8102";
 const DATA_CATALOG_URL =
   process.env.DATA_CATALOG_URL ?? "http://localhost:8101";
+const AGENT_RUNTIME_URL =
+  process.env.AGENT_RUNTIME_URL ?? "http://localhost:8104";
 
 /**
  * Principal headers for artifact-catalog's deny-by-default gate (ADR-0044 §3).
@@ -65,6 +67,9 @@ export const acGet = <T>(path: string) => get<T>(ARTIFACT_CATALOG_URL, path);
 
 /** GET against data-catalog (:8101 — RAW definitions: products, schemas, silver). */
 export const dcGet = <T>(path: string) => get<T>(DATA_CATALOG_URL, path);
+
+/** GET against agent-runtime (:8104 — conversations + the agent loop). */
+export const arGet = <T>(path: string) => get<T>(AGENT_RUNTIME_URL, path);
 
 /** URL-encode an artifact id (it contains `:` — `feature:name:1`). */
 export const encId = (id: string) => encodeURIComponent(id);

@@ -53,9 +53,10 @@ export default function LivePage() {
         <span className="inline-flex items-center gap-1.5 border border-green/40 bg-green/5 px-2 py-0.5 font-mono text-meta uppercase tracking-[0.12em] text-green">
           <span className="h-1.5 w-1.5 rounded-full bg-green" /> live · artifact-catalog
         </span>
-        <Link href="/live/datasets" className="ml-auto text-ui text-faint hover:text-clay">
-          Datasets →
-        </Link>
+        <span className="ml-auto flex items-center gap-3">
+          <Link href="/live/datasets" className="text-ui text-faint hover:text-clay">Datasets →</Link>
+          <Link href="/live/conversations" className="text-ui text-faint hover:text-clay">Conversations →</Link>
+        </span>
       </div>
       <p className="mt-1.5 text-body text-ink-2">
         Real artifacts read from <span className="font-mono text-meta">artifact-catalog (:8102)</span>{" "}

@@ -103,6 +103,16 @@ export async function getLiveHostedDataset(
 ): Promise<HostedDataset | undefined> {
   return apiGet(`/api/catalog/datasets/${encodeURIComponent(id)}`);
 }
+export async function listLiveConversations(): Promise<
+  import("@/lib/api/conversations").LiveConvSummary[]
+> {
+  return apiGet(`/api/agent/conversations`);
+}
+export async function getLiveConversation(
+  id: string,
+): Promise<import("@/lib/api/conversations").LiveConversation | undefined> {
+  return apiGet(`/api/agent/conversations/${encodeURIComponent(id)}`);
+}
 
 /** The lineage subgraph for a workspace (or the one containing a node). */
 export async function getLineageSubgraph(ref: string): Promise<LineageSubgraph> {
