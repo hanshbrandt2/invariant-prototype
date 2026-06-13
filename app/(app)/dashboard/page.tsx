@@ -13,6 +13,7 @@ import { StartInput } from "@/components/dashboard/start-input";
 import { HostedDataPicker } from "@/components/dashboard/hosted-data-picker";
 import { UploadData } from "@/components/dashboard/upload-data";
 import { WorkspaceViews } from "@/components/dashboard/workspace-views";
+import { LiveWorkspacesShelf } from "@/components/dashboard/live-workspaces-shelf";
 import { StarterStrip } from "@/components/dashboard/starter-strip";
 import { RecipesShelf } from "@/components/dashboard/recipes-shelf";
 import { FindingsShelf } from "@/components/dashboard/findings-shelf";
@@ -83,6 +84,8 @@ export default async function DashboardPage({
             reads as "yours" (gated client-side on a real session/finding). ── */}
       <ReturningOnly>
         <WorkspaceViews workspaces={workspaces} initial={initialView} />
+
+        <LiveWorkspacesShelf />
 
         {recipes.length > 0 && (
           <section className="mt-12">
