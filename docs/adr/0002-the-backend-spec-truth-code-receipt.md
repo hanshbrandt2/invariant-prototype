@@ -228,7 +228,9 @@ and read-line-by-line use cases are served by the *same* receipt artifact.
 
 **Costs / risks.** The parity emitter (D2) is real engineering in `dsl-engine`:
 every operator must emit standalone source *and* prove it equals the executor — the
-keystone, and the thing that converts the Code lens from theatre to guarantee.
+keystone, and the thing that converts the Code lens from theatre to guarantee. Its
+design spec (per-operator `emit()`, the parity gate, the receipt bundle, the
+dsl-engine sequencing) is `docs/keystone-emitter-and-receipt.md`.
 Cross-environment bit-identity for model fits is **not** achievable (D3) — we manage
 it by *declaring the class*, not by pretending. The descriptive sandbox (D4) is a
 genuine security surface (containment, network isolation, output caps) and must
