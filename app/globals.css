@@ -259,6 +259,21 @@ body {
   animation: canvasTravel 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* The TRACE descent (ADR-0001 · D4): a number opens into the space BENEATH it.
+   The layer unfolds downward from its top edge (object constancy — it grows from
+   where you fell through), not a generic fade-in. The thread connector + this
+   wipe make the dive read as one continuous fall, not a stack of cards. */
+@keyframes traceDescend {
+  from { clip-path: inset(0 0 100% 0); opacity: 0.45; }
+  to { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+.trace-descend {
+  animation: traceDescend 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: top center;
+}
+@keyframes threadGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.trace-thread { transform-origin: top; animation: threadGrow 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+
 /* Reveal-on-scroll (driven by Reveal component) */
 .reveal {
   opacity: 0;
@@ -291,9 +306,12 @@ body {
   .node-snap,
   .drawer-in,
   .node-flash,
-  .canvas-travel {
+  .canvas-travel,
+  .trace-descend,
+  .trace-thread {
     animation: none !important;
     opacity: 1 !important;
+    clip-path: none !important;
     transform: none !important;
     transition: none !important;
   }

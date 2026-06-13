@@ -17,6 +17,8 @@ export function Conversation({
   onCollapse,
   validatorFor,
   onFlashPin,
+  mode = "continue",
+  focusTick,
 }: {
   turns: Turn[];
   building: boolean;
@@ -27,6 +29,8 @@ export function Conversation({
   onCollapse: () => void;
   validatorFor?: (nodeId: string) => Validator | undefined;
   onFlashPin?: (pinId: string) => void;
+  mode?: "continue" | "fork"; // which intent Enter commits (set by f / c shortcuts)
+  focusTick?: number; // bump to focus the composer (keyboard spine)
 }) {
   const [value, setValue] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -34,6 +38,8 @@ export function Conversation({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [turns, building]);
+  // the keyboard spine focuses the composer (f / c / typing-anywhere)
+  useEffect(() => { if (focusTick) taRef.current?.focus(); }, [focusTick]);
 
   // the input grows with what you type (line by line) instead of scrolling inside
   // a fixed box — so the chat bar feels smooth, not jumpy. Capped, then it scrolls.
@@ -109,11 +115,11 @@ export function Conversation({
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                send();
+                send(mode === "fork");
               }
             }}
             rows={1}
-            placeholder="ask the next question…"
+            placeholder={mode === "fork" ? "fork: ask a separate question…" : "ask the next question…"}
             className="w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-ui leading-relaxed outline-none placeholder:text-faint min-h-[2.6rem] max-h-[168px] overflow-y-auto transition-[height] duration-150 ease-out"
           />
           <div className="flex items-center justify-between gap-2 px-2.5 pb-2.5">
@@ -122,16 +128,16 @@ export function Conversation({
               <button
                 onClick={() => send(true)}
                 disabled={!value.trim()}
-                title="fork ⑂ — explore this separately; the current line is kept, reachable in the session map"
-                className="btn-press font-mono text-meta uppercase tracking-[0.12em] border border-hairline-2 text-muted rounded-lg px-2.5 py-1.5 hover:border-ink hover:text-ink disabled:opacity-40 disabled:pointer-events-none"
+                title="fork ⑂ (f) — explore this separately; the current line is kept, reachable in the session map"
+                className={`btn-press font-mono text-meta uppercase tracking-[0.12em] rounded-lg px-2.5 py-1.5 disabled:opacity-40 disabled:pointer-events-none ${mode === "fork" ? "bg-ink text-paper hover:bg-clay" : "border border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
               >
                 fork ⑂
               </button>
               <button
                 onClick={() => send(false)}
                 disabled={!value.trim()}
-                title="continue ↳ — grow the current line of inquiry"
-                className="btn-press font-mono text-meta uppercase tracking-[0.12em] bg-ink text-paper rounded-lg px-3.5 py-1.5 hover:bg-clay disabled:opacity-40 disabled:pointer-events-none"
+                title="continue ↳ (c) — grow the current line of inquiry"
+                className={`btn-press font-mono text-meta uppercase tracking-[0.12em] rounded-lg px-3.5 py-1.5 disabled:opacity-40 disabled:pointer-events-none ${mode === "continue" ? "bg-ink text-paper hover:bg-clay" : "border border-hairline-2 text-muted hover:border-ink hover:text-ink"}`}
               >
                 continue ↳
               </button>

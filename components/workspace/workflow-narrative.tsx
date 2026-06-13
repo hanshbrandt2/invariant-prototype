@@ -403,7 +403,11 @@ export function WorkflowNarrative({
                 // and diving elsewhere keeps the old one, so >1 means a fork.
                 const siblings = diveTree && node.parentId ? childrenOf(diveTree, node.parentId) : [];
                 return (
-                  <div key={node.id} className="rise mt-2 border border-hairline border-l-2 border-l-clay bg-paper p-4">
+                  <div key={node.id} className="trace-descend relative mt-3 border border-hairline border-l-2 border-l-clay bg-paper p-4">
+                    {/* the trace thread — a clay spine connecting this layer to the
+                        one above, so the dive reads as one continuous fall (ADR D4) */}
+                    <span aria-hidden className="trace-thread absolute left-[-2px] -top-3 h-3 w-[2px] bg-clay" />
+                    <span aria-hidden className="absolute left-[-5px] -top-[5px] h-2 w-2 rounded-full bg-clay" />
                     <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
                       <p className="font-mono text-meta uppercase tracking-[0.12em]">
                         {path.map((sp, k) => (

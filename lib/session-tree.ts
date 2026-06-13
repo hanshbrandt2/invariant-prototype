@@ -160,6 +160,20 @@ export function questionNodes(tree: SessionTree): SessionNode[] {
   return Object.values(tree.nodes).filter((n) => !n.view.dive);
 }
 
+/** Question nodes in pre-order (root → children, depth-first) — the order j/k
+ *  walk through with the keyboard. */
+export function orderedQuestionNodes(tree: SessionTree): SessionNode[] {
+  const out: SessionNode[] = [];
+  const walk = (id: string) => {
+    const n = tree.nodes[id];
+    if (!n) return;
+    if (!n.view.dive) out.push(n);
+    for (const ch of childrenOf(tree, id)) walk(ch.id);
+  };
+  walk(tree.rootId);
+  return out;
+}
+
 /** How many dive levels hang beneath a question (its trace depth, any branch). */
 export function diveDepthUnder(tree: SessionTree, id: string): number {
   let max = 0;

@@ -35,7 +35,7 @@ export function SessionMap({ tree, onTravel, onPin, onUnpin }: { tree: SessionTr
       <div className="flex items-baseline justify-between gap-3 mb-2">
         <p className="eyebrow">the session · a tree, not a stack</p>
         <p className="font-mono text-micro text-faint">
-          {total} question{total === 1 ? "" : "s"} · fork freely, nothing is lost
+          {total} question{total === 1 ? "" : "s"} · <span className="text-muted">j/k</span> to move · <span className="text-muted">?</span> for keys
         </p>
       </div>
       <div className="flex items-stretch overflow-x-auto pb-1">

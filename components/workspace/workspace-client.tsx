@@ -20,7 +20,8 @@ import { useCredits } from "@/components/app/credits-context";
 import { useAuth } from "@/components/auth/auth-context";
 import { estimateBuild, runBuild, narrate, runAgentic } from "@/lib/sim";
 import { knobForOp, inferCurrent, genMetrics, buildPipeline, deriveValidator, validatorOk, publishFinding, loadSession, saveSession } from "@/lib/data";
-import { initSessionTree, diveTo, navigate as navigateTree, addChild, addChildKeepCursor, questionAncestor, pin as pinNode, unpin as unpinNode } from "@/lib/session-tree";
+import { initSessionTree, diveTo, navigate as navigateTree, addChild, addChildKeepCursor, questionAncestor, orderedQuestionNodes, pin as pinNode, unpin as unpinNode } from "@/lib/session-tree";
+import { KeyboardHints } from "@/components/workspace/keyboard-hints";
 import { buildProject } from "@/lib/code-project";
 import type { BuildPlan } from "@/lib/sim/plan";
 import type { WorkspaceBundle, CanvasState, InspectTarget, Lens } from "@/components/workspace/types";
@@ -157,6 +158,53 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
   const onUnpin = useCallback((nodeId: string) => {
     setSessionTree((t) => (t ? unpinNode(t, nodeId) : t));
   }, []);
+
+  // ── the keyboard spine: navigate the session with j/k, act with f/c/p, climb
+  // the dive with u, audit with a, ? for the cheatsheet (⌘K is the palette). A
+  // quant lives in the keyboard; the mouse is optional. ─────────────────────────
+  const [composerMode, setComposerMode] = useState<"continue" | "fork">("continue");
+  const [composerFocusTick, setComposerFocusTick] = useState(0);
+  const [keyHintsOpen, setKeyHintsOpen] = useState(false);
+  const focusComposer = useCallback((mode: "continue" | "fork") => {
+    setComposerMode(mode);
+    setChatOpen(true);
+    setComposerFocusTick((t) => t + 1);
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // never hijack typing or modified keys (⌘K is the palette's own)
+      const el = e.target as HTMLElement | null;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.key === "?") { e.preventDefault(); setKeyHintsOpen((o) => !o); return; }
+      if (e.key === "Escape") { setKeyHintsOpen(false); return; }
+      if (e.key === "a") { e.preventDefault(); setAuditOpen((o) => !o); return; }
+      // the rest don't fire while a modal owns the screen
+      if (publishOpen || promoting || forkNode || auditOpen || keyHintsOpen || activeRun) return;
+      const tree = sessionTree;
+      if (!tree) return;
+      if (e.key === "j" || e.key === "k") {
+        const qs = orderedQuestionNodes(tree);
+        if (qs.length < 2) return;
+        const i = qs.findIndex((q) => q.id === questionAncestor(tree, tree.currentId));
+        const target = qs[e.key === "j" ? Math.min(qs.length - 1, i + 1) : Math.max(0, i - 1)];
+        if (target) { e.preventDefault(); onTravel(target.id); }
+      } else if (e.key === "p") {
+        const id = questionAncestor(tree, tree.currentId);
+        e.preventDefault();
+        tree.nodes[id]?.pinned ? onUnpin(id) : onPin(id);
+      } else if (e.key === "f") {
+        e.preventDefault(); focusComposer("fork");
+      } else if (e.key === "c" || e.key === "/") {
+        e.preventDefault(); focusComposer("continue");
+      } else if (e.key === "u") {
+        const node = tree.nodes[tree.currentId];
+        if (node?.view.dive && node.parentId) { e.preventDefault(); onNavigateDive(node.parentId); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sessionTree, publishOpen, promoting, forkNode, auditOpen, keyHintsOpen, activeRun, onTravel, onPin, onUnpin, onNavigateDive, focusComposer]);
 
   const [building, setBuilding] = useState(false);
   const [inFlightId, setInFlightId] = useState<string | null>(null);
@@ -720,7 +768,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
     <div className="flex h-screen bg-paper">
       <WorkspaceRail />
       {chatOpen && (
-        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} validatorFor={validatorFor} onFlashPin={flashPin} />
+        <Conversation turns={turns} building={building} onSubmit={submit} onAction={onAction} onApprovePlan={onApprovePlan} onScopePlan={onScopePlan} onCollapse={() => setChatOpen(false)} validatorFor={validatorFor} onFlashPin={flashPin} mode={composerMode} focusTick={composerFocusTick} />
       )}
       <div className="flex-1 min-w-0 flex flex-col">
         <WorkspaceTopBar
@@ -824,6 +872,7 @@ export function WorkspaceClient({ bundle }: { bundle: WorkspaceBundle }) {
           onClose={() => setAuditOpen(false)}
         />
       )}
+      {keyHintsOpen && <KeyboardHints onClose={() => setKeyHintsOpen(false)} />}
       {publishOpen && resultNode && (
         <PublishPanel
           result={resultNode}
