@@ -7,7 +7,8 @@ The product is a long-running **research session** (ADR-0001): you ask a questio
 
 **Orient yourself here first:**
 - `docs/ROADMAP.md` — the anti-drift anchor. Every change maps to a milestone. **Phase 1 (M-A…M-H) + Phase 2 (M-I…M-N) + Phase 3 (M-O…M-T) are DONE.** Don't add scope without adding it here.
-- `docs/adr/0001-the-research-session.md` — the binding design decisions (tree-not-stack, contract-as-engine, drill-to-raw, pinboard, budget-as-bound).
+- `docs/adr/0001-the-research-session.md` — the binding *frontend* design decisions (tree-not-stack, contract-as-engine, drill-to-raw, pinboard, budget-as-bound).
+- `docs/adr/0002-the-backend-spec-truth-code-receipt.md` — the binding *backend* architecture (run the validated spec not a kernel; the published Python is a parity-verified `emit() ≡ execute()` rendering; "same results" is a reproducibility receipt; no-drift = the `lib/types` contract + a gate). The architecture *behind* this frontend.
 - `docs/agentic-analytics-ui-design-principles.md` — the interaction principles.
 - `docs/BACKEND_CONTRACT.md` — the `lib/data` interface a real backend must satisfy.
 

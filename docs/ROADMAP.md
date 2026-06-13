@@ -237,8 +237,40 @@ Two planes: free exploration vs the report assembling itself.
 
 ---
 
+## Phase 4 — the backend (architecture decided; implementation is next, after the frontend)
+
+Phases 1–3 got the **frontend** exactly right against mock data typed to the real
+contracts. Phase 4 puts a real backend behind the one seam. The **architecture is
+now decided** — `docs/adr/0002-the-backend-spec-truth-code-receipt.md` — and the
+**sequence/order** of wiring lives in `docs/MIGRATION_TO_BACKEND.md`. The work is
+*later* (the frontend leads); this section exists so the decision isn't drift.
+
+The binding shape (ADR-0002, one line each):
+- **Run the validated spec, centrally — not a per-workspace kernel.** Execution is a
+  content-addressed DSL job (`research-workbench` over `dsl-engine`), surfaced via the
+  existing `lib/sim` `BuildEvent` stream. The "kernel feel" comes from the ADR-0001
+  session tree + artifact caching, reconstructible — not a resident process.
+- **The Code lens is a parity-verified rendering of what ran** (`emit() ≡ execute()`,
+  gated per operator). This is what makes "code you can run yourself" falsifiable
+  rather than aspirational.
+- **"Same results" is a receipt:** parity script + pinned lockfile + data manifest
+  (vintage / knowledge-time) + a declared reproducibility class (bit-identical for
+  dataframe ops; within-ε for model fits).
+- **Two lanes:** validated-DSL on the tradeable path; arbitrary Python only in a
+  fenced, container-bounded descriptive `analysis` sandbox.
+- **No-drift = a gate:** `lib/types` is the contract; the BFF's shapes are checked
+  against it in CI (the executable form of `MIGRATION` §3's `lib/api/MAPPING.md`).
+
+DoD (when Phase 4 starts): `MIGRATION_TO_BACKEND.md` §7's "first concrete move" —
+read-path-only against artifact-catalog + data-catalog behind
+`NEXT_PUBLIC_DATA_SOURCE=api`, one real workspace, zero component changes, the §3
+contract checks green.
+
 ## Out of scope (until there's a need)
-Team/org switching, member management, a Connectors/Resources page, real OAuth, a real compute/credit backend, multi-user collaboration. Add when collaborators or real infra demand it.
+Team/org switching, member management, a Connectors/Resources page, real OAuth,
+multi-user collaboration. (The compute/credit backend is no longer "out of scope" —
+it is **Phase 4**, architected in ADR-0002, sequenced in `MIGRATION_TO_BACKEND.md`;
+it is simply *after* the frontend.) Add the rest when collaborators or real infra demand it.
 
 ## How we work (no drift)
 - Every PR/change names its milestone (e.g. `M-A3`).
