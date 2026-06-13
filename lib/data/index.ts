@@ -95,6 +95,14 @@ export async function getLiveArtifact(id: string): Promise<Node | undefined> {
 export async function getLiveLineage(id: string): Promise<LineageSubgraph> {
   return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/lineage`);
 }
+export async function listLiveHostedDatasets(): Promise<HostedDataset[]> {
+  return apiGet(`/api/catalog/datasets`);
+}
+export async function getLiveHostedDataset(
+  id: string,
+): Promise<HostedDataset | undefined> {
+  return apiGet(`/api/catalog/datasets/${encodeURIComponent(id)}`);
+}
 
 /** The lineage subgraph for a workspace (or the one containing a node). */
 export async function getLineageSubgraph(ref: string): Promise<LineageSubgraph> {
