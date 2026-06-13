@@ -99,9 +99,17 @@ export default function LivePage() {
           <div className="min-w-0">
             {selected ? (
               <div className="space-y-8">
-                <div>
-                  <h2 className="font-serif text-h2 text-ink">{selected.name}</h2>
-                  <p className="mt-0.5 font-mono text-meta text-muted">{selected.id}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="font-serif text-h2 text-ink">{selected.name}</h2>
+                    <p className="mt-0.5 font-mono text-meta text-muted">{selected.id}</p>
+                  </div>
+                  <Link
+                    href={`/live/artifact/${encodeURIComponent(selected.id)}`}
+                    className="shrink-0 border border-clay/40 bg-clay-wash px-3 py-1.5 text-ui text-clay transition-colors hover:border-clay"
+                  >
+                    Open graph + inspector ▸
+                  </Link>
                 </div>
 
                 <section>
