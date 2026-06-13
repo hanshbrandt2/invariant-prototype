@@ -143,14 +143,11 @@ function Hero() {
         <PopularStarts />
       </div>
 
-      {/* fig.1 — the PRODUCT (a finding you can fall through + the session), on a
-          faint paper panel. The lineage DAG is the engine underneath, not the pitch. */}
+      {/* fig.1 — the PRODUCT: one COMPLETE investigation, read as a chaptered
+          research note (it owns its own standfirst). The whole defensible arc —
+          finding → factors → drivers → the candid turn → lineage → the memo. */}
       <div id="finding" className="border-t border-hairline bg-paper-2 scroll-mt-16">
-        <div className="mx-auto max-w-[1180px] px-6 md:px-10 py-10 md:py-14">
-          <div className="flex items-baseline justify-between mb-7">
-            <span className="eyebrow">Fig. 1 — The answer is a figure you can fall through</span>
-            <span className="eyebrow hidden sm:inline">Finding · live</span>
-          </div>
+        <div className="mx-auto max-w-[1180px] px-6 md:px-10 py-12 md:py-16">
           <FindingShowcase />
         </div>
       </div>

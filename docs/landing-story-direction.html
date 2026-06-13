@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Landing — The Investigation (entire-story viz)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAF7F1; --paper-2:#F3EEE4; --paper-3:#ECE5D7;
+    --ink:#1C1B18; --ink-2:#4a463d; --muted:#7b7466; --faint:#93897a;
+    --hair:#E7E1D5; --hair-2:#d8d0bf;
+    --clay:#BE4D2B; --clay-deep:#9c3c20; --clay-wash:#FBF1EC;
+    --green:#3B6D11; --blue:#1F4E79; --sage:#7A8B6F; --notrade:#CBC7BB;
+    --serif:"Source Serif 4",Georgia,serif;
+    --sans:"Inter",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 40px}
+  .eyebrow{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted)}
+  .clay{color:var(--clay)} .green{color:var(--green)} .blue{color:var(--blue)}
+  .mono{font-family:var(--mono)} .serif{font-family:var(--serif)}
+  .rule{height:1px;background:var(--hair);border:0}
+
+  /* masthead */
+  header.mast{position:sticky;top:0;z-index:40;background:rgba(250,247,241,.9);backdrop-filter:blur(6px);border-bottom:1px solid var(--ink)}
+  .mast .row{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:baseline;gap:10px}
+  .brand .dot{width:10px;height:10px;background:var(--clay);transform:translateY(-1px)}
+  .brand b{font-family:var(--serif);font-size:24px;font-weight:600;letter-spacing:-.01em}
+  .mast .dl{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+
+  /* standfirst */
+  .stand{padding:52px 0 30px}
+  .stand h1{font-family:var(--serif);font-weight:600;letter-spacing:-.02em;line-height:1.04;font-size:43px;max-width:20ch;margin-top:14px}
+  .stand h1 em{font-style:italic;font-weight:400;color:var(--clay)}
+  .stand .sf{font-family:var(--serif);font-size:18.5px;line-height:1.62;color:var(--ink-2);max-width:64ch;margin-top:20px}
+  .stand .sf b{font-weight:600;color:var(--ink)}
+  /* kpi dateline strip — typographic, not tiles */
+  .kpis{display:flex;flex-wrap:wrap;gap:0;margin-top:26px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+  .kpi{padding:14px 26px 13px 0;margin-right:26px;border-right:1px solid var(--hair)}
+  .kpi:last-child{border-right:0}
+  .kpi .v{font-family:var(--mono);font-size:25px;font-variant-numeric:tabular-nums;letter-spacing:-.01em;line-height:1}
+  .kpi .k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-top:8px}
+  .stand .when{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--faint);margin-top:14px}
+
+  /* body grid: sticky index rail + story */
+  .body{display:grid;grid-template-columns:188px 1fr;gap:48px;align-items:start;padding:8px 0 80px}
+  nav.rail{position:sticky;top:84px}
+  nav.rail .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.16em;color:var(--faint);margin-bottom:14px}
+  nav.rail a{display:flex;gap:10px;align-items:baseline;text-decoration:none;padding:7px 0 7px 14px;margin-left:-1px;border-left:2px solid var(--hair);transition:border-color .2s}
+  nav.rail a .n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+  nav.rail a .t{font-size:13px;color:var(--muted)}
+  nav.rail a.on{border-left-color:var(--clay)}
+  nav.rail a.on .n{color:var(--clay)} nav.rail a.on .t{color:var(--ink);font-weight:500}
+  nav.rail .meta{margin-top:20px;padding-top:16px;border-top:1px solid var(--hair);font-family:var(--mono);font-size:10px;line-height:1.7;color:var(--faint)}
+  nav.rail .meta .ok{color:var(--green)}
+
+  .story{min-width:0}
+  section.ch{padding-bottom:40px;margin-bottom:38px;border-bottom:1px solid var(--hair)}
+  section.ch:last-child{border-bottom:0;margin-bottom:0}
+  .ch .ce{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--clay)}
+  .ch h2{font-family:var(--serif);font-weight:600;font-size:25px;line-height:1.22;letter-spacing:-.01em;max-width:32ch;margin-top:9px}
+  .ch .lede{font-size:14.5px;line-height:1.66;color:var(--ink-2);max-width:66ch;margin-top:12px}
+  .ch .lede b{color:var(--ink);font-weight:600}
+  .plate{border:1px solid var(--hair);background:var(--paper);padding:18px 18px 14px;margin-top:18px}
+  .cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;color:var(--faint);margin-bottom:10px;display:flex;justify-content:space-between;gap:12px}
+  .callout{margin-top:14px;padding:9px 0 9px 14px;border-left:2px solid var(--clay);font-size:13.5px;color:var(--ink-2);max-width:64ch}
+  .callout b{color:var(--clay);font-weight:600}
+
+  /* ch01 ticks plate (corner ticks) */
+  .ticks{position:relative}
+  .ticks::before,.ticks::after{content:"";position:absolute;width:9px;height:9px;border-color:var(--hair-2);border-style:solid}
+  .ticks::before{top:-1px;left:-1px;border-width:1px 0 0 1px}
+  .ticks::after{top:-1px;right:-1px;border-width:1px 1px 0 0}
+  svg{display:block;width:100%;height:auto}
+
+  /* ch03 pull-quote */
+  .pq{font-family:var(--serif);font-style:italic;font-weight:400;font-size:24px;line-height:1.3;color:var(--ink);max-width:26ch;margin-top:9px}
+  .spec{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:12px;letter-spacing:.02em}
+
+  /* ch04 candid wash */
+  section.ch.candid{background:var(--clay-wash);border:1px solid #f0ddd2;padding:26px 26px 28px;margin-left:-26px;margin-right:-26px;border-radius:1px}
+  .ch.candid h2{color:var(--clay-deep)}
+  .tally{display:flex;flex-wrap:wrap;gap:18px;margin-top:14px;font-family:var(--mono);font-size:11.5px;color:var(--ink-2)}
+  .tally span{display:inline-flex;align-items:center;gap:7px}
+  .tally i{width:11px;height:11px;display:inline-block;border-radius:1px}
+
+  /* ch05 lineage */
+  .flow{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding-bottom:4px}
+  .node{flex:0 0 auto;width:120px;border:1px solid var(--hair);background:var(--paper);padding:9px 10px}
+  .node.res{border-color:var(--clay)}
+  .node .kind{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.13em;color:var(--faint)}
+  .node.res .kind{color:var(--clay)}
+  .node .nm{font-size:12.5px;color:var(--ink);line-height:1.2;margin-top:4px}
+  .node .op{font-family:var(--mono);font-size:9.5px;color:var(--faint);margin-top:3px}
+  .node.trio{width:132px;display:flex;flex-direction:column;gap:5px}
+  .node.trio .sig{font-size:11px;color:var(--ink-2);border-left:2px solid var(--blue);padding-left:6px;line-height:1.15}
+  .node.trio .sig.clayb{border-left-color:var(--clay)}
+  .arrow{flex:0 0 auto;display:flex;align-items:center;padding:0 7px;color:var(--hair-2);font-family:var(--mono);font-size:13px}
+  .policies{display:flex;gap:10px;margin-bottom:12px}
+  .pchip{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px dashed var(--hair-2);padding:4px 8px}
+  .pchip b{color:var(--ink-2);font-weight:500}
+
+  /* ch06 memo */
+  .memo{border:1px solid var(--ink);background:var(--paper)}
+  .memo .mh{padding:16px 20px;border-bottom:1px solid var(--hair)}
+  .memo .mh .e{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--clay)}
+  .memo .mh h3{font-family:var(--serif);font-size:19px;font-weight:600;margin-top:5px}
+  .memo ul{list-style:none;padding:14px 20px}
+  .memo li{display:flex;gap:10px;font-size:13.5px;color:var(--ink-2);padding:6px 0;line-height:1.5}
+  .memo li .s{color:var(--clay);font-family:var(--mono);flex:0 0 auto}
+  .memo li b{color:var(--ink);font-weight:600}
+  .seal{display:flex;flex-wrap:wrap;gap:18px;padding:13px 20px;border-top:1px solid var(--hair);background:var(--paper-2);font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+  .seal span{display:inline-flex;align-items:center;gap:6px}
+  .seal .g{color:var(--green)}
+  .next{display:flex;align-items:center;gap:14px;margin-top:16px;border:1px solid var(--clay);background:var(--paper)}
+  .next .tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--paper);background:var(--clay);padding:14px 14px;align-self:stretch;display:flex;align-items:center}
+  .next .tx{font-size:13.5px;color:var(--ink-2);padding:12px 14px 12px 0}
+  .next .tx b{color:var(--ink);font-weight:600}
+  .prov{font-family:var(--mono);font-size:10px;color:var(--faint);margin-top:12px;letter-spacing:.02em}
+  .topclay{height:2px;background:var(--clay)}
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap"><div class="row">
+  <div class="brand"><span class="dot"></span><b>Invariant</b></div>
+  <div class="dl">Research note · WTI · Jan–Jun 2024 · validated</div>
+</div></div></header>
+
+<div class="wrap">
+  <div class="topclay" style="margin-top:0"></div>
+
+  <!-- STANDFIRST -->
+  <div class="stand">
+    <p class="eyebrow">An Invariant investigation · crude-oil-research · 6 chapters</p>
+    <h1>Mean-reversion held its edge — <em>until</em> the market trended.</h1>
+    <p class="sf">A complete investigation, read top to bottom. On WTI crude, Jan–Jun 2024, a 20-day z-score on the crude–gas spread earned a <b>1.42 Sharpe</b> and <b>+18.7% a year</b> — but it gave <b>8.3% back</b> when the market trended, and this note shows exactly where. Traced from 3.8M raw 1-minute bars to a validated backtest; nothing asserted that you can&rsquo;t fall through.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="v">1.42</div><div class="k">Sharpe</div></div>
+      <div class="kpi"><div class="v green">+18.7%</div><div class="k">Ann. return</div></div>
+      <div class="kpi"><div class="v clay">−8.3%</div><div class="k">Max drawdown</div></div>
+      <div class="kpi"><div class="v">56.1%</div><div class="k">Win rate</div></div>
+      <div class="kpi"><div class="v">34%</div><div class="k">Turnover</div></div>
+    </div>
+    <p class="when">Eval 2024-01-02 → 2024-06-28 · 26 weeks · validated · no-lookahead · reproducible</p>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+    <nav class="rail">
+      <div class="lbl">The investigation</div>
+      <a class="on"><span class="n">01</span><span class="t">the finding</span></a>
+      <a><span class="n">02</span><span class="t">the factors</span></a>
+      <a><span class="n">03</span><span class="t">what drove it</span></a>
+      <a><span class="n">04</span><span class="t">when it works</span></a>
+      <a><span class="n">05</span><span class="t">how it was built</span></a>
+      <a><span class="n">06</span><span class="t">the deliverable</span></a>
+      <div class="meta">6 figures · 1 model<br/>7-step lineage<br/><span class="ok">✓ validated</span><br/>no-lookahead · reproducible</div>
+    </nav>
+
+    <div class="story">
+      <!-- 01 FINDING -->
+      <section class="ch">
+        <p class="ce">01 · the finding</p>
+        <h2>Up 9.4% over 26 weeks — but every dollar was earned in the chop, and part of it handed back in the trend.</h2>
+        <p class="lede">Weekly cumulative return. It climbed to <b>+8.0%</b> by late February, then the trending-DOWN weeks dragged it to <b>−0.3%</b> by late March — a <b>−8.3% drawdown</b> — before reverting to <b>+9.4%</b>. The regime ribbon under the curve is the tell: the clay weeks are where it fell.</p>
+        <div class="plate ticks">
+          <div class="cap"><span>Fig. 1 — cumulative return %, regime-shaded · weekly · 2024</span><span>authored · internally consistent</span></div>
+          <svg id="equity" viewBox="0 0 920 232" role="img" aria-label="cumulative return with drawdown and regime ribbon"></svg>
+        </div>
+        <div class="callout"><b>Max drawdown −8.3%</b> — drawn, not buried. You can see the week it happened.</div>
+      </section>
+
+      <!-- 02 FACTORS -->
+      <section class="ch">
+        <p class="ce">02 · the factors</p>
+        <h2>Three signals went into the matrix — the z-score and the spread move together; gas runs on its own.</h2>
+        <p class="lede"><b>zscore_20</b> (crude log-return z-score, 20-day), <b>gas_z20</b> (nat-gas z-score, same window), and <b>spread_5d</b> (the crude–gas cointegrated spread, 60-bar lookback). They aren&rsquo;t redundant: zscore_20 and spread_5d correlate <b>0.58</b> — they revert together — while gas_z20 is nearly independent (0.31, −0.12), which is exactly why it can hedge in the next chapter.</p>
+        <div class="plate">
+          <div class="cap"><span>Fig. 2 — correlation across the three signals</span><span>authored from signal_matrix_v3</span></div>
+          <svg id="corr" viewBox="0 0 920 200" role="img" aria-label="3 by 3 correlation heatmap"></svg>
+        </div>
+      </section>
+
+      <!-- 03 WHAT DROVE IT -->
+      <section class="ch">
+        <p class="ce">03 · what drove it</p>
+        <p class="pq">&ldquo;Z-score carries the signal — gas z-score leans against it.&rdquo;</p>
+        <p class="lede">A ridge baseline (α=0.1) on the signal matrix, predicting the 5-minute forward return, learned three weights: <b>zscore_20 +0.42</b> carries it, <b>spread_5d +0.09</b> adds a little in the same direction, and <b>gas_z20 −0.18</b> leans against it — damping crude-only noise.</p>
+        <div class="plate">
+          <div class="cap"><span>Fig. 3 — learned model weights · positive adds signal, negative hedges</span><span>ridge · linreg_baseline</span></div>
+          <svg id="weights" viewBox="0 0 920 168" role="img" aria-label="signed model weights"></svg>
+        </div>
+        <p class="spec">ridge · α=0.1 · target fwd_ret_5m · features signal_matrix_v3 (3 cols)</p>
+      </section>
+
+      <!-- 04 WHEN IT WORKS (candid) -->
+      <section class="ch candid">
+        <p class="ce">04 · when it works</p>
+        <h2>It paid in mean-reverting weeks — and gave it back when the market trended.</h2>
+        <p class="lede">The edge is regime-dependent <b>by construction</b>. Across 26 weeks, mean-reversion ruled <b>17</b>, the market trended up for 2 and down for 5, and 2 were no-trade. The five trending-DOWN weeks (<b>Feb 27 – Mar 26</b>) overlap the drawdown exactly — that&rsquo;s where equity slid from +8.0% to −0.3%.</p>
+        <div class="plate" style="background:transparent">
+          <div class="cap"><span>Fig. 4 — weekly regime · the DOWN phase is the drawdown window</span><span>authored regime series</span></div>
+          <svg id="regime" viewBox="0 0 920 96" role="img" aria-label="weekly regime ribbon"></svg>
+          <div class="tally">
+            <span><i style="background:var(--sage)"></i>mean-reverting · 17</span>
+            <span><i style="background:var(--blue)"></i>trending up · 2</span>
+            <span><i style="background:var(--clay)"></i>trending down · 5</span>
+            <span><i style="background:var(--notrade)"></i>no-trade · 2</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 HOW IT WAS BUILT -->
+      <section class="ch">
+        <p class="ce">05 · how it was built</p>
+        <h2>Seven steps from 3.8M raw crude bars to a validated backtest — every node hashed.</h2>
+        <p class="lede"><b>crude_oil_1m</b> (3.8M rows) and <b>nat_gas_1m</b> (Henry Hub) stitch to a continuous front-month under the Panama calendar-roll policy — no artificial roll gap — then log-returns, three signals, the matrix, a 5-minute-ahead target, the ridge model, and a dollar-neutral top-decile long/short backtest. The z-window was widened <b>14→20</b> after a turnover review.</p>
+        <div class="plate">
+          <div class="cap"><span>Fig. 5 — lineage · crude_oil_1m → final backtest</span><span>maps to verified platform capabilities</span></div>
+          <div class="policies">
+            <span class="pchip">policy · <b>roll_stitch_cl_calendar_panama</b></span>
+            <span class="pchip">policy · <b>position_sizing_top_decile_long_short</b></span>
+          </div>
+          <div class="flow">
+            <div class="node"><div class="kind">dataset</div><div class="nm">WTI crude · 1m</div><div class="op">3.8M rows</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="kind">feature</div><div class="nm">Front-month cont.</div><div class="op">stitch_contracts</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="kind">feature</div><div class="nm">Log returns</div><div class="op">derive_column</div></div>
+            <div class="arrow">→</div>
+            <div class="node trio">
+              <div class="sig">Z-score · 20 <span class="clay" style="font-size:9px">14→20</span></div>
+              <div class="sig">Gas z-score · 20</div>
+              <div class="sig clayb">Crude–gas spread</div>
+            </div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="kind">matrix</div><div class="nm">Signal matrix</div><div class="op">join_feature</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="kind">target</div><div class="nm">Fwd return · 5m</div><div class="op">lead</div></div>
+            <div class="arrow">→</div>
+            <div class="node"><div class="kind">model</div><div class="nm">Ridge · α=0.1</div><div class="op">fit_model</div></div>
+            <div class="arrow">→</div>
+            <div class="node res"><div class="kind">result</div><div class="nm">Backtest · mean-rev</div><div class="op">evaluate_strategy</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 DELIVERABLE -->
+      <section class="ch">
+        <p class="ce">06 · the deliverable</p>
+        <h2>The memo writes itself — what we can defend, and the next move.</h2>
+        <p class="lede">Everything above traces to raw tick and reproduces. The pinned findings assemble into the deliverable — not a generic CTA, but the case you can stand behind.</p>
+        <div class="memo">
+          <div class="mh"><div class="e">Pinboard · the memo</div><h3>WTI mean-reversion · what we can defend</h3></div>
+          <ul>
+            <li><span class="s">★</span><span><b>+9.4% / 1.42 Sharpe</b>, earned in 17 mean-reverting weeks.</span></li>
+            <li><span class="s">★</span><span>Gives back <b>8.3%</b> in trends — by construction, not by accident.</span></li>
+            <li><span class="s">★</span><span><b>No-lookahead</b>: the forward return is shifted strictly 5 minutes ahead of the signal.</span></li>
+          </ul>
+          <div class="seal">
+            <span class="g">✓ validated · all validators pass</span>
+            <span>🔒 no-lookahead · fwd return +5 min</span>
+            <span>🔒 reproducible · hash per node</span>
+            <span>⤳ regime-honest · drawdown sits in the DOWN regime</span>
+          </div>
+        </div>
+        <div class="next">
+          <span class="tag">Next →</span>
+          <span class="tx"><b>Widen the z-window 20→30 bars</b> — signal concentrates in slower reversion, turnover drops further.</span>
+        </div>
+        <p class="prov">crude_oil_1m 3.8M rows · ridge α=0.1 · z-window 20 · coint 60-bar · eval 2024-01-02 → 2024-06-28 · published validated</p>
+      </section>
+    </div>
+  </div>
+
+  <div class="topclay" style="margin-bottom:60px"></div>
+</div>
+
+<script>
+const EQ=[0.0,1.0,2.2,3.4,4.6,5.8,6.9,8.0,7.1,5.4,3.2,1.1,-0.3,1.4,3.0,4.3,5.5,6.4,7.2,7.9,8.4,8.0,8.7,9.1,8.8,9.4];
+const REG=["MR","MR","MR","MR","MR","UP","MR","MR","DOWN","DOWN","DOWN","DOWN","DOWN","MR","MR","MR","MR","MR","MR","UP","NO_TRADE","NO_TRADE","MR","MR","MR","MR"];
+const COL={MR:"#7A8B6F",UP:"#1F4E79",DOWN:"#BE4D2B",NO_TRADE:"#CBC7BB"};
+const BLUE="#1F4E79",CLAY="#BE4D2B",HAIR="#E7E1D5",HAIR2="#d8d0bf",FAINT="#93897a",INK="#1C1B18",INK2="#4a463d",PAPER="#FAF7F1";
+const MONO="font-family:'JetBrains Mono',monospace";
+const NS="http://www.w3.org/2000/svg";
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function txt(x,y,s,o={}){const e=el("text",{x,y,"font-size":o.fs||10,fill:o.fill||FAINT,"text-anchor":o.anchor||"start","font-weight":o.fw||400});e.setAttribute("style",MONO);e.textContent=s;return e;}
+
+// ── EQUITY HERO: 3 stacked bands ──
+(function(){
+  const s=document.getElementById("equity"); if(!s)return;
+  const L=52,R=900,n=EQ.length, x=i=>L+i/(n-1)*(R-L);
+  // band A: line + running max  (y 12..146 over equity -1..10)
+  const yA=v=>146-(v+1)/11*(146-12);
+  [0,4,8].forEach(g=>{ s.appendChild(el("line",{x1:L,y1:yA(g),x2:R,y2:yA(g),stroke:HAIR})); s.appendChild(txt(L-8,yA(g)+3,g+"%",{anchor:"end"})); });
+  // running max line
+  let mx=-99; const rm=EQ.map(v=>(mx=Math.max(mx,v)));
+  let dpRM="";rm.forEach((v,i)=>dpRM+=(i?"L":"M")+x(i).toFixed(1)+" "+yA(v).toFixed(1)+" ");
+  s.appendChild(el("path",{d:dpRM,fill:"none",stroke:HAIR2,"stroke-width":1,"stroke-dasharray":"3 3"}));
+  // equity area + line
+  let dp="";EQ.forEach((v,i)=>dp+=(i?"L":"M")+x(i).toFixed(1)+" "+yA(v).toFixed(1)+" ");
+  s.appendChild(el("path",{d:dp+"L"+x(n-1)+" "+yA(0)+" L"+x(0)+" "+yA(0)+" Z",fill:BLUE,"fill-opacity":.08}));
+  s.appendChild(el("path",{d:dp,fill:"none",stroke:BLUE,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+  // annotations: peak +8.0 (idx7), trough -0.3 (idx12)
+  function lit(i,v,label,below){const cx=x(i),cy=yA(v);
+    s.appendChild(el("circle",{cx,cy,r:9,fill:"rgba(190,77,43,.10)"}));
+    s.appendChild(el("circle",{cx,cy,r:4,fill:CLAY}));
+    const t=txt(cx,below?cy+17:cy-9,label,{anchor:i>n-6?"end":"middle",fill:CLAY,fw:500,fs:10.5});s.appendChild(t);}
+  lit(7,8.0,"+8.0% · late Feb");
+  lit(12,-0.3,"−0.3% · late Mar",true);
+  lit(25,9.4,"+9.4%",false);
+  // band B: drawdown area (y 158..196 over dd 0..-8.3)
+  const yB=dd=>158+(-dd)/8.3*(196-158);
+  s.appendChild(txt(L-8,164,"dd",{anchor:"end"}));
+  let db="M"+x(0)+" "+yB(0);EQ.forEach((v,i)=>{db+=" L"+x(i).toFixed(1)+" "+yB(v-rm[i]).toFixed(1);});
+  db+=" L"+x(n-1)+" "+yB(0)+" Z";
+  s.appendChild(el("path",{d:db,fill:CLAY,"fill-opacity":.16}));
+  let dl="";EQ.forEach((v,i)=>dl+=(i?"L":"M")+x(i).toFixed(1)+" "+yB(v-rm[i]).toFixed(1)+" ");
+  s.appendChild(el("path",{d:dl,fill:"none",stroke:CLAY,"stroke-width":1.2}));
+  s.appendChild(txt(R,yB(-8.3)+3,"−8.3% max drawdown",{anchor:"end",fill:CLAY,fw:500}));
+  // band C: regime ribbon (y 206..222)
+  const cw=(R-L)/n;
+  REG.forEach((r,i)=>s.appendChild(el("rect",{x:L+i*cw+0.5,y:206,width:cw-1,height:16,fill:COL[r]})));
+  s.appendChild(txt(L,232,"Jan",{}));s.appendChild(txt((L+R)/2,232,"regime ▸ clay = trending down",{anchor:"middle"}));s.appendChild(txt(R,232,"Jun",{anchor:"end"}));
+})();
+
+// ── CORRELATION HEATMAP 3x3 ──
+(function(){
+  const s=document.getElementById("corr"); if(!s)return;
+  const M=[[1,0.31,0.58],[0.31,1,-0.12],[0.58,-0.12,1]];
+  const labs=["Z-score · 20","Gas z-score · 20","Crude–gas spread"];
+  const short=["z₂₀","gas z","spread"];
+  const cell=54,gx=300,gy=20,gap=6;
+  // diverging ramp clay(-1) -> paper(0) -> blue(+1)
+  function ramp(v){const t=Math.max(-1,Math.min(1,v));
+    const a=[190,77,43],b=[243,238,228],c=[31,78,121];
+    let r,g,bl;if(t<0){const k=-t;r=b[0]+(a[0]-b[0])*k;g=b[1]+(a[1]-b[1])*k;bl=b[2]+(a[2]-b[2])*k;}
+    else{const k=t;r=b[0]+(c[0]-b[0])*k;g=b[1]+(c[1]-b[1])*k;bl=b[2]+(c[2]-b[2])*k;}
+    return`rgb(${r|0},${g|0},${bl|0})`;}
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){
+    const v=M[i][j],xx=gx+j*(cell+gap),yy=gy+i*(cell+gap);
+    s.appendChild(el("rect",{x:xx,y:yy,width:cell,height:cell,fill:ramp(v),stroke:HAIR}));
+    const dark=Math.abs(v)>0.5;
+    const t=txt(xx+cell/2,yy+cell/2+4,v.toFixed(2),{anchor:"middle",fill:(v>0.5)?PAPER:INK,fw:500,fs:12});s.appendChild(t);
+    if(i===0&&j===2){ // ring the 0.58
+      s.appendChild(el("rect",{x:xx-2,y:yy-2,width:cell+4,height:cell+4,fill:"none",stroke:INK,"stroke-width":1.4}));
+    }
+  }
+  // row labels
+  for(let i=0;i<3;i++)s.appendChild(txt(gx-12,gy+i*(cell+gap)+cell/2+3,short[i],{anchor:"end",fill:INK2,fs:11}));
+  for(let j=0;j<3;j++)s.appendChild(txt(gx+j*(cell+gap)+cell/2,gy-7,short[j],{anchor:"middle",fill:INK2,fs:11}));
+  // legend + note
+  s.appendChild(txt(30,40,"strongest pair",{fill:FAINT,fs:10.5}));
+  s.appendChild(txt(30,55,"z-score ↔ spread",{fill:INK2,fw:500,fs:12}));
+  s.appendChild(txt(30,71,"0.58 — they revert",{fill:FAINT,fs:10.5}));
+  s.appendChild(txt(30,85,"together",{fill:FAINT,fs:10.5}));
+  s.appendChild(txt(30,120,"gas z-score",{fill:INK2,fw:500,fs:12}));
+  s.appendChild(txt(30,135,"near-independent",{fill:FAINT,fs:10.5}));
+  s.appendChild(txt(30,149,"0.31 · −0.12",{fill:FAINT,fs:10.5}));
+  // mini diverging key
+  const ky=176,kx=300;for(let q=0;q<=20;q++){s.appendChild(el("rect",{x:kx+q*9,y:ky,width:9,height:9,fill:ramp(-1+q/10)}));}
+  s.appendChild(txt(kx-6,ky+8,"−1",{anchor:"end"}));s.appendChild(txt(kx+20*9+6,ky+8,"+1",{}));
+})();
+
+// ── WEIGHTS: signed diverging bars ──
+(function(){
+  const s=document.getElementById("weights"); if(!s)return;
+  const W=[["Z-score · 20",0.42,BLUE],["Gas z-score · 20",-0.18,CLAY],["Crude–gas spread",0.09,BLUE]];
+  const zero=460,scale=560,row=38,top=24,L=210;
+  s.appendChild(el("line",{x1:zero,y1:top-8,x2:zero,y2:top+row*3-6,stroke:HAIR2}));
+  s.appendChild(txt(zero,top+row*3+8,"0",{anchor:"middle"}));
+  W.forEach((w,i)=>{const y=top+i*row,[nm,v,c]=w,bw=Math.abs(v)*scale;
+    s.appendChild(txt(L,y+13,nm,{anchor:"end",fill:INK2,fs:13,fw:400}));
+    const x=v>=0?zero:zero-bw;
+    s.appendChild(el("rect",{x,y:y+2,width:bw,height:18,fill:c,"fill-opacity":.85}));
+    s.appendChild(txt(v>=0?x+bw+8:x-8,y+15,(v>=0?"+":"")+v.toFixed(2),{anchor:v>=0?"start":"end",fill:c,fw:500,fs:12.5}));
+  });
+})();
+
+// ── REGIME RIBBON standalone (ch04) ──
+(function(){
+  const s=document.getElementById("regime"); if(!s)return;
+  const L=8,R=912,n=REG.length,cw=(R-L)/n;
+  REG.forEach((r,i)=>s.appendChild(el("rect",{x:L+i*cw+0.5,y:14,width:cw-1,height:30,fill:COL[r]})));
+  // bracket the DOWN run idx8..12
+  const bx1=L+8*cw,bx2=L+13*cw;
+  s.appendChild(el("line",{x1:bx1,y1:50,x2:bx2,y2:50,stroke:CLAY,"stroke-width":1.4}));
+  s.appendChild(el("line",{x1:bx1,y1:46,x2:bx1,y2:50,stroke:CLAY,"stroke-width":1.4}));
+  s.appendChild(el("line",{x1:bx2,y1:46,x2:bx2,y2:50,stroke:CLAY,"stroke-width":1.4}));
+  s.appendChild(txt((bx1+bx2)/2,64,"Feb 27 – Mar 26 · the drawdown window",{anchor:"middle",fill:CLAY,fw:500,fs:11}));
+  s.appendChild(txt(L,10,"Jan 2024",{}));s.appendChild(txt(R,10,"Jun 2024",{anchor:"end"}));
+})();
+</script>
+</body>
+</html>
