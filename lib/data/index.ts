@@ -42,6 +42,16 @@ export const DATA_SOURCE: "fixtures" | "api" =
  *  and docs/BACKEND_CONTRACT.md for the interface a backend must satisfy. */
 export const API_BASE_URL: string = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
+/** Minimal BFF fetch for the `api` source branch. Hits the Next route handlers
+ *  (app/api/catalog/*), which hold the engine-service URLs + principal
+ *  server-side. See lib/api/MAPPING.md + docs/adr/0002-*. */
+async function apiGet<T>(path: string): Promise<T> {
+  const res = await fetch(API_BASE_URL + path, { cache: "no-store" });
+  if (res.status === 404) return undefined as T;
+  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+  return (await res.json()) as T;
+}
+
 // every node we know about, indexed by id (across all workspace lineages)
 const allNodes: Record<string, Node> = (() => {
   const map: Record<string, Node> = {};
@@ -67,6 +77,23 @@ export async function getGraphPresentation(ref: string): Promise<{
 
 export async function getNode(id: string): Promise<Node | undefined> {
   return allNodes[id];
+}
+
+// ── Phase-4 live catalog (the /live spike) ───────────────────────────────────
+// These ALWAYS hit the real backend through the route handlers (app/api/catalog/*),
+// independent of the global DATA_SOURCE toggle — so the existing fixture pages are
+// untouched while /live proves the real read path. Components read through these
+// (never fetch() directly — check:seams). The global fixtures↔api flip across all
+// getters is a later slice; see lib/api/MAPPING.md.
+export async function listLiveArtifacts(kind?: string): Promise<Node[]> {
+  const q = kind ? `?kind=${encodeURIComponent(kind)}` : "";
+  return apiGet(`/api/catalog/artifacts${q}`);
+}
+export async function getLiveArtifact(id: string): Promise<Node | undefined> {
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}`);
+}
+export async function getLiveLineage(id: string): Promise<LineageSubgraph> {
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/lineage`);
 }
 
 /** The lineage subgraph for a workspace (or the one containing a node). */
