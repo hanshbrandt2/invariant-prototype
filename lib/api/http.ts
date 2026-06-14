@@ -104,6 +104,9 @@ export const dcGet = <T>(path: string) => get<T>(DATA_CATALOG_URL, path);
 /** GET against agent-runtime (:8104 — conversations + the agent loop). */
 export const arGet = <T>(path: string) => get<T>(AGENT_RUNTIME_URL, path);
 
+/** GET against research-workbench (:8105 — the DAG registry: /api/dsl/dags). */
+export const rwbGet = <T>(path: string) => get<T>(RESEARCH_WORKBENCH_URL, path);
+
 /** POST against research-workbench (:8105 — the headless DSL codegen routes:
  *  /api/dsl/assemble, /api/dsl/receipt). Pure / read-only on the engine side. */
 export const rwbPost = <T>(path: string, body: unknown) =>

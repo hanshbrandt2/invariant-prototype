@@ -1,23 +1,23 @@
 // lib/api/receipt.ts — the contract mapping for ADR-0002's code & receipt
-// surface (Phase-4 Slice 6). Translates the REAL research-workbench DSL codegen
-// wire shapes (POST /api/dsl/assemble, /api/dsl/receipt — snake_case Pydantic,
-// served straight out of dsl-engine's `assemble_dag` / `build_receipt`) into the
-// frontend contract (`Receipt`, `AssembledCode` in lib/types). No schema drift:
-// a missing/renamed wire field is a backend ticket, never a contract edit.
+// surface (Phase-4 Slice 6 → 6b). Translates the REAL research-workbench DSL
+// wire shapes into the frontend contract (`Receipt`, `AssembledCode`,
+// `DagListItem` in lib/types). No schema drift: a missing/renamed wire field is
+// a backend ticket, never a contract edit.
 //
-// THE INPUT DAG IS A LABELLED DEMO. Real artifacts carry DAG-*run* metadata
-// (dag_id / from_node / run_id / output_blob_path), NOT the producing
-// TransformNode graph — so today there is no real DAG to package from a stored
-// artifact (the artifact→TransformNode gap, tracked as task #10). That closes
-// only when the UI builds the DAG itself (the build-stream, MIGRATION step 3).
-// Until then we drive the live endpoints with DEMO_DAG so the *code & receipt
-// are real* (produced by the real codegen over the real rwb endpoint) even
-// though the *input DAG* is a placeholder. Honesty bar: the surface says so.
+// REAL DAGs, not a synthetic demo. The platform's producing pipelines live in
+// the DAG registry (`catalog/dags/*.yaml`), listed by GET /api/dsl/dags and
+// fetched by GET /api/dsl/dags/{id} → {spec}. An artifact's `dag_id` points at
+// one of these. The surface fetches a real spec and POSTs it to
+// /api/dsl/{assemble,receipt} — so the code AND the DAG are real. A DAG whose
+// operators aren't yet emittable returns a clean 422 (honest coverage); see
+// receiptResultFrom(). The artifact→dag_id wiring (so a *result* opens its own
+// receipt) is task #10 / the build-stream — this surface is the registry view.
 
 import type {
   Receipt,
   ReceiptFile,
   AssembledCode,
+  DagListItem,
   ReproducibilityClass,
 } from "@/lib/types";
 
@@ -40,7 +40,43 @@ export interface DagReceiptResponse {
   reproducibility_class: ReproducibilityClass;
 }
 
+/** rwb `DagSummary` (api/dsl/routers/dags.py) — one row per catalog/dags/*.yaml. */
+export interface DagSummaryRead {
+  id: string;
+  stage: string;
+  version: string;
+  title: string | null;
+  summary: string | null;
+  description: string | null;
+  file_path: string;
+  resource_hint: string;
+}
+
+/** rwb `DagSpec` — full spec for one DAG (the `spec` is the runnable DAG dict). */
+export interface DagSpecRead {
+  id: string;
+  stage: string;
+  version: string;
+  spec: Record<string, unknown>;
+  resource_hint: string;
+}
+
+/** The DAG packaged by default — the one real catalog pipeline that fully
+ *  emits today (a 15m target). As emit() coverage widens, more of the registry
+ *  becomes packageable; the picker surfaces every DAG and its per-DAG status. */
+export const DEFAULT_DAG_ID = "cl_15m_target_dag";
+
 // ── mappers ──────────────────────────────────────────────────────────────────
+
+export function dagSummaryToItem(s: DagSummaryRead): DagListItem {
+  return {
+    id: s.id,
+    stage: s.stage,
+    title: s.title,
+    description: s.description,
+    resourceHint: s.resource_hint,
+  };
+}
 
 /** Filename → Code-lens language. Verbatim content; this only drives rendering. */
 function langOf(name: string): ReceiptFile["lang"] {
@@ -89,66 +125,15 @@ export function assembleResponseToAssembled(
   };
 }
 
-// ── the labelled demo DAG ─────────────────────────────────────────────────────
-// A minimal two-node DAG: join two inputs, then derive a blended column. It
-// exercises three of the four keystone emit() patterns (multi-input/named-frame
-// `join`, the expression-AST renderer `derive_column`) and assembles into a
-// runnable `run(frame_prices, frame_signals) -> result`. Kept here (server-side)
-// so the browser never has to know DSL internals; replaced by build-stream DAGs.
-
-type DagDict = Record<string, unknown>;
-
-function inputNode(id: string, ref: string): DagDict {
-  return {
-    type: "input",
-    id,
-    artifact_ref: ref,
-    domain_transition: { from: "grid_dense", to: "grid_dense" },
-    representation_transition: {
-      from: "generic_contract",
-      to: "generic_contract",
-    },
-  };
+/** rwb returns its 422 client-errors as `{"detail": "<message>"}`. Pull the
+ *  message out for the honest "blocked" surface; fall back to the raw body. */
+export function parseDetail(body: string | undefined): string {
+  if (!body) return "unknown error";
+  try {
+    const j = JSON.parse(body) as { detail?: unknown };
+    if (typeof j.detail === "string") return j.detail;
+  } catch {
+    /* not JSON — use raw */
+  }
+  return body.slice(0, 300);
 }
-
-function transformNode(
-  id: string,
-  operator: string,
-  inputs: string[],
-  parameters: DagDict,
-): DagDict {
-  return {
-    type: "transform",
-    id,
-    operator,
-    inputs,
-    domain_transition: { from: "grid_dense", to: "grid_dense" },
-    representation_transition: {
-      from: "generic_contract",
-      to: "generic_contract",
-    },
-    parameters,
-    row_behavior: "row_preserving",
-    output_schema: { adds: [], removes: [] },
-  };
-}
-
-export const DEMO_DAG: DagDict = {
-  id: "invariant_demo_blend",
-  stage: "feature",
-  inputs: [
-    inputNode("prices", "dataset:cl_front_1m:1"),
-    inputNode("signals", "dataset:cl_sig:1"),
-  ],
-  nodes: [
-    transformNode("j", "join", ["prices", "signals"], {
-      join_type: "left",
-      on: ["key"],
-    }),
-    transformNode("feat", "derive_column", ["j"], {
-      expression: "(left_val + right_val) / 2",
-      output_column: "blend",
-    }),
-  ],
-  outputs: [{ id: "out", artifact_type: "feature", from_node: "feat" }],
-};

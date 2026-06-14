@@ -7,8 +7,9 @@ import type {
   StarterPrompt,
   ResultSpec,
   SearchHit,
-  Receipt,
   AssembledCode,
+  DagListItem,
+  ReceiptResult,
 } from "@/lib/types";
 import { fig1Lineage, crudeOilLabels, crudeOilProducerOps } from "@/lib/fixtures/fig1-lineage";
 import { hostedDatasets } from "@/lib/fixtures/hosted-datasets";
@@ -116,14 +117,20 @@ export async function getLiveConversation(
   return apiGet(`/api/agent/conversations/${encodeURIComponent(id)}`);
 }
 // Slice 6 (MIGRATION step 3 preview): the ADR-0002 code & receipt — the REAL
-// dsl-engine codegen (emit → assemble_dag → build_receipt) served over rwb
-// (:8105). The input DAG is a labelled demo until the build-stream lands; the
-// emitted code + receipt are real + parity-verified. See lib/api/receipt.ts.
-export async function getLiveReceipt(): Promise<Receipt> {
-  return apiGet(`/api/dsl/receipt`);
+// dsl-engine codegen (emit → assemble_dag → build_receipt) over rwb (:8105),
+// driven by REAL producing DAGs from the registry (catalog/dags/*.yaml). The
+// code + receipt are parity-verified; a DAG whose operators aren't emittable yet
+// returns a clean blocked result (honest coverage). See lib/api/receipt.ts.
+export async function listLiveDags(): Promise<DagListItem[]> {
+  return apiGet(`/api/dsl/dags`);
 }
-export async function getLiveAssembled(): Promise<AssembledCode> {
-  return apiGet(`/api/dsl/assemble`);
+export async function getLiveReceipt(dag?: string): Promise<ReceiptResult> {
+  return apiGet(`/api/dsl/receipt${dag ? `?dag=${encodeURIComponent(dag)}` : ""}`);
+}
+export async function getLiveAssembled(
+  dag?: string,
+): Promise<AssembledCode | undefined> {
+  return apiGet(`/api/dsl/assemble${dag ? `?dag=${encodeURIComponent(dag)}` : ""}`);
 }
 
 /** The lineage subgraph for a workspace (or the one containing a node). */

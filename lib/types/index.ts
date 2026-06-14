@@ -597,6 +597,26 @@ export interface AssembledCode {
   reproducibilityClass: ReproducibilityClass;
 }
 
+/** One real producing pipeline from the platform's DAG registry
+ *  (`catalog/dags/*.yaml`). The id is what an artifact's `dag_id` points at; the
+ *  receipt surface fetches the spec by id and packages it. */
+export interface DagListItem {
+  id: string;
+  stage: string; // dataset | feature | matrix | target | analysis
+  title: string | null;
+  description: string | null;
+  resourceHint: string; // light | heavy
+}
+
+/** Packaging a real DAG either yields a receipt or is **blocked** — the pipeline
+ *  uses an operator whose `emit()` isn't shipped yet, or a DAG shape the
+ *  assembler doesn't support (multi-output v1). The block is honest, surfaced
+ *  verbatim from the engine's 422 (never a thrown 500): emit() coverage rolls
+ *  out per operator, demand-ranked. */
+export type ReceiptResult =
+  | { ok: true; receipt: Receipt }
+  | { ok: false; status: number; detail: string };
+
 /** The simulated agentic run — streams like a build, but can HALT when an
  *  artifact would violate a pinned invariant (the trust moment). */
 export type AgenticEvent =
