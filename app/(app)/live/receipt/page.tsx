@@ -197,7 +197,12 @@ function LiveReceiptInner() {
                 {/* manifest strip */}
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 border-y border-hairline py-2.5 font-mono text-meta text-muted">
                   <span>entrypoint <span className="text-ink-2">{receipt.entrypoint}</span></span>
-                  <span>output <span className="text-ink-2">{receipt.outputName}</span></span>
+                  <span>
+                    {receipt.outputNames.length > 1 ? "outputs" : "output"}{" "}
+                    {receipt.outputNames.map((n) => (
+                      <span key={n} className="ml-1 text-ink-2">{n}</span>
+                    ))}
+                  </span>
                   <span>
                     inputs{" "}
                     {receipt.inputIds.map((id) => (

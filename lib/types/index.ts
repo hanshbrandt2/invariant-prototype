@@ -584,7 +584,7 @@ export interface ReceiptFile {
 export interface Receipt {
   files: ReceiptFile[];
   inputIds: string[]; // the DAG's input artifact refs — the data manifest
-  outputName: string; // the run() output frame name
+  outputNames: string[]; // run() returns a dict keyed by these (1 for single-output)
   reproducibilityClass: ReproducibilityClass;
   entrypoint: string; // the file to run — "pipeline.py"
 }
@@ -596,7 +596,7 @@ export interface AssembledCode {
   source: string;
   imports: string[];
   inputIds: string[];
-  outputId: string;
+  outputIds: string[]; // the keys of the dict the script binds to `result`
   reproducibilityClass: ReproducibilityClass;
 }
 

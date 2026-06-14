@@ -126,8 +126,8 @@ The keystone made real. `research-workbench` exposes dsl-engine's codegen
 
 | Frontend (`lib/types`) | Wire (rwb `api/dsl/schemas.py`) | Getter → route → rwb | Notes |
 |---|---|---|---|
-| `Receipt` `{files[], inputIds, outputName, reproducibilityClass, entrypoint}` | `DagReceiptResponse` `{files: dict, input_ids, output_name, reproducibility_class}` | `getLiveReceipt` → `GET /api/dsl/receipt` → `POST /api/dsl/receipt` | `files` map → ordered `ReceiptFile[]` (entrypoint first); `entrypoint` synthesized = `"pipeline.py"` |
-| `AssembledCode` `{source, imports, inputIds, outputId, reproducibilityClass}` | `DagAssembleResponse` (same field set, snake_case) | `getLiveAssembled` → `GET /api/dsl/assemble` → `POST /api/dsl/assemble` | one runnable script (the Code lens) |
+| `Receipt` `{files[], inputIds, outputNames[], reproducibilityClass, entrypoint}` | `DagReceiptResponse` `{files: dict, input_ids, output_names, reproducibility_class}` | `getLiveReceipt` → `GET /api/dsl/receipt` → `POST /api/dsl/receipt` | `files` map → ordered `ReceiptFile[]` (entrypoint first); `entrypoint` synthesized = `"pipeline.py"`; `run()` returns a dict keyed by `outputNames` (1 for single-output) |
+| `AssembledCode` `{source, imports, inputIds, outputIds[], reproducibilityClass}` | `DagAssembleResponse` (same field set, snake_case) | `getLiveAssembled` → `GET /api/dsl/assemble` → `POST /api/dsl/assemble` | one runnable script (the Code lens); multi-output v2 (dsl-engine #90) |
 | `ReproducibilityClass` | `Literal["bit_identical","epsilon"]` | — | the receipt's trust claim; parity gate is always bit-identical same-machine |
 
 **The input DAG is a labelled demo (`DEMO_DAG` in `lib/api/receipt.ts`), not a

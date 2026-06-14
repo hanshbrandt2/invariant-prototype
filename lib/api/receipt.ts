@@ -28,7 +28,7 @@ export interface DagAssembleResponse {
   source: string;
   imports: string[];
   input_ids: string[];
-  output_id: string;
+  output_ids: string[];
   reproducibility_class: ReproducibilityClass;
 }
 
@@ -36,7 +36,7 @@ export interface DagAssembleResponse {
 export interface DagReceiptResponse {
   files: Record<string, string>;
   input_ids: string[];
-  output_name: string;
+  output_names: string[];
   reproducibility_class: ReproducibilityClass;
 }
 
@@ -107,7 +107,7 @@ export function receiptResponseToReceipt(r: DagReceiptResponse): Receipt {
   return {
     files,
     inputIds: r.input_ids,
-    outputName: r.output_name,
+    outputNames: r.output_names,
     reproducibilityClass: r.reproducibility_class,
     entrypoint: "pipeline.py",
   };
@@ -120,7 +120,7 @@ export function assembleResponseToAssembled(
     source: r.source,
     imports: r.imports,
     inputIds: r.input_ids,
-    outputId: r.output_id,
+    outputIds: r.output_ids,
     reproducibilityClass: r.reproducibility_class,
   };
 }
