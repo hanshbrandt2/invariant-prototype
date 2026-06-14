@@ -9,8 +9,9 @@
 // blocked result — honest, demand-ranked coverage, not a fake. Honesty bar: the
 // surface shows exactly which real pipelines package today and why the rest don't.
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type {
   Receipt,
   AssembledCode,
@@ -42,9 +43,12 @@ function ReproBadge({ cls }: { cls: ReproducibilityClass }) {
   );
 }
 
-export default function LiveReceiptPage() {
+function LiveReceiptInner() {
+  // ?dag=<id> deep-links a specific producing pipeline (e.g. from an artifact's
+  // "code & receipt" affordance — its spec.dag_id). Falls back to the default.
+  const dagParam = useSearchParams().get("dag");
   const [dags, setDags] = useState<DagListItem[]>([]);
-  const [selected, setSelected] = useState<string>(DEFAULT_DAG_ID);
+  const [selected, setSelected] = useState<string>(dagParam || DEFAULT_DAG_ID);
   const [result, setResult] = useState<ReceiptResult | null>(null);
   const [assembled, setAssembled] = useState<AssembledCode | null>(null);
   const [mode, setMode] = useState<"receipt" | "assembled">("receipt");
@@ -58,11 +62,19 @@ export default function LiveReceiptPage() {
     listLiveDags()
       .then((d) => {
         setDags(d);
-        const start = d.find((x) => x.id === DEFAULT_DAG_ID)?.id ?? d[0]?.id;
+        const start =
+          (dagParam && d.find((x) => x.id === dagParam)?.id) ||
+          d.find((x) => x.id === DEFAULT_DAG_ID)?.id ||
+          d[0]?.id;
         if (start) open(start);
       })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
+    // mount-only: the registry loads once; ?dag= is read here for the initial
+    // selection. The artifact affordance deep-links via a full navigation
+    // (remount), so a changing param re-runs this; in-page rail clicks call
+    // open() directly without touching the URL.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function open(dag: string) {
@@ -263,5 +275,13 @@ export default function LiveReceiptPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function LiveReceiptPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-ui text-muted">Loading…</div>}>
+      <LiveReceiptInner />
+    </Suspense>
   );
 }

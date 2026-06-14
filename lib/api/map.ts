@@ -83,6 +83,7 @@ export function artifactToNode(a: ArtifactRead): Node {
     asOfKnowledgeTime: a.as_of_knowledge_time ?? undefined,
     owner: a.owner,
     createdAt: a.created_at,
+    dagId: (a.spec as { dag_id?: string } | null)?.dag_id ?? undefined,
     spec: a.spec,
   };
 }

@@ -71,7 +71,16 @@ export function LiveArtifactClient({ id }: { id: string }) {
         <span className="hidden font-mono text-meta text-muted md:inline">
           {node.id}
         </span>
-        <span className="ml-auto inline-flex items-center gap-1.5 border border-green/40 bg-green/5 px-2 py-0.5 font-mono text-micro uppercase tracking-[0.12em] text-green">
+        {node.dagId && !node.dagId.endsWith(".py") && (
+          <Link
+            href={`/live/receipt?dag=${encodeURIComponent(node.dagId)}`}
+            title={`package the producing pipeline ${node.dagId} into a reproducibility receipt`}
+            className="ml-auto font-mono text-meta uppercase tracking-[0.06em] text-clay hover:text-clay-deep border border-clay/40 hover:border-clay rounded px-2 py-0.5 transition-colors"
+          >
+            ⬇ code &amp; receipt
+          </Link>
+        )}
+        <span className={`${node.dagId && !node.dagId.endsWith(".py") ? "" : "ml-auto"} inline-flex items-center gap-1.5 border border-green/40 bg-green/5 px-2 py-0.5 font-mono text-micro uppercase tracking-[0.12em] text-green`}>
           <span className="h-1.5 w-1.5 rounded-full bg-green" /> live graph + inspector
         </span>
       </div>

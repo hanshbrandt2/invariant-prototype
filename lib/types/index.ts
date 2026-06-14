@@ -40,6 +40,9 @@ export interface Node {
   asOfKnowledgeTime?: string; // point-in-time knowledge cutoff of the inputs
   owner?: string; // workspace member who authored/owns the artifact
   createdAt?: string;
+  dagId?: string; // the producing DSL DAG id (spec.dag_id) — resolves in the DAG
+  //                 registry when the artifact was DSL-produced; absent / a *.py
+  //                 when produced outside the engine (no DSL receipt)
   spec?: unknown; // typed per kind (see BUILD_SPEC)
 }
 
