@@ -56,6 +56,7 @@ export default function LivePage() {
         <span className="ml-auto flex items-center gap-3">
           <Link href="/live/datasets" className="text-ui text-faint hover:text-clay">Datasets →</Link>
           <Link href="/live/conversations" className="text-ui text-faint hover:text-clay">Conversations →</Link>
+          <Link href="/live/receipt" className="text-ui text-faint hover:text-clay">Code &amp; receipt →</Link>
         </span>
       </div>
       <p className="mt-1.5 text-body text-ink-2">

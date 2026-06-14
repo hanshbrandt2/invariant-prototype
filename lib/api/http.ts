@@ -11,6 +11,8 @@ const DATA_CATALOG_URL =
   process.env.DATA_CATALOG_URL ?? "http://localhost:8101";
 const AGENT_RUNTIME_URL =
   process.env.AGENT_RUNTIME_URL ?? "http://localhost:8104";
+const RESEARCH_WORKBENCH_URL =
+  process.env.RESEARCH_WORKBENCH_URL ?? "http://localhost:8105";
 
 /**
  * Principal headers for artifact-catalog's deny-by-default gate (ADR-0044 §3).
@@ -51,6 +53,37 @@ async function get<T>(base: string, path: string): Promise<T> {
   }
 }
 
+/**
+ * POST JSON against an engine service (server-only). Mirrors `get`'s honesty
+ * contract: a 422 (the DSL routers' clean client-error for a malformed/
+ * non-emittable DAG) surfaces as an ApiError carrying the engine's message, not
+ * a thrown 500. Used by the DSL codegen routes (rwb /api/dsl/*).
+ */
+async function post<T>(base: string, path: string, body: unknown): Promise<T> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 20_000);
+  try {
+    const res = await fetch(base + path, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...principalHeaders(),
+      },
+      cache: "no-store",
+      signal: ctrl.signal,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new ApiError(res.status, `${base}${path} → ${res.status}`, text);
+    }
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -70,6 +103,11 @@ export const dcGet = <T>(path: string) => get<T>(DATA_CATALOG_URL, path);
 
 /** GET against agent-runtime (:8104 — conversations + the agent loop). */
 export const arGet = <T>(path: string) => get<T>(AGENT_RUNTIME_URL, path);
+
+/** POST against research-workbench (:8105 — the headless DSL codegen routes:
+ *  /api/dsl/assemble, /api/dsl/receipt). Pure / read-only on the engine side. */
+export const rwbPost = <T>(path: string, body: unknown) =>
+  post<T>(RESEARCH_WORKBENCH_URL, path, body);
 
 /** URL-encode an artifact id (it contains `:` — `feature:name:1`). */
 export const encId = (id: string) => encodeURIComponent(id);

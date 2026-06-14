@@ -7,7 +7,7 @@
 > backend conforms to `lib/types`; where it can't yet, that's a **backend ticket**,
 > not a frontend hack).
 >
-> Last updated: 2026-06-13 · Phase 4 Step 0.
+> Last updated: 2026-06-14 · Phase 4 (read path + Slice 6 code & receipt).
 
 ## How this was obtained (and a caveat)
 
@@ -115,3 +115,31 @@ because **workspaces are synthesized** (T-1) and **datasets carry the biggest ga
 
 Each slice flips a subset of `lib/data` to `api` and is independently shippable
 (fixtures + api can mix per-getter). Component layer never changes.
+
+---
+
+## Slice 6 — the ADR-0002 code & receipt (DSL codegen, `research-workbench :8105`)
+
+The keystone made real. `research-workbench` exposes dsl-engine's codegen
+(`emit → assemble_dag → build_receipt`) as two **pure / read-only** POST routes;
+`lib/api/receipt.ts` maps their wire shapes into the `lib/types` contract.
+
+| Frontend (`lib/types`) | Wire (rwb `api/dsl/schemas.py`) | Getter → route → rwb | Notes |
+|---|---|---|---|
+| `Receipt` `{files[], inputIds, outputName, reproducibilityClass, entrypoint}` | `DagReceiptResponse` `{files: dict, input_ids, output_name, reproducibility_class}` | `getLiveReceipt` → `GET /api/dsl/receipt` → `POST /api/dsl/receipt` | `files` map → ordered `ReceiptFile[]` (entrypoint first); `entrypoint` synthesized = `"pipeline.py"` |
+| `AssembledCode` `{source, imports, inputIds, outputId, reproducibilityClass}` | `DagAssembleResponse` (same field set, snake_case) | `getLiveAssembled` → `GET /api/dsl/assemble` → `POST /api/dsl/assemble` | one runnable script (the Code lens) |
+| `ReproducibilityClass` | `Literal["bit_identical","epsilon"]` | — | the receipt's trust claim; parity gate is always bit-identical same-machine |
+
+**The input DAG is a labelled demo (`DEMO_DAG` in `lib/api/receipt.ts`), not a
+backend gap in the codegen.** Stored artifacts carry DAG-*run* metadata
+(`dag_id`/`from_node`/`run_id`/`output_blob_path`), **not** the producing
+`TransformNode` graph — so there is no real DAG to package from an artifact yet.
+The *code & receipt are real* (live, parity-verified); only the *input* is a
+placeholder. This is the artifact→TransformNode gap (task #10), and it closes
+when the workspace builds the DAG itself (the **build-stream**, MIGRATION step 3),
+not by a frontend workaround.
+
+| Backend ticket | Gap | Owner | Closes |
+|---|---|---|---|
+| T-8 | **producing `TransformNode`/DAG on an artifact** (so a real result can emit its own receipt) | artifact-catalog + build-stream | `getCodeMap`/`getLiveReceipt` over a *real* artifact id |
+| T-9 | **fill `receipt.json` `content_hash` / `vintage`** from the catalog (left null per LAW §3) | BFF / caller | a fully-pinned data manifest |

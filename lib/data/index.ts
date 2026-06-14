@@ -7,6 +7,8 @@ import type {
   StarterPrompt,
   ResultSpec,
   SearchHit,
+  Receipt,
+  AssembledCode,
 } from "@/lib/types";
 import { fig1Lineage, crudeOilLabels, crudeOilProducerOps } from "@/lib/fixtures/fig1-lineage";
 import { hostedDatasets } from "@/lib/fixtures/hosted-datasets";
@@ -112,6 +114,16 @@ export async function getLiveConversation(
   id: string,
 ): Promise<import("@/lib/api/conversations").LiveConversation | undefined> {
   return apiGet(`/api/agent/conversations/${encodeURIComponent(id)}`);
+}
+// Slice 6 (MIGRATION step 3 preview): the ADR-0002 code & receipt — the REAL
+// dsl-engine codegen (emit → assemble_dag → build_receipt) served over rwb
+// (:8105). The input DAG is a labelled demo until the build-stream lands; the
+// emitted code + receipt are real + parity-verified. See lib/api/receipt.ts.
+export async function getLiveReceipt(): Promise<Receipt> {
+  return apiGet(`/api/dsl/receipt`);
+}
+export async function getLiveAssembled(): Promise<AssembledCode> {
+  return apiGet(`/api/dsl/assemble`);
 }
 
 /** The lineage subgraph for a workspace (or the one containing a node). */

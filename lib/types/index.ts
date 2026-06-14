@@ -557,6 +557,46 @@ export interface ProjectFile {
   nodeIds?: string[]; // every artifact whose code lives in this module (grouped modules)
 }
 
+/** ADR-0002 — the reproducibility class a receipt carries: `bit_identical`
+ *  (deterministic dataframe ops — same bytes on any machine) or `epsilon`
+ *  (model-fits — bit-identical same-machine, within-tolerance cross-machine due
+ *  to BLAS/numpy variance). The parity *gate* is always bit-identical
+ *  same-machine; `epsilon` is the declared cross-machine replay tolerance. */
+export type ReproducibilityClass = "bit_identical" | "epsilon";
+
+/** One file in a reproducibility receipt (ADR-0002 D3). `lang` drives only how
+ *  the Code lens renders it; `content` is verbatim from dsl-engine codegen. */
+export interface ReceiptFile {
+  name: string; // "pipeline.py", "requirements.txt", "receipt.json", "pyproject.toml", "data.py"
+  content: string;
+  lang: "python" | "text" | "toml" | "json";
+}
+
+/** ADR-0002 — the reproducibility **receipt**: the self-contained, clone-and-run
+ *  package the platform emits so a result is *"publish the code, point it at your
+ *  data, get the same numbers."* Produced by dsl-engine codegen
+ *  (`emit → assemble_dag → build_receipt`) and parity-verified against the
+ *  executor; `reproducibilityClass` is the trust claim. `content_hash`/`vintage`
+ *  in `receipt.json` are left null for the caller (BFF) to fill, per LAW §3. */
+export interface Receipt {
+  files: ReceiptFile[];
+  inputIds: string[]; // the DAG's input artifact refs — the data manifest
+  outputName: string; // the run() output frame name
+  reproducibilityClass: ReproducibilityClass;
+  entrypoint: string; // the file to run — "pipeline.py"
+}
+
+/** ADR-0002 D2 — the **assembled** standalone program for a whole DAG (the Code
+ *  lens): a parity-verified rendering of what the executor runs (`emit ≡
+ *  execute`), composed by `assemble_dag`. One runnable script, not a package. */
+export interface AssembledCode {
+  source: string;
+  imports: string[];
+  inputIds: string[];
+  outputId: string;
+  reproducibilityClass: ReproducibilityClass;
+}
+
 /** The simulated agentic run — streams like a build, but can HALT when an
  *  artifact would violate a pinned invariant (the trust moment). */
 export type AgenticEvent =
