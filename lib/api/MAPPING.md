@@ -143,3 +143,29 @@ not by a frontend workaround.
 |---|---|---|---|
 | T-8 | **producing `TransformNode`/DAG on an artifact** (so a real result can emit its own receipt) | artifact-catalog + build-stream | `getCodeMap`/`getLiveReceipt` over a *real* artifact id |
 | T-9 | **fill `receipt.json` `content_hash` / `vintage`** from the catalog (left null per LAW §3) | BFF / caller | a fully-pinned data manifest |
+
+---
+
+## Slice 7 — live data inspection (table + distributions, `research-workbench :8105`)
+
+The data-legibility surface (the `/live/artifact/[id]` **Data** + **Distributions**
+tabs). `research-workbench` is the **only** service that serves real *rows* —
+artifact-catalog/data-catalog carry metadata only (T-3). `lib/api/data-inspect.ts`
+maps two read-only endpoints into `lib/types`.
+
+| Frontend (`lib/types`) | Wire (rwb `api/research`) | Getter → route → rwb | Notes |
+|---|---|---|---|
+| `LiveArtifactPreview` `{status, columns[], rows[][], totalRows, truncated}` | `GET /api/research/artifacts/{id}/preview?limit=` | `getLiveArtifactPreview` → `GET /api/catalog/artifacts/{id}/preview` → rwb | A **labeled SAMPLE** — first ≤`limit` rows (clean ISO). **Cap 500, no `offset`** → no row paging. `status` discriminates `200` (`ok`/`no_path`/`unsupported_format`/…) — render fallback on non-`ok`, never throw. |
+| `LiveEdaSummary` `{sourceRowCount, columnStats[], histograms[]}` | `GET /api/research/eda/{id}/summary` → `EdaSummary` sidecar | `getLiveArtifactEda` → `GET /api/catalog/artifacts/{id}/eda` → rwb | Stats + histograms over the **FULL** table (pre-computed at ingest; `generatedAt` stamp, stale if the blob changed). `null` ⇒ never summarized. |
+
+**Honesty:** the table is a *sample* (so the header says `sample · N of M`); the
+distributions are *full-population* (so they say `over N rows`). Neither is
+synthesized. **Wart:** rwb `str()`s datetimes in the EDA *category* values
+(`"datetime.datetime(…)"`) — `artifact-charts.tsx#prettyCategory` reformats the
+same value (read-only sibling repo; not a fabrication). The preview rows are
+already clean ISO.
+
+| Backend ticket | Gap | Owner | Closes |
+|---|---|---|---|
+| T-10 | **row paging** (`offset` on preview, or a cursor query) — to browse beyond the 500-row sample | research-workbench | full-table inspection (not just a sample) |
+| T-11 | **typed datetimes in the EDA sidecar** (don't `str()` them) | research-workbench EDA | drop the `prettyCategory` client patch |

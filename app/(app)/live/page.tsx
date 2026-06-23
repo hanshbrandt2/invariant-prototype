@@ -4,7 +4,7 @@
 // (:8102) through the BFF route handlers, rendered by the existing inspector
 // components. This is the live read path, not fixtures — labeled as such (honesty bar).
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { Node, LineageSubgraph } from "@/lib/types";
 import { listLiveArtifacts, getLiveLineage } from "@/lib/data";
@@ -18,6 +18,7 @@ export default function LivePage() {
   const [lineage, setLineage] = useState<LineageSubgraph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     listLiveArtifacts()
@@ -38,6 +39,19 @@ export default function LivePage() {
 
   const parents =
     lineage?.edges.filter((e) => e.childId === selected?.id) ?? [];
+
+  // client-side filter over the already-fetched list (no search endpoint yet —
+  // MAPPING.md note 70); keeps the growing catalog navigable.
+  const filtered = useMemo(() => {
+    const s = query.trim().toLowerCase();
+    if (!s) return artifacts;
+    return artifacts.filter(
+      (a) =>
+        a.name.toLowerCase().includes(s) ||
+        a.id.toLowerCase().includes(s) ||
+        a.kind.toLowerCase().includes(s),
+    );
+  }, [artifacts, query]);
 
   return (
     <div className="mx-auto max-w-[1180px] px-5 md:px-8 py-8 md:py-10">
@@ -72,9 +86,21 @@ export default function LivePage() {
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[300px_1fr]">
           {/* left — the artifact list */}
           <div>
-            <p className="eyebrow mb-3">Artifacts [{artifacts.length}]</p>
+            <p className="eyebrow mb-2">
+              Artifacts [{filtered.length}
+              {query && filtered.length !== artifacts.length ? ` of ${artifacts.length}` : ""}]
+            </p>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter by name, id, kind…"
+              className="mb-2 w-full border border-hairline bg-paper px-3 py-1.5 text-ui text-ink placeholder:text-faint focus:border-ink-2 focus:outline-none"
+            />
             <div className="max-h-[70vh] space-y-1 overflow-y-auto pr-1">
-              {artifacts.map((a) => (
+              {filtered.length === 0 && (
+                <p className="px-1 py-3 text-ui text-muted">No artifacts match “{query}”.</p>
+              )}
+              {filtered.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => select(a)}

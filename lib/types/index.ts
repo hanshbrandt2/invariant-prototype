@@ -123,6 +123,66 @@ export interface HostedDataset {
   histograms?: ColumnHistogram[]; // pre-binned distributions
 }
 
+// ── Phase-4 live data inspection (research-workbench :8105) ───────────────────
+// REAL row preview + EDA summary for a live artifact. The honesty split is the
+// whole point:
+//   • LiveArtifactPreview.rows is a SAMPLE — the first ≤`limit` of `totalRows`.
+//   • LiveEdaSummary stats + histograms are computed over ALL `sourceRowCount`
+//     rows (a pre-computed sidecar), so they describe the full population.
+// Neither is ever synthesized in the browser; both come straight off :8105.
+
+export interface LiveColumn {
+  name: string;
+  dtype: string; // Polars dtype, e.g. "Float64", "String", "Datetime(...)"
+}
+
+export interface LiveArtifactPreview {
+  status: string; // "ok" | "no_path" | "remote_scheme" | "unsupported_format" | …
+  columns: LiveColumn[];
+  rows: (string | number | boolean | null)[][]; // positional, aligned to columns
+  totalRows: number;
+  truncated: boolean;
+  sourceField?: string;
+  format?: string;
+}
+
+export interface LiveColumnStat {
+  name: string;
+  dtype: string;
+  count: number;
+  nullCount: number;
+  nullPct: number;
+  nDistinct: number;
+  mean: number | null;
+  std: number | null;
+  minVal: number | string | null;
+  maxVal: number | string | null;
+  p01: number | null;
+  p05: number | null;
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+  p95: number | null;
+  p99: number | null;
+  nanCount: number;
+  infCount: number;
+}
+
+export interface LiveHistogram {
+  name: string;
+  isNumeric: boolean;
+  bins: { binStart: number; binEnd: number; count: number }[] | null; // numeric
+  categories: { value: string; count: number }[] | null; // categorical
+}
+
+export interface LiveEdaSummary {
+  sourceRowCount: number; // over the FULL table
+  sampleRowCount: number;
+  generatedAt: string;
+  columnStats: LiveColumnStat[];
+  histograms: LiveHistogram[];
+}
+
 export interface Workspace {
   id: string; // slug, e.g. "crude-oil-research"
   name: string;

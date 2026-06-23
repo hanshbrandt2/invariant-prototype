@@ -17,6 +17,15 @@ import type { InspectTarget } from "@/components/workspace/types";
 import { getLiveArtifact, getLiveLineage, getConcepts } from "@/lib/data";
 import { WorkflowGraph } from "@/components/workspace/workflow-graph";
 import { InspectorDrawer } from "@/components/workspace/inspector/inspector-drawer";
+import { ArtifactDataTable } from "@/components/live/artifact-data-table";
+import { ArtifactCharts } from "@/components/live/artifact-charts";
+
+const VIEWS = [
+  ["graph", "Graph"],
+  ["data", "Data"],
+  ["dist", "Distributions"],
+] as const;
+type View = (typeof VIEWS)[number][0];
 
 const NO_LABELS: Record<string, string> = {};
 const NO_OPS: Record<string, string> = {};
@@ -28,6 +37,7 @@ export function LiveArtifactClient({ id }: { id: string }) {
   const [concepts, setConcepts] = useState<Record<string, Concept>>({});
   const [drawer, setDrawer] = useState<InspectTarget | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [view, setView] = useState<View>("graph");
 
   useEffect(() => {
     Promise.all([getLiveArtifact(id), getLiveLineage(id), getConcepts()])
@@ -71,6 +81,21 @@ export function LiveArtifactClient({ id }: { id: string }) {
         <span className="hidden font-mono text-meta text-muted md:inline">
           {node.id}
         </span>
+        <div className="ml-2 flex items-center gap-0.5 rounded-md border border-hairline p-0.5" role="tablist">
+          {VIEWS.map(([k, label]) => (
+            <button
+              key={k}
+              role="tab"
+              aria-selected={view === k}
+              onClick={() => setView(k)}
+              className={`rounded px-2.5 py-0.5 text-ui transition-colors ${
+                view === k ? "bg-clay-wash text-clay" : "text-ink-2 hover:bg-paper-2"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         {node.dagId && !node.dagId.endsWith(".py") && (
           <Link
             href={`/live/receipt?dag=${encodeURIComponent(node.dagId)}`}
@@ -86,38 +111,50 @@ export function LiveArtifactClient({ id }: { id: string }) {
       </div>
 
       {/* the real graph lens (click a node → the real inspector drawer) */}
-      <div className="relative min-h-0 flex-1">
-        <WorkflowGraph
-          graph={lineage}
-          labels={NO_LABELS}
-          producerOps={NO_OPS}
-          concepts={concepts}
-          variants={NO_VARIANTS}
-          selectedId={drawer?.type === "node" ? drawer.id : undefined}
-          onInspectNode={(nid) => setDrawer({ type: "node", id: nid })}
-          onInspectEdge={(e: LineageEdge) =>
-            setDrawer({ type: "edge", parentId: e.parentId, childId: e.childId })
-          }
-          onCompare={() => {}}
-          onFork={() => {}}
-        />
-        {drawer && (
-          <InspectorDrawer
-            target={drawer}
-            initialTab="contract"
+      {view === "graph" ? (
+        <div className="relative min-h-0 flex-1">
+          <WorkflowGraph
             graph={lineage}
             labels={NO_LABELS}
             producerOps={NO_OPS}
-            resultSpecs={{}}
-            datasets={{}}
             concepts={concepts}
             variants={NO_VARIANTS}
-            onClose={() => setDrawer(null)}
-            onPromote={() => {}}
+            selectedId={drawer?.type === "node" ? drawer.id : undefined}
+            onInspectNode={(nid) => setDrawer({ type: "node", id: nid })}
+            onInspectEdge={(e: LineageEdge) =>
+              setDrawer({ type: "edge", parentId: e.parentId, childId: e.childId })
+            }
+            onCompare={() => {}}
             onFork={() => {}}
           />
-        )}
-      </div>
+          {drawer && (
+            <InspectorDrawer
+              target={drawer}
+              initialTab="contract"
+              graph={lineage}
+              labels={NO_LABELS}
+              producerOps={NO_OPS}
+              resultSpecs={{}}
+              datasets={{}}
+              concepts={concepts}
+              variants={NO_VARIANTS}
+              onClose={() => setDrawer(null)}
+              onPromote={() => {}}
+              onFork={() => {}}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto">
+          <div className="mx-auto max-w-[1180px] px-5 py-6 md:px-8">
+            {view === "data" ? (
+              <ArtifactDataTable artifactId={node.id} />
+            ) : (
+              <ArtifactCharts artifactId={node.id} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

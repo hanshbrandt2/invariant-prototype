@@ -98,6 +98,19 @@ export async function getLiveArtifact(id: string): Promise<Node | undefined> {
 export async function getLiveLineage(id: string): Promise<LineageSubgraph> {
   return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/lineage`);
 }
+// REAL data inspection (research-workbench :8105) — a labeled row sample and the
+// full-population EDA summary. The only live data, not metadata. See data-inspect.ts.
+export async function getLiveArtifactPreview(
+  id: string,
+  limit = 500,
+): Promise<import("@/lib/types").LiveArtifactPreview | undefined> {
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/preview?limit=${limit}`);
+}
+export async function getLiveArtifactEda(
+  id: string,
+): Promise<import("@/lib/types").LiveEdaSummary | undefined> {
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/eda`);
+}
 export async function listLiveHostedDatasets(): Promise<HostedDataset[]> {
   return apiGet(`/api/catalog/datasets`);
 }
