@@ -11,6 +11,7 @@ const I = {
   home: <path d="M3 9.5 10 4l7 5.5V16a1 1 0 0 1-1 1h-3v-4H7v4H4a1 1 0 0 1-1-1z" />,
   search: <><circle cx="9" cy="9" r="5" /><path d="m17 17-4-4" /></>,
   data: <><ellipse cx="10" cy="5.5" rx="6" ry="2.2" /><path d="M4 5.5v9c0 1.2 2.7 2.2 6 2.2s6-1 6-2.2v-9" /></>,
+  catalog: <><path d="M10 3 3 6.5 10 10l7-3.5L10 3Z" /><path d="m3 10 7 3.5L17 10" /><path d="m3 13.5 7 3.5 7-3.5" /></>,
   work: <><rect x="3.5" y="5.5" width="13" height="10" rx="1" /><path d="M3.5 8.5h13" /></>,
   community: <><circle cx="7" cy="8" r="2.2" /><circle cx="13" cy="8" r="2.2" /><path d="M3.5 16c0-2 1.6-3.2 3.5-3.2M16.5 16c0-2-1.6-3.2-3.5-3.2" /></>,
 };
@@ -19,6 +20,7 @@ const items: Item[] = [
   { label: "Home", href: "/dashboard", icon: I.home },
   { label: "Search", href: "#search", icon: I.search },
   { label: "Hosted data", href: "/dashboard#hosted-data", icon: I.data },
+  { label: "Live catalog", href: "/live", icon: I.catalog },
 ];
 
 const WORKSPACE_VIEWS = [
@@ -42,7 +44,10 @@ export function Sidebar({ recents = [] }: { recents?: { id: string; name: string
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
         {items.map((it) => {
-          const active = pathname === it.href.split("#")[0].split("?")[0] && it.label === "Home";
+          const base = it.href.split("#")[0].split("?")[0];
+          const active =
+            (it.label === "Home" && pathname === base) ||
+            (it.label === "Live catalog" && pathname.startsWith("/live"));
           const cls = `group flex items-center gap-3 px-3 py-2 rounded-lg text-ui transition-colors w-full ${
             active ? "bg-paper-2 text-ink" : "text-ink-2 hover:bg-paper-2"
           }`;

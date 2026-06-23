@@ -10,6 +10,7 @@ import type { Node, LineageSubgraph } from "@/lib/types";
 import { listLiveArtifacts, getLiveLineage } from "@/lib/data";
 import { ContractTab } from "@/components/workspace/inspector/contract-tab";
 import { SpecTable } from "@/components/workspace/inspector/spec-table";
+import { ServiceDown } from "@/components/live/service-down";
 
 export default function LivePage() {
   const [artifacts, setArtifacts] = useState<Node[]>([]);
@@ -65,15 +66,7 @@ export default function LivePage() {
       </p>
 
       {loading && <p className="mt-10 text-ui text-muted">Loading the live catalog…</p>}
-      {error && (
-        <p className="mt-10 text-ui text-clay">
-          Could not reach the catalog: <span className="font-mono text-meta">{error}</span>
-          <br />
-          <span className="text-muted">
-            Is the SSH tunnel up? <span className="font-mono">ssh -fNL 8102:localhost:8102 hans@ingest</span>
-          </span>
-        </p>
-      )}
+      {error && <ServiceDown service="artifact-catalog" port={8102} error={error} reach="tunnel" />}
 
       {!loading && !error && (
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[300px_1fr]">

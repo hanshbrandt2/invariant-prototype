@@ -20,6 +20,7 @@ import type {
   ReproducibilityClass,
 } from "@/lib/types";
 import { listLiveDags, getLiveReceipt, getLiveAssembled } from "@/lib/data";
+import { ServiceDown } from "@/components/live/service-down";
 import { CodeBlock } from "@/components/workspace/code-lens";
 import { zipSync } from "@/lib/zip";
 
@@ -141,11 +142,7 @@ function LiveReceiptInner() {
       </p>
 
       {loading && <p className="mt-10 text-ui text-muted">Loading the DAG registry…</p>}
-      {error && (
-        <p className="mt-10 text-ui text-clay">
-          Could not reach research-workbench (:8105): <span className="font-mono text-meta">{error}</span>
-        </p>
-      )}
+      {error && <ServiceDown service="research-workbench" port={8105} error={error} reach="local" />}
 
       {!loading && !error && (
         <div className="mt-7 grid grid-cols-1 gap-7 lg:grid-cols-[300px_1fr]">

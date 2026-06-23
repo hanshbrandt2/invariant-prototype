@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LiveConvSummary, LiveConversation } from "@/lib/api/conversations";
 import { listLiveConversations, getLiveConversation } from "@/lib/data";
+import { ServiceDown } from "@/components/live/service-down";
 
 const roleLabel = (r: string) => (r === "user" ? "You" : r === "assistant" ? "Assistant" : "System");
 
@@ -57,7 +58,7 @@ export default function LiveConversationsPage() {
       </p>
 
       {loading && <p className="mt-10 text-ui text-muted">Loading conversations…</p>}
-      {error && <p className="mt-10 text-ui text-clay">Could not reach agent-runtime: <span className="font-mono text-meta">{error}</span></p>}
+      {error && <ServiceDown service="agent-runtime" port={8104} error={error} reach="local" />}
 
       {!loading && !error && (
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[300px_1fr]">

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { HostedDataset } from "@/lib/types";
 import { listLiveHostedDatasets } from "@/lib/data";
+import { ServiceDown } from "@/components/live/service-down";
 
 export default function LiveDatasetsPage() {
   const [datasets, setDatasets] = useState<HostedDataset[]>([]);
@@ -48,9 +49,7 @@ export default function LiveDatasetsPage() {
       </p>
 
       {loading && <p className="mt-10 text-ui text-muted">Loading datasets…</p>}
-      {error && (
-        <p className="mt-10 text-ui text-clay">Could not reach data-catalog: <span className="font-mono text-meta">{error}</span></p>
-      )}
+      {error && <ServiceDown service="data-catalog" port={8101} error={error} reach="tunnel" />}
 
       {!loading && !error && (
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
