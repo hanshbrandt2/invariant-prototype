@@ -111,6 +111,19 @@ export async function getLiveArtifactEda(
 ): Promise<import("@/lib/types").LiveEdaSummary | undefined> {
   return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/eda`);
 }
+// Plot tab — the contracts picker + a real OHLCV series for one contract/window.
+export async function getLiveArtifactContracts(
+  id: string,
+): Promise<import("@/lib/types").SeriesContract[]> {
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/contracts`);
+}
+export async function getLiveArtifactSeries(
+  id: string,
+  opts: { contract: string; from: string; to: string; grain: import("@/lib/types").SeriesGrain },
+): Promise<import("@/lib/types").ArtifactSeries> {
+  const q = new URLSearchParams({ contract: opts.contract, from: opts.from, to: opts.to, grain: opts.grain });
+  return apiGet(`/api/catalog/artifacts/${encodeURIComponent(id)}/series?${q.toString()}`);
+}
 export async function listLiveHostedDatasets(): Promise<HostedDataset[]> {
   return apiGet(`/api/catalog/datasets`);
 }

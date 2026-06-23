@@ -183,6 +183,38 @@ export interface LiveEdaSummary {
   histograms: LiveHistogram[];
 }
 
+// ── Plot tab — a real OHLCV time series for one contract over a window ────────
+// Built live from the :8105 query endpoint. Minute grain returns true per-bar
+// OHLC; daily grain is aggregated — there is no first()/last() aggregation, so
+// `open` is null and the chart draws a high–low band + mean-close line instead
+// of candles. Everything is real; nothing is synthesized.
+
+export type SeriesGrain = "minute" | "daily";
+
+export interface SeriesBar {
+  t: string; // ISO timestamp (minute) or date (daily)
+  open: number | null; // null for daily (no first() aggregation)
+  high: number;
+  low: number;
+  close: number; // minute: the bar close; daily: the mean close
+  volume: number;
+}
+
+export interface ArtifactSeries {
+  grain: SeriesGrain;
+  bars: SeriesBar[];
+  truncated: boolean;
+}
+
+/** One tradeable contract in an OHLCV artifact (the Plot tab's series picker). */
+export interface SeriesContract {
+  canonicalId: string;
+  symbol: string | null;
+  rows: number;
+  first: string; // earliest session (date)
+  last: string; // latest session (date)
+}
+
 export interface Workspace {
   id: string; // slug, e.g. "crude-oil-research"
   name: string;

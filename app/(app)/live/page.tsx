@@ -136,6 +136,12 @@ export default function LivePage() {
                       Inspect data ▸
                     </Link>
                     <Link
+                      href={`/live/artifact/${encodeURIComponent(selected.id)}?view=plot`}
+                      className="border border-hairline px-3 py-1.5 text-ui text-ink-2 transition-colors hover:border-ink-2"
+                    >
+                      Plot
+                    </Link>
+                    <Link
                       href={`/live/artifact/${encodeURIComponent(selected.id)}?view=dist`}
                       className="border border-hairline px-3 py-1.5 text-ui text-ink-2 transition-colors hover:border-ink-2"
                     >

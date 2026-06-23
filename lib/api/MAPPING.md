@@ -168,5 +168,28 @@ already clean ISO.
 | Backend ticket | Gap | Owner | Closes |
 |---|---|---|---|
 | T-10 | **row paging** (`offset` on preview, or a cursor query) — to browse beyond the 500-row sample | research-workbench | full-table inspection (not just a sample) |
-| T-11 | **typed datetimes in the EDA sidecar** (don't `str()` them) | research-workbench EDA | drop the `prettyCategory` client patch |
-| T-12 | **`/eda/{id}/query` 500s on any Datetime result column** — `select_columns:[ts_event,…]` or `group_by:[ts_event]` both return HTTP 500 (numeric selects + `group_by session_id` (a Date) work fine, ~40ms). Same root cause as T-11: rwb can't serialize a Polars `Datetime`. | research-workbench | the intraday **Plot tab** (minute candlesticks) — held until fixed; daily `group_by session_id` aggregation already works |
+| ~~T-11~~ | **✓ FIXED** — `summarize.py` now emits `.isoformat()` instead of `repr()` for datetimes (rwb `fix/eda-datetime-serialization`). Existing sidecars on disk still carry the old `str()` form until regenerated, so `prettyCategory` stays for now (it no-ops on ISO). | research-workbench | drop `prettyCategory` once sidecars are regenerated |
+| ~~T-12~~ | **✓ FIXED** — root cause was DuckDB needing `pytz` (gone since pandas 3.0) to materialize a `TIMESTAMP WITH TIME ZONE`, crashing in `fetchall()`. `query_builder._project_ident` now casts tz-aware columns to UTC-ISO **in the SQL** (`strftime(… AT TIME ZONE 'UTC', …)`) — no pytz, matches preview byte-for-byte. (rwb `fix/eda-datetime-serialization`) | research-workbench | the intraday **Plot tab** — now unblocked |
+
+---
+
+## Slice 8 — the Plot tab (OHLCV time series, `:8105` query endpoint)
+
+`/live/artifact/[id]` **Plot** tab. The DuckDB ad-hoc query endpoint (`POST
+/api/research/eda/{id}/query`, via `rwbPost`), now that T-12 is fixed, serves
+real per-bar OHLC. OHLCV-shaped artifacts only (detected from the column set
+`canonical_id, session_id, ts_event, open, high, low, close, volume`); others get
+an honest "not an OHLCV series" note.
+
+| Frontend (`lib/types`) | Query body (rwb `/eda/{id}/query`) | Getter → route | Notes |
+|---|---|---|---|
+| `SeriesContract[]` | `group_by [canonical_id, symbol]` + `min/max(session_id)` + `count(*)` | `getLiveArtifactContracts` → `GET …/contracts` | the picker — every contract with its date span + row count (222 here) |
+| `ArtifactSeries` (minute) | `select [ts_event,open,high,low,close,volume]` filtered by `canonical_id` + `session_id between` | `getLiveArtifactSeries(grain:'minute')` → `GET …/series` | real candlesticks; cap 20k bars |
+| `ArtifactSeries` (daily) | `group_by [session_id]` + `max(high)/min(low)/mean(close)/sum(volume)` | `getLiveArtifactSeries(grain:'daily')` → `GET …/series` | hi–lo band + **mean** close; **`open` is null** (no `first()` agg) |
+
+**Honesty:** minute = true OHLC candles; daily = aggregated, so it draws a band +
+mean-close line and the footer says the open is omitted. Granularity auto-switches
+on the window span (≤5 days → minute). `truncated` is computed from the **output**
+bar count vs the cap (the endpoint's `result_truncated` counts *pre-aggregation*
+rows, so it's wrong for GROUP BY). A true daily open/close would need a `first()`/
+`last()` aggregation in rwb — **T-13** (would upgrade the daily band to real candles).

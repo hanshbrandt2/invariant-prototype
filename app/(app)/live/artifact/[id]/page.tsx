@@ -16,7 +16,7 @@ export default async function LiveArtifactPage({
   const { view } = await searchParams;
   // ?view= deep-links a tab (so the list page can open straight to Data/Distributions).
   const initialView =
-    view === "data" || view === "dist" || view === "graph" ? view : undefined;
+    view === "data" || view === "dist" || view === "graph" || view === "plot" ? view : undefined;
   // The dynamic segment arrives URL-encoded (ids contain `:`); decode once so the
   // always-live getters re-encode it exactly once for the route handler.
   return <LiveArtifactClient id={decodeURIComponent(id)} initialView={initialView} />;

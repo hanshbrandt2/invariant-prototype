@@ -19,10 +19,12 @@ import { WorkflowGraph } from "@/components/workspace/workflow-graph";
 import { InspectorDrawer } from "@/components/workspace/inspector/inspector-drawer";
 import { ArtifactDataTable } from "@/components/live/artifact-data-table";
 import { ArtifactCharts } from "@/components/live/artifact-charts";
+import { ArtifactPlot } from "@/components/live/artifact-plot";
 
 const VIEWS = [
   ["graph", "Graph"],
   ["data", "Data"],
+  ["plot", "Plot"],
   ["dist", "Distributions"],
 ] as const;
 type View = (typeof VIEWS)[number][0];
@@ -152,9 +154,11 @@ export function LiveArtifactClient({
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
-          <div className={`mx-auto px-5 py-6 md:px-8 ${view === "data" ? "max-w-[1640px]" : "max-w-[1320px]"}`}>
+          <div className={`mx-auto px-5 py-6 md:px-8 ${view === "dist" ? "max-w-[1320px]" : "max-w-[1640px]"}`}>
             {view === "data" ? (
               <ArtifactDataTable artifactId={node.id} />
+            ) : view === "plot" ? (
+              <ArtifactPlot artifactId={node.id} />
             ) : (
               <ArtifactCharts artifactId={node.id} />
             )}
