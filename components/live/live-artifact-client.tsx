@@ -31,13 +31,19 @@ const NO_LABELS: Record<string, string> = {};
 const NO_OPS: Record<string, string> = {};
 const NO_VARIANTS = {} as Record<string, never>;
 
-export function LiveArtifactClient({ id }: { id: string }) {
+export function LiveArtifactClient({
+  id,
+  initialView = "graph",
+}: {
+  id: string;
+  initialView?: View;
+}) {
   const [node, setNode] = useState<Node | null>(null);
   const [lineage, setLineage] = useState<LineageSubgraph | null>(null);
   const [concepts, setConcepts] = useState<Record<string, Concept>>({});
   const [drawer, setDrawer] = useState<InspectTarget | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [view, setView] = useState<View>("graph");
+  const [view, setView] = useState<View>(initialView);
 
   useEffect(() => {
     Promise.all([getLiveArtifact(id), getLiveLineage(id), getConcepts()])
@@ -146,7 +152,7 @@ export function LiveArtifactClient({ id }: { id: string }) {
         </div>
       ) : (
         <div className="min-h-0 flex-1 overflow-auto">
-          <div className="mx-auto max-w-[1180px] px-5 py-6 md:px-8">
+          <div className={`mx-auto px-5 py-6 md:px-8 ${view === "data" ? "max-w-[1640px]" : "max-w-[1320px]"}`}>
             {view === "data" ? (
               <ArtifactDataTable artifactId={node.id} />
             ) : (

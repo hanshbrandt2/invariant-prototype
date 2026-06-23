@@ -132,7 +132,7 @@ export function ArtifactDataTable({ artifactId }: { artifactId: string }) {
           <span className="h-1.5 w-1.5 rounded-full bg-green" /> real · research-workbench
         </span>
       </div>
-      <div style={{ height: 540 }}>
+      <div style={{ height: "calc(100vh - 230px)", minHeight: 460 }}>
         <AgGridReact
           theme={editorialGrid}
           columnDefs={columnDefs}

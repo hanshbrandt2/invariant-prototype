@@ -6,7 +6,7 @@
 // Numeric columns reuse the editorial <Histogram>; categorical columns get
 // editorial top-N bars. A stats table sits underneath. Nothing is synthesized.
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LiveEdaSummary, LiveHistogram, ColumnHistogram } from "@/lib/types";
 import { getLiveArtifactEda } from "@/lib/data";
 import { Histogram } from "@/components/workspace/histogram";
@@ -37,29 +37,44 @@ function prettyCategory(v: string): string {
 }
 
 function CategoryBars({ h }: { h: LiveHistogram }) {
-  const cats = [...(h.categories ?? [])].sort((a, b) => b.count - a.count).slice(0, 12);
-  const max = Math.max(1, ...cats.map((x) => x.count));
+  const [showAll, setShowAll] = useState(false);
+  const all = useMemo(
+    () => [...(h.categories ?? [])].sort((a, b) => b.count - a.count),
+    [h],
+  );
+  const cats = showAll ? all : all.slice(0, 12);
+  const max = Math.max(1, ...all.map((x) => x.count));
   return (
-    <div className="space-y-1 pt-1">
-      {cats.map((cat) => {
-        const label = prettyCategory(cat.value);
-        return (
-        <div key={cat.value} className="flex items-center gap-2">
-          <span className="w-[42%] shrink-0 truncate font-mono text-micro text-ink-2" title={label}>
-            {label}
-          </span>
-          <div className="h-3 flex-1 bg-paper-2">
-            <div
-              className="h-full"
-              style={{ width: `${(cat.count / max) * 100}%`, backgroundColor: c.data }}
-            />
-          </div>
-          <span className="w-14 shrink-0 text-right font-mono text-micro text-muted tabular-nums">
-            {fmtNumber(cat.count)}
-          </span>
-        </div>
-        );
-      })}
+    <div className="pt-1">
+      <div className="space-y-1">
+        {cats.map((cat) => {
+          const label = prettyCategory(cat.value);
+          return (
+            <div key={cat.value} className="flex items-center gap-2">
+              <span className="w-[42%] shrink-0 truncate font-mono text-micro text-ink-2" title={label}>
+                {label}
+              </span>
+              <div className="h-3 flex-1 bg-paper-2">
+                <div
+                  className="h-full"
+                  style={{ width: `${(cat.count / max) * 100}%`, backgroundColor: c.data }}
+                />
+              </div>
+              <span className="w-14 shrink-0 text-right font-mono text-micro text-muted tabular-nums">
+                {fmtNumber(cat.count)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {all.length > 12 && (
+        <button
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-1.5 font-mono text-micro text-clay hover:underline"
+        >
+          {showAll ? "← top 12" : `show all ${all.length} loaded ↓`}
+        </button>
+      )}
     </div>
   );
 }
@@ -102,6 +117,9 @@ export function ArtifactCharts({ artifactId }: { artifactId: string }) {
   }
 
   const generated = eda.generatedAt?.slice(0, 10) ?? "—";
+  const statByName: Record<string, (typeof eda.columnStats)[number]> = Object.fromEntries(
+    eda.columnStats.map((s) => [s.name, s]),
+  );
 
   return (
     <div>
@@ -119,12 +137,15 @@ export function ArtifactCharts({ artifactId }: { artifactId: string }) {
       <div className="grid grid-cols-1 gap-x-8 gap-y-6 lg:grid-cols-2">
         {eda.histograms.map((h) => {
           const hasData = h.isNumeric ? (h.bins?.length ?? 0) > 0 : (h.categories?.length ?? 0) > 0;
+          const nDistinct = statByName[h.name]?.nDistinct;
           return (
             <div key={h.name} className="min-w-0">
               <div className="mb-1 flex items-baseline justify-between gap-2">
                 <span className="font-mono text-meta text-ink-2">{h.name}</span>
                 <span className="font-mono text-micro uppercase tracking-[0.1em] text-faint">
-                  {h.isNumeric ? "numeric" : "categorical"}
+                  {h.isNumeric
+                    ? "numeric"
+                    : `categorical · ${nDistinct != null ? nDistinct.toLocaleString() : "?"} distinct`}
                 </span>
               </div>
               {!hasData ? (

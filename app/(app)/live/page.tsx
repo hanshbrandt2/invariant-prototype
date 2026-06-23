@@ -128,12 +128,26 @@ export default function LivePage() {
                     <h2 className="font-serif text-h2 text-ink">{selected.name}</h2>
                     <p className="mt-0.5 font-mono text-meta text-muted">{selected.id}</p>
                   </div>
-                  <Link
-                    href={`/live/artifact/${encodeURIComponent(selected.id)}`}
-                    className="shrink-0 border border-clay/40 bg-clay-wash px-3 py-1.5 text-ui text-clay transition-colors hover:border-clay"
-                  >
-                    Open graph + inspector ▸
-                  </Link>
+                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <Link
+                      href={`/live/artifact/${encodeURIComponent(selected.id)}?view=data`}
+                      className="border border-clay/40 bg-clay-wash px-3 py-1.5 text-ui text-clay transition-colors hover:border-clay"
+                    >
+                      Inspect data ▸
+                    </Link>
+                    <Link
+                      href={`/live/artifact/${encodeURIComponent(selected.id)}?view=dist`}
+                      className="border border-hairline px-3 py-1.5 text-ui text-ink-2 transition-colors hover:border-ink-2"
+                    >
+                      Distributions
+                    </Link>
+                    <Link
+                      href={`/live/artifact/${encodeURIComponent(selected.id)}`}
+                      className="border border-hairline px-3 py-1.5 text-ui text-ink-2 transition-colors hover:border-ink-2"
+                    >
+                      Graph
+                    </Link>
+                  </div>
                 </div>
 
                 <section>

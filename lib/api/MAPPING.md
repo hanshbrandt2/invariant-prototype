@@ -169,3 +169,4 @@ already clean ISO.
 |---|---|---|---|
 | T-10 | **row paging** (`offset` on preview, or a cursor query) — to browse beyond the 500-row sample | research-workbench | full-table inspection (not just a sample) |
 | T-11 | **typed datetimes in the EDA sidecar** (don't `str()` them) | research-workbench EDA | drop the `prettyCategory` client patch |
+| T-12 | **`/eda/{id}/query` 500s on any Datetime result column** — `select_columns:[ts_event,…]` or `group_by:[ts_event]` both return HTTP 500 (numeric selects + `group_by session_id` (a Date) work fine, ~40ms). Same root cause as T-11: rwb can't serialize a Polars `Datetime`. | research-workbench | the intraday **Plot tab** (minute candlesticks) — held until fixed; daily `group_by session_id` aggregation already works |
